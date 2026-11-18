@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Progress</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+<style>
+body { margin: 0; background: #f5f5f3; color: #141416; font-family: 'Inter', system-ui, sans-serif; }
+a { color: #67676b; } a:hover { color: #141416; }
+h1, h2, h3 { font-family: 'Inter', sans-serif; font-weight: 600; margin: 0; letter-spacing: -.01em; }
+p { margin: 0; }
+.panel { background: #fbfbfa; border: 1px solid #ececea; border-radius: 14px; }
+.lbl { font-size: 10.5px; letter-spacing: .09em; text-transform: uppercase; color: #67676b; font-weight: 600; margin: 0; }
+.mut { color: #67676b; }
+.nav a { display: block; padding: 12px 13px; border-radius: 999px; text-decoration: none; font-size: 13.5px; font-weight: 500; }
+.nav a.on { background: #ececea; color: #141416; font-weight: 600; }
+.seg { display: inline-flex; border: 1px solid #ececea; border-radius: 999px; padding: 2px; background: #fbfbfa; }
+.seg a, .seg button { border: 0; background: none; min-height: 44px; padding: 0 18px; border-radius: 999px; font-family: inherit; font-size: 12.5px; font-weight: 600; color: #67676b; cursor: pointer; text-decoration: none; display: inline-grid; place-items: center; }
+.seg .on { background: #141416; color: #ffffff; }
+.tile { padding: 15px 16px; border-radius: 14px; background: #fbfbfa; border: 1px solid #ececea; min-width: 0; display: flex; flex-direction: column; gap: 4px; text-decoration: none; color: #141416; }
+.tile.g { background: #e6f0e8; } .tile.o { background: #f7e8de; } .tile.p { background: #f8e5e5; }
+.tile b { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: #67676b; font-weight: 600; }
+.tile .big { font-size: 30px; font-weight: 600; letter-spacing: -.02em; margin-top: 6px; font-variant-numeric: tabular-nums; }
+.tile .sub { font-size: 11.5px; color: #67676b; line-height: 1.4; }
+.chip { display: inline-block; padding: 3px 9px; border-radius: 999px; font-size: 10.5px; font-weight: 600; background: #ececea; color: #141416; }
+.chip.live { background: #fbe9d9; color: #9a3412; }
+.chip.ok { background: #dcefe1; color: #1f6a37; }
+.say { display: flex; gap: 12px; align-items: center; justify-content: space-between; padding: 8px 8px 8px 14px; border-radius: 12px; background: #f0f0ee; }
+.say span { font-size: 12.5px; color: #141416; min-width: 0; }
+.say button { flex: 0 0 auto; min-height: 44px; padding: 0 18px; border-radius: 999px; border: 0; background: #141416; color: #ffffff; font-family: inherit; font-size: 12px; font-weight: 600; cursor: pointer; }
+.row { display: flex; gap: 14px; align-items: center; justify-content: space-between; padding: 14px 0; border-bottom: 1px solid #ececea; text-decoration: none; color: #141416; font-size: 13.5px; }
+.row:last-child { border-bottom: 0; }
+.row small { display: block; font-size: 11.5px; color: #67676b; margin-top: 3px; font-weight: 400; }
+.ch { color: #67676b; font-size: 12.5px; white-space: nowrap; }
+.sw { flex: 0 0 auto; width: 44px; height: 26px; border-radius: 999px; position: relative; border: 0; cursor: pointer; }
+.sw i { position: absolute; top: 3px; width: 20px; height: 20px; border-radius: 999px; background: #ffffff; }
+table { border-collapse: collapse; width: 100%; font-size: 13px; }
+th, td { text-align: left; padding: 11px 12px; border-bottom: 1px solid #ececea; }
+th { color: #67676b; font-weight: 600; font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase; }
+td { font-variant-numeric: tabular-nums; }
+.av { width: 34px; height: 34px; border-radius: 999px; background: #f2cdb8; display: grid; place-items: center; font-weight: 600; font-size: 13px; position: relative; flex: 0 0 auto; }
+.av::after { content: ""; position: absolute; right: -1px; bottom: -1px; width: 9px; height: 9px; border-radius: 999px; background: #2f7d45; border: 2px solid #f5f5f3; }
+
+</style>
+</helmet>
+
+<div style="display: flex; flex-wrap: wrap; min-height: 900px; align-items: stretch">
+  <aside style="flex: 0 0 218px; min-width: 0; border-right: 1px solid #ececea; padding: 24px 14px; display: flex; flex-direction: column; gap: 18px; box-sizing: border-box; background: #f7f7f5">
+    <span style="font-size: 17px; font-weight: 700; padding: 0 10px; letter-spacing: -.02em">Shredpace</span>
+    <nav class="nav" style="display: flex; flex-direction: column; gap: 2px"><a href="TodayDesktop.dc.html">Today</a><a class="on" href="SessionsDesktop.dc.html">Training</a><a href="FoodDesktop.dc.html">Food</a><a href="BodyDesktop.dc.html">Body</a><a href="GoalsDesktop.dc.html">Goals</a></nav>
+    <div><p class="lbl" style="padding: 0 10px; margin-bottom: 6px">Tools</p><nav class="nav" style="display: flex; flex-direction: column; gap: 2px"><a href="ConnectAgentV2.dc.html">Ask Claude</a><a href="ConnectAgentV2.dc.html">Your agents</a><a href="ProCoach.dc.html">Coach</a><a href="Settings.dc.html">Settings</a></nav></div>
+    <a href="ConnectAgentV2.dc.html" class="panel" style="margin-top: auto; padding: 12px 14px; text-decoration: none; display: block"><strong style="font-size: 12px; color: #141416; display: block">Claude is connected</strong><span style="font-size: 11.5px; color: #67676b; line-height: 1.5">Last heard 18:02 · logs every set you send</span></a>
+  </aside>
+  <main style="flex: 999 1 560px; min-width: 0; padding: 18px 34px 28px; display: flex; flex-direction: column; gap: 16px; box-sizing: border-box">
+<div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 16px"><div><h1 style="font-size: 30px">Training</h1><div style="margin-top: 12px"><span class="seg"><a href="SessionsDesktop.dc.html">Sessions</a><a class="on" href="ProProgress.dc.html">Progress</a><a href="Exercises.dc.html">Exercises</a></span></div></div><div style="display: flex; gap: 12px; align-items: center; min-height: 44px"><span style="font-size: 11.5px; color: #67676b">Wed, Nov 18, 2026</span><span class="av">S</span></div></div>
+    <p class="mut" style="font-size: 13px">Since you started · 17 Nov (1 week)</p>
+    <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px">
+      <div class="tile"><b>Workouts</b><span class="big">3</span><span class="sub"></span></div><div class="tile"><b>Lifted</b><span class="big">2.1 <span style='font-size:14px;font-weight:500'>t</span></span><span class="sub"></span></div><div class="tile"><b>Distance</b><span class="big">5 <span style='font-size:14px;font-weight:500'>km</span></span><span class="sub"></span></div><div class="tile"><b>Weeks trained</b><span class="big">1 <span class='mut' style='font-size:14px;font-weight:500'>of 1</span></span><span class="sub"></span></div>
+    </div>
+    <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start">
+      <div class="panel" style="flex: 1 1 380px; min-width: 0; padding: 18px"><p class="lbl">Week 1 of 12 · Recomp</p><h2 style="font-size: 17px; margin-top: 8px">Early days</h2><p class="mut" style="font-size: 12.5px; margin-top: 4px; line-height: 1.5">Weight moves with water in the first weeks. We judge a recomp from week 4, by your waist and your lifts.</p>
+        <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 10px 0; border-bottom: 1px solid #ececea"><span><strong style="font-size: 13px">Waist</strong><br><span class="mut" style="font-size: 11.5px">1 readings: a trend needs 3</span></span><strong style="font-size: 16px">84 cm</strong></div><div style="display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 10px 0; border-bottom: 1px solid #ececea"><span><strong style="font-size: 13px">Back Squat · e1RM</strong><br><span class="mut" style="font-size: 11.5px">Not enough sessions yet</span></span><strong style="font-size: 16px">116.7 kg</strong></div><div style="display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 10px 0; border-bottom: 1px solid #ececea"><span><strong style="font-size: 13px">Body fat · same scale</strong><br><span class="mut" style="font-size: 11.5px">1 scan: a trend needs 3</span></span><strong style="font-size: 16px">18%</strong></div>
+        <div style="padding-top: 12px"><p class="lbl">Weight</p><div style="display: flex; justify-content: space-between; font-size: 11.5px; color: #67676b; margin-top: 6px"><span>80.3</span><strong style="color: #141416">82.3 kg · steady, as it should be</strong><span>84.3</span></div><div style="height: 6px; border-radius: 999px; background: #ececea; margin-top: 6px; position: relative"><span style="position: absolute; left: 49%; top: -3px; width: 12px; height: 12px; border-radius: 999px; background: #141416"></span></div></div></div>
+      <div style="flex: 1 1 300px; min-width: 0; display: flex; flex-direction: column; gap: 12px">
+        <div class="panel" style="padding: 16px"><div style="display: flex; justify-content: space-between; align-items: center"><p class="lbl">Your lifts</p><span class="seg"><button type="button" class="on">Lifts</button><button type="button">Runs</button></span></div>
+          <div style="margin-top: 8px"><p class="lbl">First marks · 2 new lifts</p><p class="mut" style="font-size: 12px; margin-top: 4px">Today’s best set of each lift. Next time is measured against these.</p>
+          <table style="margin-top: 6px"><tbody><tr><td><strong>Back Squat</strong></td><td>100 × 5</td><td class="mut">e1RM 117</td></tr><tr><td><strong>Romanian Deadlift</strong></td><td>80 × 8</td><td class="mut">e1RM 101</td></tr></tbody></table><p class="mut" style="font-size: 11.5px; margin-top: 6px">The chart and its % start with a second week.</p></div></div>
+        <div class="panel" style="padding: 16px"><p class="lbl">What you trained</p><p style="margin-top: 8px; font-size: 14px"><strong>Legs · Wed 18 Nov</strong> <span class="mut">Last workout</span></p><p style="font-size: 12.5px; margin-top: 6px; line-height: 1.5">So far: glutes, quads, hamstrings and adductor magnus.</p></div>
+        <div class="panel" style="padding: 16px"><p class="lbl">Bests <span style="text-transform: none; letter-spacing: 0; font-weight: 400">since you started</span></p>
+          <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 10px 0; border-bottom: 1px solid #ececea"><span><strong style="font-size: 13px">Back Squat</strong><br><span class="mut" style="font-size: 11.5px">Wed 18 Nov 2026</span></span><strong style="font-size: 16px">117 kg e1RM</strong></div><div style="display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 10px 0; border-bottom: 1px solid #ececea"><span><strong style="font-size: 13px">Romanian Deadlift</strong><br><span class="mut" style="font-size: 11.5px">Wed 18 Nov 2026</span></span><strong style="font-size: 16px">101 kg e1RM</strong></div><div style="display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 10px 0; border-bottom: 1px solid #ececea"><span><strong style="font-size: 13px">5 km run</strong><br><span class="mut" style="font-size: 11.5px">Wed 18 Nov 2026</span></span><strong style="font-size: 16px">27:40</strong></div></div>
+      </div>
+    </div>
+    <div class="panel" style="padding: 16px 18px"><p class="lbl">Your year <span style="text-transform: none; letter-spacing: 0; font-weight: 400">one square a week · dashed: before you started · faint: still to come</span></p>
+      <div style="display: flex; gap: 4px; margin-top: 10px; align-items: center"><span style="width: 14px; height: 14px; border-radius: 4px; background: #141416"></span><span style="width: 14px; height: 14px; border-radius: 4px; border: 1px dashed #c9c9c4"></span><span style="width: 14px; height: 14px; border-radius: 4px; border: 1px dashed #c9c9c4"></span><span style="width: 14px; height: 14px; border-radius: 4px; background: #ececea"></span></div>
+      <p class="mut" style="font-size: 12px; margin-top: 10px">1 of 1 weeks trained · 3 workouts a week · Longest streak 1 wk</p></div>
+<p style="margin: auto 0 0; font-size: 11.5px; color: #67676b; line-height: 1.55; max-width: 96ch">Redrawn from the live dashboard on 18 Nov 2026 after the account held real data (Studio, light). Labels, copy, structure and order were observed. The body figure is a placeholder for the real illustration, tile tints are approximate, and figures and times are sample data.</p>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

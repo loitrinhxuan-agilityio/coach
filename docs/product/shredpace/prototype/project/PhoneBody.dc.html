@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Body on a phone</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:ital,wdth,wght@0,62..125,100..900;1,62..125,100..900&family=Inter:wght@400;500;600;700&display=swap">
+<style>
+body { margin: 0; background: #0e0e10; color: #f4f4f5; font-family: 'Inter', system-ui, sans-serif; }
+a { color: #a1a1aa; } a:hover { color: #f4f4f5; }
+.hd { font-family: 'Archivo', sans-serif; font-style: italic; font-stretch: 78%; font-weight: 800; text-transform: uppercase; line-height: .95; margin: 0; }
+.card { background: #18181b; border: 1px solid #2e2e33; border-radius: 20px; }
+.lbl { font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: #a1a1aa; font-weight: 600; margin: 0; }
+.tabs { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); border-top: 1px solid #2e2e33; background: #131316; }
+.tabs a { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 0 14px; font-size: 10px; text-decoration: none; }
+.tabs a.on { color: #ff5b1f; font-weight: 600; }
+.dot { width: 18px; height: 18px; border-radius: 6px; border: 1.5px solid currentColor; }
+.r { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; padding: 12px 0; border-bottom: 1px solid #2e2e33; font-size: 12.5px; }
+</style>
+</helmet>
+
+<div style="width: 390px; height: 844px; box-sizing: border-box; display: flex; flex-direction: column; overflow: hidden">
+  <header style="padding: 18px 18px 10px; display: flex; align-items: baseline; justify-content: space-between">
+    <div>
+      <h1 class="hd" style="font-size: 27px">Body</h1>
+      <p style="margin: 4px 0 0; font-size: 11.5px; color: #a1a1aa">Scale, scan and tape</p>
+    </div>
+    <button type="button" style="padding: 7px 14px; border-radius: 999px; border: 0; background: #ff5b1f; color: #0e0e10; font-family: inherit; font-size: 11.5px; font-weight: 700; cursor: pointer">Add ›</button>
+  </header>
+
+  <div style="flex: 1; min-height: 0; overflow-y: auto; padding: 0 18px 18px; display: flex; flex-direction: column; gap: 12px">
+    <div class="card" style="padding: 16px">
+      <p class="lbl">Bodyweight trend</p>
+      <p class="hd" style="font-size: 32px; margin: 8px 0 3px">81.4 <span style="font-size: 13px; color: #a1a1aa; font-style: normal; text-transform: none">kg</span></p>
+      <p style="margin: 0 0 12px; font-size: 11.5px; color: #8bd17c">−0.6 kg over 4 weeks</p>
+      <svg viewBox="0 0 320 70" role="img" aria-label="Bodyweight easing down from 82.3 to 81.4 kg over four weeks" style="width: 100%; max-width: 100%; height: 70px; display: block">
+        <polyline points="4,20 46,24 88,18 130,30 172,34 214,30 256,42 300,46" fill="none" stroke="#ff8a4c" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"></polyline>
+        <circle cx="300" cy="46" r="4" fill="#ff5b1f"></circle>
+        <text x="4" y="64" fill="#a1a1aa" font-size="9" font-family="Inter, sans-serif">82.3</text>
+        <text x="276" y="64" fill="#a1a1aa" font-size="9" font-family="Inter, sans-serif">81.4</text>
+      </svg>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 11px">
+      <div class="card" style="padding: 14px"><p class="lbl">Body fat</p><p class="hd" style="font-size: 22px; margin-top: 6px">20.6%</p><p style="margin: 3px 0 0; font-size: 10.5px; color: #a1a1aa">Scan · 3 readings</p></div>
+      <div class="card" style="padding: 14px"><p class="lbl">Waist</p><p class="hd" style="font-size: 22px; margin-top: 6px">84 cm</p><p style="margin: 3px 0 0; font-size: 10.5px; color: #a1a1aa">Tape</p></div>
+    </div>
+
+    <div class="card" style="padding: 16px">
+      <p class="lbl" style="margin-bottom: 6px">Recent readings</p>
+      <div class="r"><span>81.4 kg · 20.6% fat<br><span style="font-size: 11px; color: #a1a1aa">Today 07:02 · Withings scale</span></span><span style="font-size: 11px; color: #a1a1aa">scale</span></div>
+      <div class="r"><span>Full scan<br><span style="font-size: 11px; color: #a1a1aa">Sun · read from a screenshot</span></span><span style="font-size: 11px; color: #a1a1aa">scan</span></div>
+      <div class="r"><span>81.9 kg<br><span style="font-size: 11px; color: #a1a1aa">Fri 06:58 · Withings scale</span></span><span style="font-size: 11px; color: #a1a1aa">scale</span></div>
+      <div class="r" style="border: 0"><span>Waist 84 cm, chest 104 cm<br><span style="font-size: 11px; color: #a1a1aa">10 Nov · tape</span></span><span style="font-size: 11px; color: #a1a1aa">tape</span></div>
+      <p style="margin: 11px 0 0; font-size: 11px; color: #a1a1aa">A trend needs 3 readings.</p>
+    </div>
+  </div>
+
+  <nav class="tabs">
+    <a href="PhoneToday.dc.html"><span class="dot"></span>Today</a>
+    <a href="PhoneSessions.dc.html"><span class="dot"></span>Training</a>
+    <a href="PhoneFood.dc.html"><span class="dot"></span>Food</a>
+    <a class="on" href="PhoneBody.dc.html"><span class="dot"></span>Body</a>
+    <a href="PhoneGoals.dc.html"><span class="dot"></span>Goals</a>
+  </nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>During a session on a phone</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:ital,wdth,wght@0,62..125,100..900;1,62..125,100..900&family=Inter:wght@400;500;600;700&display=swap">
+<style>
+body { margin: 0; background: #0e0e10; color: #f4f4f5; font-family: 'Inter', system-ui, sans-serif; }
+a { color: #a1a1aa; } a:hover { color: #f4f4f5; }
+.hd { font-family: 'Archivo', sans-serif; font-style: italic; font-stretch: 78%; font-weight: 800; text-transform: uppercase; line-height: .95; margin: 0; }
+.card { background: #18181b; border: 1px solid #2e2e33; border-radius: 20px; }
+.lbl { font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: #a1a1aa; font-weight: 600; margin: 0; }
+.seg { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border: 1px solid #2e2e33; border-radius: 999px; overflow: hidden; }
+.seg a { padding: 8px 0; font-size: 12px; text-align: center; text-decoration: none; }
+.seg a.on { background: #f4f4f5; color: #0e0e10; font-weight: 600; }
+.set { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; padding: 11px 0; border-bottom: 1px solid #2e2e33; font-size: 12.5px; }
+.stepper { display: flex; align-items: center; gap: 10px; }
+.stepper button { width: 34px; height: 34px; border-radius: 999px; border: 1px solid #2e2e33; background: #131316; color: #f4f4f5; font-family: inherit; font-size: 16px; cursor: pointer; }
+</style>
+</helmet>
+
+<div style="width: 390px; height: 844px; box-sizing: border-box; display: flex; flex-direction: column; overflow: hidden">
+  <header style="padding: 16px 18px 10px; display: flex; flex-direction: column; gap: 11px">
+    <div style="display: flex; align-items: baseline; justify-content: space-between">
+      <h1 class="hd" style="font-size: 24px">Legs</h1>
+      <span style="font-size: 11.5px; color: #ff8a4c"><span style="color: #ff5b1f">●</span> 24 min</span>
+    </div>
+    <nav class="seg">
+      <a href="PhoneBefore.dc.html">Before</a>
+      <a class="on" href="PhoneDuring.dc.html">During</a>
+      <a href="PhoneAfter.dc.html">After</a>
+    </nav>
+  </header>
+
+  <div style="flex: 1; min-height: 0; overflow-y: auto; padding: 4px 18px 18px; display: flex; flex-direction: column; gap: 12px">
+    <div class="card" style="padding: 18px; border-color: #ff5b1f">
+      <p class="lbl" style="color: #ff8a4c">Next set</p>
+      <p class="hd" style="font-size: 36px; margin: 9px 0 5px">100 kg × 5</p>
+      <p style="margin: 0; font-size: 12.5px; color: #d4d4d8">Back Squat · set 3 of 3</p>
+      <p style="margin: 7px 0 0; font-size: 11.5px; color: #a1a1aa">15 a side × 2 plus the 20 kg bar. Rest about 3 min.</p>
+    </div>
+
+    <div class="card" style="padding: 16px; display: flex; flex-direction: column; gap: 13px">
+      <p class="lbl">Log it by hand</p>
+      <div style="display: flex; justify-content: space-between; align-items: center">
+        <label for="w" style="font-size: 12.5px; color: #d4d4d8">Weight</label>
+        <span class="stepper"><button type="button" aria-label="Less weight">−</button><input id="w" value="100" style="width: 56px; text-align: center; background: #0e0e10; border: 1px solid #2e2e33; border-radius: 10px; color: #f4f4f5; font-family: inherit; font-size: 14px; padding: 7px 0; font-variant-numeric: tabular-nums"><button type="button" aria-label="More weight">+</button></span>
+      </div>
+      <div style="display: flex; justify-content: space-between; align-items: center">
+        <label for="r" style="font-size: 12.5px; color: #d4d4d8">Reps</label>
+        <span class="stepper"><button type="button" aria-label="Fewer reps">−</button><input id="r" value="5" style="width: 56px; text-align: center; background: #0e0e10; border: 1px solid #2e2e33; border-radius: 10px; color: #f4f4f5; font-family: inherit; font-size: 14px; padding: 7px 0; font-variant-numeric: tabular-nums"><button type="button" aria-label="More reps">+</button></span>
+      </div>
+      <div>
+        <p class="lbl" style="margin-bottom: 8px">How hard?</p>
+        <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px">
+          <button type="button" style="padding: 8px 0; border-radius: 999px; border: 1px solid #2e2e33; background: none; color: #a1a1aa; font-family: inherit; font-size: 11px; cursor: pointer">Easy</button>
+          <button type="button" style="padding: 8px 0; border-radius: 999px; border: 1px solid #f4f4f5; background: #f4f4f5; color: #0e0e10; font-family: inherit; font-size: 11px; font-weight: 600; cursor: pointer">Good</button>
+          <button type="button" style="padding: 8px 0; border-radius: 999px; border: 1px solid #2e2e33; background: none; color: #a1a1aa; font-family: inherit; font-size: 11px; cursor: pointer">Hard</button>
+          <button type="button" style="padding: 8px 0; border-radius: 999px; border: 1px solid #2e2e33; background: none; color: #a1a1aa; font-family: inherit; font-size: 11px; cursor: pointer">All out</button>
+        </div>
+      </div>
+      <button type="button" style="height: 44px; border-radius: 999px; border: 0; background: #ff5b1f; color: #0e0e10; font-family: inherit; font-size: 14px; font-weight: 700; cursor: pointer">Log the set</button>
+    </div>
+
+    <div class="card" style="padding: 16px">
+      <p class="lbl" style="margin-bottom: 7px">Logged so far</p>
+      <div class="set"><span>Back Squat <span style="color: #a1a1aa">warm-up</span></span><span style="color: #a1a1aa; font-variant-numeric: tabular-nums">60 × 8</span></div>
+      <div class="set"><span>Back Squat <span style="color: #a1a1aa">1</span></span><span style="font-variant-numeric: tabular-nums">100 × 5 · Easy</span></div>
+      <div class="set"><span>Back Squat <span style="color: #a1a1aa">2</span></span><span style="font-variant-numeric: tabular-nums">100 × 5 · Good</span></div>
+      <div class="set" style="border: 0"><span>Romanian Deadlift <span style="color: #a1a1aa">1</span></span><span style="font-variant-numeric: tabular-nums">80 × 8 · Good</span></div>
+    </div>
+
+    <button type="button" style="height: 44px; border-radius: 999px; border: 1px solid #2e2e33; background: #131316; color: #f4f4f5; font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer">End session</button>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

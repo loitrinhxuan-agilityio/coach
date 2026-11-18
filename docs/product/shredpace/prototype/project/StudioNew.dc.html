@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Studio: a first Today</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+<style>
+/* Studio, light: the real palette from the shipped theme table. Accent is the text colour. */
+body { margin: 0; background: #f5f5f3; color: #141416; font-family: 'Inter', system-ui, sans-serif; }
+a { color: #67676b; } a:hover { color: #141416; }
+h1, h2, h3 { font-family: 'Inter', sans-serif; font-weight: 600; margin: 0; letter-spacing: -.01em; }
+.panel { background: #fbfbfa; border: 1px solid #ececea; border-radius: 14px; }
+.lbl { font-size: 10.5px; letter-spacing: .09em; text-transform: uppercase; color: #67676b; font-weight: 600; margin: 0; }
+.nav a { display: block; padding: 9px 13px; border-radius: 999px; text-decoration: none; font-size: 13.5px; font-weight: 500; }
+.nav a.on { background: #ececea; color: #141416; font-weight: 600; }
+.step { display: flex; gap: 14px; align-items: center; padding: 14px 16px; border-radius: 14px; border: 1px solid #ececea; background: #fbfbfa; text-decoration: none; color: #141416; }
+.step:hover { border-color: #141416; }
+.step.first { border-color: #141416; background: #ffffff; }
+.dot { width: 26px; height: 26px; border-radius: 999px; border: 1.5px solid #c9c9c4; display: grid; place-items: center; font-size: 11px; font-weight: 600; color: #67676b; flex: 0 0 auto; }
+.step.first .dot { background: #141416; border-color: #141416; color: #ffffff; }
+.tile.g { background: #e6f0e8; } .tile.o { background: #f7e8de; } .tile.p { background: #f8e5e5; }
+.tile { padding: 14px 15px; border-radius: 14px; background: #fbfbfa; border: 1px solid #ececea; min-width: 0; }
+.tile b { display: block; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: #67676b; font-weight: 600; }
+.tile span { display: block; margin-top: 10px; font-size: 13px; color: #67676b; white-space: nowrap; }
+.copy { display: flex; gap: 12px; align-items: center; justify-content: space-between; padding: 12px 14px; border-radius: 14px; background: #ececea; }
+.copy code { font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 12px; color: #141416; line-height: 1.5; min-width: 0; }
+.copy button { flex: 0 0 auto; height: 44px; padding: 0 16px; border-radius: 999px; border: 0; background: #141416; color: #ffffff; font-family: inherit; font-size: 12px; font-weight: 600; cursor: pointer; }
+.seg { display: inline-flex; border: 1px solid #ececea; border-radius: 999px; padding: 2px; background: #fbfbfa; }
+.seg button { border: 0; background: none; min-height: 44px; padding: 0 16px; border-radius: 999px; font-family: inherit; font-size: 11.5px; font-weight: 600; color: #67676b; cursor: pointer; }
+.seg button.on { background: #141416; color: #ffffff; }
+</style>
+</helmet>
+
+<div style="display: flex; flex-wrap: wrap; min-height: 900px; align-items: stretch">
+
+  <aside style="flex: 0 0 220px; min-width: 0; border-right: 1px solid #ececea; padding: 24px 16px; display: flex; flex-direction: column; gap: 22px; box-sizing: border-box; background: #f7f7f5">
+    <span style="font-size: 17px; font-weight: 700; padding: 0 8px; letter-spacing: -.02em">Shredpace</span>
+    <nav class="nav" style="display: flex; flex-direction: column; gap: 2px">
+      <a class="on" href="StudioNew.dc.html">Today</a>
+      <a href="SessionsDesktop.dc.html">Training</a>
+      <a href="FoodDesktop.dc.html">Food</a>
+      <a href="BodyDesktop.dc.html">Body</a>
+      <a href="GoalsDesktop.dc.html">Goals</a>
+    </nav>
+    <div>
+      <p class="lbl" style="padding: 0 8px; margin-bottom: 6px">Tools</p>
+      <nav class="nav" style="display: flex; flex-direction: column; gap: 2px">
+        <a href="ConnectAgentV2.dc.html">Ask Claude</a>
+        <a href="ConnectAgentV2.dc.html">Your agents</a>
+        <a href="ProCoach.dc.html">Coach</a>
+        <a href="Settings.dc.html">Settings</a>
+      </nav>
+    </div>
+    <a href="ConnectAgentV2.dc.html" class="panel" style="margin-top: auto; padding: 12px 14px; text-decoration: none; display: block">
+      <strong style="font-size: 12px; color: #141416; display: block">Claude is connected</strong>
+      <span style="font-size: 11.5px; color: #67676b; line-height: 1.5">Last heard just now · logs every set you send</span>
+    </a>
+  </aside>
+
+  <main style="flex: 999 1 560px; min-width: 0; padding: 30px 34px; display: flex; flex-direction: column; gap: 22px; box-sizing: border-box">
+
+    <div>
+      <p style="margin: 0; font-size: 15px; color: #67676b">Hello,</p>
+      <h1 style="font-size: 36px; margin-top: 2px">Sam.</h1>
+      <p style="margin: 8px 0 0; font-size: 14px; color: #67676b; max-width: 60ch; line-height: 1.55">Here’s your training today. Nothing is logged yet: three steps, then your agent takes it from there.</p>
+    </div>
+
+    <div style="display: flex; flex-wrap: wrap; gap: 22px; align-items: flex-start">
+
+      <div style="flex: 1 1 380px; min-width: 0; display: flex; flex-direction: column; gap: 18px">
+        <div style="display: flex; flex-direction: column; gap: 10px">
+          <p class="lbl">Your next step</p>
+          <a class="step first" href="ConnectAgentV2.dc.html"><span class="dot">1</span><span style="min-width: 0"><strong style="font-size: 14px; display: block">Connect your agent</strong><span style="font-size: 12px; color: #67676b">Claude, ChatGPT or Grok. One click, no key to copy.</span></span></a>
+          <a class="step" href="PlanSetup.dc.html"><span class="dot">2</span><span style="min-width: 0"><strong style="font-size: 14px; display: block">Set up your plan</strong><span style="font-size: 12px; color: #67676b">What you train for, how fast, and how much time you give it.</span></span></a>
+          <a class="step" href="BodyDesktop.dc.html"><span class="dot">3</span><span style="min-width: 0"><strong style="font-size: 14px; display: block">Your first weigh-in</strong><span style="font-size: 12px; color: #67676b">Tell your agent your weight. It becomes your starting point.</span></span></a>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 10px">
+          <p class="lbl">When you’re at the gym</p>
+          <div class="copy"><code>“Starting my session: I’m at the gym”</code><button type="button">Copy</button></div>
+          <p style="margin: 0; font-size: 12px; color: #67676b; line-height: 1.5">Paste it into your agent’s chat. It starts the session when you say you’re there, then logs each set as you go.</p>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 10px">
+          <p class="lbl">What fills in after your first session</p>
+          <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px">
+            <div class="tile g"><b>This week</b><span>To come</span></div>
+            <div class="tile o"><b>Volume</b><span>To come</span></div>
+            <div class="tile"><b>Strength</b><span>To come</span></div>
+            <div class="tile"><b>New bests</b><span>To come</span></div>
+            <div class="tile p"><b>Streak</b><span>To come</span></div>
+            <div class="tile"><b>Time trained</b><span>To come</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div style="flex: 0 1 290px; min-width: 240px; display: flex; flex-direction: column; gap: 14px; align-items: center">
+        <div class="panel" style="width: 100%; box-sizing: border-box; padding: 18px 18px 14px; display: flex; flex-direction: column; align-items: center; gap: 12px">
+          <div style="display: flex; justify-content: space-between; align-items: center; width: 100%"><p class="lbl">This week</p>
+            <span class="seg"><button type="button" class="on">Front</button><button type="button">Back</button></span></div>
+          <svg viewBox="0 0 120 250" width="150" height="312" role="img" aria-label="Body figure with no muscles trained yet">
+            <g fill="#e6e0d9">
+              <circle cx="60" cy="20" r="14"/>
+              <rect x="40" y="40" width="40" height="68" rx="16"/>
+              <rect x="16" y="44" width="20" height="74" rx="10"/>
+              <rect x="84" y="44" width="20" height="74" rx="10"/>
+              <rect x="42" y="110" width="17" height="124" rx="8"/>
+              <rect x="61" y="110" width="17" height="124" rx="8"/>
+            </g>
+          </svg>
+          <p style="margin: 0; font-size: 11.5px; color: #67676b; text-align: center; line-height: 1.5">Drag to turn · Fewer sets ↔ More<br>Nothing trained yet this week. Tracked by your agent, set by set.</p>
+        </div>
+      </div>
+    </div>
+
+    <p style="margin: 0; font-size: 11.5px; color: #67676b; line-height: 1.55; max-width: 90ch">The first-run state is reconstructed from the 26–27 Oct changelog; the board name StudioNew appears in the shipped code. The rail, the six tile names and their tints, the greeting and the copy-sentence style were observed on a live Studio account on 18 Nov. The body figure here is a placeholder for the real anatomical illustration; the tints are approximate.</p>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

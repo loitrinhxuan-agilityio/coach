@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Exercises</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+<style>
+body { margin: 0; background: #f5f5f3; color: #141416; font-family: 'Inter', system-ui, sans-serif; }
+a { color: #67676b; } a:hover { color: #141416; }
+h1, h2, h3 { font-family: 'Inter', sans-serif; font-weight: 600; margin: 0; letter-spacing: -.01em; }
+p { margin: 0; }
+.panel { background: #fbfbfa; border: 1px solid #ececea; border-radius: 14px; }
+.lbl { font-size: 10.5px; letter-spacing: .09em; text-transform: uppercase; color: #67676b; font-weight: 600; margin: 0; }
+.mut { color: #67676b; }
+.nav a { display: block; padding: 12px 13px; border-radius: 999px; text-decoration: none; font-size: 13.5px; font-weight: 500; }
+.nav a.on { background: #ececea; color: #141416; font-weight: 600; }
+.seg { display: inline-flex; border: 1px solid #ececea; border-radius: 999px; padding: 2px; background: #fbfbfa; }
+.seg a, .seg button { border: 0; background: none; min-height: 44px; padding: 0 18px; border-radius: 999px; font-family: inherit; font-size: 12.5px; font-weight: 600; color: #67676b; cursor: pointer; text-decoration: none; display: inline-grid; place-items: center; }
+.seg .on { background: #141416; color: #ffffff; }
+.tile { padding: 15px 16px; border-radius: 14px; background: #fbfbfa; border: 1px solid #ececea; min-width: 0; display: flex; flex-direction: column; gap: 4px; text-decoration: none; color: #141416; }
+.tile.g { background: #e6f0e8; } .tile.o { background: #f7e8de; } .tile.p { background: #f8e5e5; }
+.tile b { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: #67676b; font-weight: 600; }
+.tile .big { font-size: 30px; font-weight: 600; letter-spacing: -.02em; margin-top: 6px; font-variant-numeric: tabular-nums; }
+.tile .sub { font-size: 11.5px; color: #67676b; line-height: 1.4; }
+.chip { display: inline-block; padding: 3px 9px; border-radius: 999px; font-size: 10.5px; font-weight: 600; background: #ececea; color: #141416; }
+.chip.live { background: #fbe9d9; color: #9a3412; }
+.chip.ok { background: #dcefe1; color: #1f6a37; }
+.say { display: flex; gap: 12px; align-items: center; justify-content: space-between; padding: 8px 8px 8px 14px; border-radius: 12px; background: #f0f0ee; }
+.say span { font-size: 12.5px; color: #141416; min-width: 0; }
+.say button { flex: 0 0 auto; min-height: 44px; padding: 0 18px; border-radius: 999px; border: 0; background: #141416; color: #ffffff; font-family: inherit; font-size: 12px; font-weight: 600; cursor: pointer; }
+.row { display: flex; gap: 14px; align-items: center; justify-content: space-between; padding: 14px 0; border-bottom: 1px solid #ececea; text-decoration: none; color: #141416; font-size: 13.5px; }
+.row:last-child { border-bottom: 0; }
+.row small { display: block; font-size: 11.5px; color: #67676b; margin-top: 3px; font-weight: 400; }
+.ch { color: #67676b; font-size: 12.5px; white-space: nowrap; }
+.sw { flex: 0 0 auto; width: 44px; height: 26px; border-radius: 999px; position: relative; border: 0; cursor: pointer; }
+.sw i { position: absolute; top: 3px; width: 20px; height: 20px; border-radius: 999px; background: #ffffff; }
+table { border-collapse: collapse; width: 100%; font-size: 13px; }
+th, td { text-align: left; padding: 11px 12px; border-bottom: 1px solid #ececea; }
+th { color: #67676b; font-weight: 600; font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase; }
+td { font-variant-numeric: tabular-nums; }
+.av { width: 34px; height: 34px; border-radius: 999px; background: #f2cdb8; display: grid; place-items: center; font-weight: 600; font-size: 13px; position: relative; flex: 0 0 auto; }
+.av::after { content: ""; position: absolute; right: -1px; bottom: -1px; width: 9px; height: 9px; border-radius: 999px; background: #2f7d45; border: 2px solid #f5f5f3; }
+
+</style>
+</helmet>
+
+<div style="display: flex; flex-wrap: wrap; min-height: 900px; align-items: stretch">
+  <aside style="flex: 0 0 218px; min-width: 0; border-right: 1px solid #ececea; padding: 24px 14px; display: flex; flex-direction: column; gap: 18px; box-sizing: border-box; background: #f7f7f5">
+    <span style="font-size: 17px; font-weight: 700; padding: 0 10px; letter-spacing: -.02em">Shredpace</span>
+    <nav class="nav" style="display: flex; flex-direction: column; gap: 2px"><a href="TodayDesktop.dc.html">Today</a><a class="on" href="SessionsDesktop.dc.html">Training</a><a href="FoodDesktop.dc.html">Food</a><a href="BodyDesktop.dc.html">Body</a><a href="GoalsDesktop.dc.html">Goals</a></nav>
+    <div><p class="lbl" style="padding: 0 10px; margin-bottom: 6px">Tools</p><nav class="nav" style="display: flex; flex-direction: column; gap: 2px"><a href="ConnectAgentV2.dc.html">Ask Claude</a><a href="ConnectAgentV2.dc.html">Your agents</a><a href="ProCoach.dc.html">Coach</a><a href="Settings.dc.html">Settings</a></nav></div>
+    <a href="ConnectAgentV2.dc.html" class="panel" style="margin-top: auto; padding: 12px 14px; text-decoration: none; display: block"><strong style="font-size: 12px; color: #141416; display: block">Claude is connected</strong><span style="font-size: 11.5px; color: #67676b; line-height: 1.5">Last heard 18:02 · logs every set you send</span></a>
+  </aside>
+  <main style="flex: 999 1 560px; min-width: 0; padding: 18px 34px 28px; display: flex; flex-direction: column; gap: 16px; box-sizing: border-box">
+<div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 16px"><div><h1 style="font-size: 30px">Training</h1><div style="margin-top: 12px"><span class="seg"><a href="SessionsDesktop.dc.html">Sessions</a><a href="ProProgress.dc.html">Progress</a><a class="on" href="Exercises.dc.html">Exercises</a></span></div></div><div style="display: flex; gap: 12px; align-items: center; min-height: 44px"><span style="font-size: 11.5px; color: #67676b">Wed, Nov 18, 2026</span><span class="av">S</span></div></div>
+    <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start">
+      <div class="panel" style="flex: 0 1 300px; min-width: 240px; padding: 6px"><div style="display: flex; padding: 8px 14px 4px"><span class="lbl">Main muscle</span><span class="lbl" style="margin-left: auto">Also works</span></div><a class="row" href="Exercises.dc.html" style="padding: 10px 14px;"><span><strong style="font-size: 13px">Ab Wheel Rollout</strong><small>Other · 8–15</small></span></a><a class="row" href="Exercises.dc.html" style="padding: 10px 14px;"><span><strong style="font-size: 13px">Arnold Press</strong><small>Dumbbell · 8–12</small></span></a><a class="row" href="Exercises.dc.html" style="padding: 10px 14px;"><span><strong style="font-size: 13px">Assault Bike</strong><small>Cardio machine · time</small></span></a><a class="row" href="Exercises.dc.html" style="padding: 10px 14px;"><span><strong style="font-size: 13px">Assisted Pull-Up</strong><small>Machine · 6–10</small></span></a><a class="row" href="Exercises.dc.html" style="padding: 10px 14px;"><span><strong style="font-size: 13px">Back Extension</strong><small>Bodyweight · 10–15</small></span></a><a class="row" href="Exercises.dc.html" style="padding: 10px 14px; background: #ececea; border-radius: 10px;"><span><strong style="font-size: 13px">Back Squat</strong><small>Barbell · 5–8</small></span></a><a class="row" href="Exercises.dc.html" style="padding: 10px 14px;"><span><strong style="font-size: 13px">Band Pull-Up</strong><small>Bodyweight · 5–10</small></span></a><a class="row" href="Exercises.dc.html" style="padding: 10px 14px;"><span><strong style="font-size: 13px">Barbell Curl</strong><small>Barbell · 8–12</small></span></a><a class="row" href="Exercises.dc.html" style="padding: 10px 14px;"><span><strong style="font-size: 13px">Barbell Row</strong><small>Barbell · 6–10</small></span></a><a class="row" href="Exercises.dc.html" style="padding: 10px 14px;"><span><strong style="font-size: 13px">Bench Press</strong><small>Barbell · 5–8</small></span></a><a class="row" href="Exercises.dc.html" style="padding: 10px 14px;"><span><strong style="font-size: 13px">Bulgarian Split Squat</strong><small>Dumbbell · 8–12</small></span></a><a class="row" href="Exercises.dc.html" style="padding: 10px 14px;"><span><strong style="font-size: 13px">Cable Crossover</strong><small>Cable · 10–15</small></span></a></div>
+      <div class="panel" style="flex: 1 1 400px; min-width: 0; padding: 20px; display: flex; flex-direction: column; gap: 14px">
+        <div><span class="chip">Barbell · starter exercise</span><h2 style="font-size: 24px; margin-top: 10px">Back Squat</h2><p class="mut" style="font-size: 12px; margin-top: 4px">Movement demo: coming soon</p></div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; font-size: 13px">
+          <div><p class="lbl">Main muscle</p><p style="margin-top: 4px">quads, glutes</p></div><div><p class="lbl">Also works</p><p style="margin-top: 4px">adductor magnus, adductors, lower back</p></div>
+          <div><p class="lbl">Rep range</p><p style="margin-top: 4px">5–8 <span class="mut">· your setting</span></p></div><div><p class="lbl">Increment</p><p style="margin-top: 4px">2.5 kg</p></div>
+        </div>
+        <div style="border-top: 1px solid #ececea; padding-top: 12px"><p class="lbl">Loaded as <span style="text-transform: none; letter-spacing: 0; font-weight: 400">sets the label and the maths</span></p><p style="font-size: 12.5px; margin-top: 6px">Barbell: log the total, the bar included.</p><span class="seg" style="margin-top: 8px"><button type="button" class="on">Bar</button></span><p class="mut" style="font-size: 11.5px; margin-top: 8px; line-height: 1.5">Not counted: the total is the plates. Records here compare only with this lift. A Smith machine starts here; a trap bar or an EZ bar takes its own weight.</p></div>
+        <div style="border-top: 1px solid #ececea; padding-top: 12px"><p class="lbl">Your progress</p><p class="mut" style="font-size: 12px; margin-top: 4px">estimated 1RM · 1 session</p><p style="font-size: 26px; font-weight: 600; margin-top: 4px">117 <span style="font-size: 14px; font-weight: 500">kg</span></p></div>
+        <div style="border-top: 1px solid #ececea; padding-top: 12px"><p class="lbl">Notes from your trainer</p><p class="mut" style="font-size: 12.5px; margin-top: 4px">No notes yet. Ask your agent to add some.</p></div>
+        <div class="say"><span>“Change how Back Squat is loaded”</span><button type="button">Copy</button></div>
+      </div>
+    </div>
+<p style="margin: auto 0 0; font-size: 11.5px; color: #67676b; line-height: 1.55; max-width: 96ch">Redrawn from the live dashboard on 18 Nov 2026 (Studio, light). Layout, labels and copy were observed; the body figure is a placeholder for the real anatomical illustration, tile tints are approximate, and the figures are sample data.</p>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

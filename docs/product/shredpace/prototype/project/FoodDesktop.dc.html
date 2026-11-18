@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Food</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+<style>
+body { margin: 0; background: #f5f5f3; color: #141416; font-family: 'Inter', system-ui, sans-serif; }
+a { color: #67676b; } a:hover { color: #141416; }
+h1, h2, h3 { font-family: 'Inter', sans-serif; font-weight: 600; margin: 0; letter-spacing: -.01em; }
+p { margin: 0; }
+.panel { background: #fbfbfa; border: 1px solid #ececea; border-radius: 14px; }
+.lbl { font-size: 10.5px; letter-spacing: .09em; text-transform: uppercase; color: #67676b; font-weight: 600; margin: 0; }
+.mut { color: #67676b; }
+.nav a { display: block; padding: 12px 13px; border-radius: 999px; text-decoration: none; font-size: 13.5px; font-weight: 500; }
+.nav a.on { background: #ececea; color: #141416; font-weight: 600; }
+.seg { display: inline-flex; border: 1px solid #ececea; border-radius: 999px; padding: 2px; background: #fbfbfa; }
+.seg a, .seg button { border: 0; background: none; min-height: 44px; padding: 0 18px; border-radius: 999px; font-family: inherit; font-size: 12.5px; font-weight: 600; color: #67676b; cursor: pointer; text-decoration: none; display: inline-grid; place-items: center; }
+.seg .on { background: #141416; color: #ffffff; }
+.tile { padding: 15px 16px; border-radius: 14px; background: #fbfbfa; border: 1px solid #ececea; min-width: 0; display: flex; flex-direction: column; gap: 4px; text-decoration: none; color: #141416; }
+.tile.g { background: #e6f0e8; } .tile.o { background: #f7e8de; } .tile.p { background: #f8e5e5; }
+.tile b { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: #67676b; font-weight: 600; }
+.tile .big { font-size: 30px; font-weight: 600; letter-spacing: -.02em; margin-top: 6px; font-variant-numeric: tabular-nums; }
+.tile .sub { font-size: 11.5px; color: #67676b; line-height: 1.4; }
+.chip { display: inline-block; padding: 3px 9px; border-radius: 999px; font-size: 10.5px; font-weight: 600; background: #ececea; color: #141416; }
+.chip.live { background: #fbe9d9; color: #9a3412; }
+.chip.ok { background: #dcefe1; color: #1f6a37; }
+.say { display: flex; gap: 12px; align-items: center; justify-content: space-between; padding: 8px 8px 8px 14px; border-radius: 12px; background: #f0f0ee; }
+.say span { font-size: 12.5px; color: #141416; min-width: 0; }
+.say button { flex: 0 0 auto; min-height: 44px; padding: 0 18px; border-radius: 999px; border: 0; background: #141416; color: #ffffff; font-family: inherit; font-size: 12px; font-weight: 600; cursor: pointer; }
+.row { display: flex; gap: 14px; align-items: center; justify-content: space-between; padding: 14px 0; border-bottom: 1px solid #ececea; text-decoration: none; color: #141416; font-size: 13.5px; }
+.row:last-child { border-bottom: 0; }
+.row small { display: block; font-size: 11.5px; color: #67676b; margin-top: 3px; font-weight: 400; }
+.ch { color: #67676b; font-size: 12.5px; white-space: nowrap; }
+.sw { flex: 0 0 auto; width: 44px; height: 26px; border-radius: 999px; position: relative; border: 0; cursor: pointer; }
+.sw i { position: absolute; top: 3px; width: 20px; height: 20px; border-radius: 999px; background: #ffffff; }
+table { border-collapse: collapse; width: 100%; font-size: 13px; }
+th, td { text-align: left; padding: 11px 12px; border-bottom: 1px solid #ececea; }
+th { color: #67676b; font-weight: 600; font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase; }
+td { font-variant-numeric: tabular-nums; }
+.av { width: 34px; height: 34px; border-radius: 999px; background: #f2cdb8; display: grid; place-items: center; font-weight: 600; font-size: 13px; position: relative; flex: 0 0 auto; }
+.av::after { content: ""; position: absolute; right: -1px; bottom: -1px; width: 9px; height: 9px; border-radius: 999px; background: #2f7d45; border: 2px solid #f5f5f3; }
+
+</style>
+</helmet>
+
+<div style="display: flex; flex-wrap: wrap; min-height: 900px; align-items: stretch">
+  <aside style="flex: 0 0 218px; min-width: 0; border-right: 1px solid #ececea; padding: 24px 14px; display: flex; flex-direction: column; gap: 18px; box-sizing: border-box; background: #f7f7f5">
+    <span style="font-size: 17px; font-weight: 700; padding: 0 10px; letter-spacing: -.02em">Shredpace</span>
+    <nav class="nav" style="display: flex; flex-direction: column; gap: 2px"><a href="TodayDesktop.dc.html">Today</a><a href="SessionsDesktop.dc.html">Training</a><a class="on" href="FoodDesktop.dc.html">Food</a><a href="BodyDesktop.dc.html">Body</a><a href="GoalsDesktop.dc.html">Goals</a></nav>
+    <div><p class="lbl" style="padding: 0 10px; margin-bottom: 6px">Tools</p><nav class="nav" style="display: flex; flex-direction: column; gap: 2px"><a href="ConnectAgentV2.dc.html">Ask Claude</a><a href="ConnectAgentV2.dc.html">Your agents</a><a href="ProCoach.dc.html">Coach</a><a href="Settings.dc.html">Settings</a></nav></div>
+    <a href="ConnectAgentV2.dc.html" class="panel" style="margin-top: auto; padding: 12px 14px; text-decoration: none; display: block"><strong style="font-size: 12px; color: #141416; display: block">Claude is connected</strong><span style="font-size: 11.5px; color: #67676b; line-height: 1.5">Last heard 18:02 · logs every set you send</span></a>
+  </aside>
+  <main style="flex: 999 1 560px; min-width: 0; padding: 18px 34px 28px; display: flex; flex-direction: column; gap: 16px; box-sizing: border-box">
+<div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 16px"><div><p class="mut" style="font-size: 12.5px">Wed 18 Nov · training day</p><div style="display: flex; gap: 12px; align-items: center; margin-top: 4px; flex-wrap: wrap"><h1 style="font-size: 30px">Food today</h1><span class="chip">Lose fat and build muscle</span></div></div><div style="display: flex; gap: 12px; align-items: center; min-height: 44px"><span style="font-size: 11.5px; color: #67676b">Wed, Nov 18, 2026</span><span class="av">S</span></div></div>
+    <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start">
+      <div style="flex: 3 1 520px; min-width: 0; display: flex; flex-direction: column; gap: 14px">
+        <div style="padding: 20px; border-radius: 14px; background: #f7e8de; border: 1px solid #ecd7c7; display: flex; flex-wrap: wrap; gap: 22px; align-items: center">
+          <svg width="120" height="120" viewBox="0 0 120 120" role="img" aria-label="1,950 kcal left"><circle cx="60" cy="60" r="48" fill="none" stroke="#f1d9c8" stroke-width="9"/><circle cx="60" cy="60" r="48" fill="none" stroke="#c2410c" stroke-width="9" stroke-linecap="round" stroke-dasharray="75 301" transform="rotate(-90 60 60)"/><text x="60" y="58" text-anchor="middle" font-family="Inter, sans-serif" font-size="24" font-weight="600" fill="#141416">1,950</text><text x="60" y="76" text-anchor="middle" font-family="Inter, sans-serif" font-size="11" fill="#67676b">kcal left</text></svg>
+          <div style="flex: 1 1 280px; min-width: 0; display: flex; flex-direction: column; gap: 12px"><div><p class="lbl">Today against your targets</p><p style="font-size: 16px; font-weight: 600; margin-top: 4px">650 of 2,600 kcal <span class="mut" style="font-weight: 400; font-size: 13px">and 165 g protein</span></p></div>
+            <div><div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px"><span>Protein</span><span class="mut" style="font-variant-numeric: tabular-nums">35 g / 165 g</span></div><div style="height: 6px; border-radius: 999px; background: #f1d9c8"><div style="width: 21%; height: 6px; border-radius: 999px; background: #c2410c"></div></div></div><div><div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px"><span>Carbs</span><span class="mut" style="font-variant-numeric: tabular-nums">80 g / 340 g</span></div><div style="height: 6px; border-radius: 999px; background: #f1d9c8"><div style="width: 24%; height: 6px; border-radius: 999px; background: #c2410c"></div></div></div><div><div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px"><span>Fat</span><span class="mut" style="font-variant-numeric: tabular-nums">21 g / 65 g</span></div><div style="height: 6px; border-radius: 999px; background: #f1d9c8"><div style="width: 32%; height: 6px; border-radius: 999px; background: #c2410c"></div></div></div>
+            <p style="font-size: 11.5px; color: #67676b; line-height: 1.5">Training day: about 150 kcal over your daily average, as carbs for today’s session. Workout burn is never added back.</p></div>
+        </div>
+        <div class="panel" style="padding: 16px 20px"><p class="lbl">Meals <span style="text-transform: none; letter-spacing: 0; font-weight: 400">tap one to see it</span></p>
+          <table style="margin-top: 6px"><thead><tr><th>Time</th><th>Meal</th><th>kcal</th><th>Protein</th><th>Carbs</th><th>Fat</th><th>Source</th></tr></thead><tbody><tr><td>17:42</td><td><strong>Chicken rice bowl</strong></td><td>650</td><td>35 g</td><td>80 g</td><td>21 g</td><td class="mut">you said</td></tr></tbody></table></div>
+        <div class="panel" style="padding: 16px 20px"><p class="lbl">Last 14 days</p><p style="font-size: 13px; margin-top: 8px"><strong>Average 650 kcal · 35 g protein</strong></p>
+          <div style="display: flex; gap: 6px; align-items: flex-end; height: 56px; margin-top: 10px; border-bottom: 1px dashed #c9c9c4"><span style="flex: 1"></span><span style="flex: 1"></span><span style="flex: 1"></span><span style="flex: 1"></span><span style="flex: 1"></span><span style="flex: 1"></span><span style="flex: 1"></span><span style="flex: 1"></span><span style="flex: 1"></span><span style="flex: 1"></span><span style="flex: 1"></span><span style="flex: 1"></span><span style="flex: 1"></span><span style="width: 12px; height: 24px; border-radius: 4px 4px 0 0; background: #e6a97c"></span></div></div>
+      </div>
+      <div style="flex: 1 1 250px; min-width: 0; display: flex; flex-direction: column; gap: 12px">
+        <div class="panel" style="padding: 16px; display: flex; flex-direction: column; gap: 8px"><p class="lbl">Your usuals</p><div class="say"><span>“Log my usual chicken rice bowl”</span><button type="button">Copy</button></div></div>
+        <div class="panel" style="padding: 16px; display: flex; flex-direction: column; gap: 8px"><p class="lbl">Tell Claude</p><div class="say"><span>“Ask me what I ate”</span><button type="button">Copy</button></div><p class="mut" style="font-size: 12px">Or send Claude a photo of your plate.</p></div>
+        <div class="panel" style="padding: 16px"><p class="lbl">Bodyweight</p><p style="font-size: 28px; font-weight: 600; margin-top: 6px">82.3 <span class="mut" style="font-size: 14px; font-weight: 500">kg</span></p><p class="mut" style="font-size: 12px">7-day average 82.3</p></div>
+        <div class="panel" style="padding: 16px"><p class="lbl">From your coach</p><p style="font-size: 12.5px; margin-top: 8px; line-height: 1.55">Weigh in a few mornings a week: after two weeks I can tell whether your targets fit.</p></div>
+      </div>
+    </div>
+<p style="margin: auto 0 0; font-size: 11.5px; color: #67676b; line-height: 1.55; max-width: 96ch">Redrawn from the live dashboard on 18 Nov 2026 after the account held real data (Studio, light). Labels, copy, structure and order were observed. The body figure is a placeholder for the real illustration, tile tints are approximate, and figures and times are sample data.</p>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

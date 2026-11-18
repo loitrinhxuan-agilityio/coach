@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Goal</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+<style>
+body { margin: 0; background: #f5f5f3; color: #141416; font-family: 'Inter', system-ui, sans-serif; }
+a { color: #67676b; } a:hover { color: #141416; }
+h1, h2, h3 { font-family: 'Inter', sans-serif; font-weight: 600; margin: 0; letter-spacing: -.01em; }
+p { margin: 0; }
+.panel { background: #fbfbfa; border: 1px solid #ececea; border-radius: 14px; }
+.lbl { font-size: 10.5px; letter-spacing: .09em; text-transform: uppercase; color: #67676b; font-weight: 600; margin: 0; }
+.mut { color: #67676b; }
+.nav a { display: block; padding: 12px 13px; border-radius: 999px; text-decoration: none; font-size: 13.5px; font-weight: 500; }
+.nav a.on { background: #ececea; color: #141416; font-weight: 600; }
+.seg { display: inline-flex; border: 1px solid #ececea; border-radius: 999px; padding: 2px; background: #fbfbfa; }
+.seg a, .seg button { border: 0; background: none; min-height: 44px; padding: 0 18px; border-radius: 999px; font-family: inherit; font-size: 12.5px; font-weight: 600; color: #67676b; cursor: pointer; text-decoration: none; display: inline-grid; place-items: center; }
+.seg .on { background: #141416; color: #ffffff; }
+.tile { padding: 15px 16px; border-radius: 14px; background: #fbfbfa; border: 1px solid #ececea; min-width: 0; display: flex; flex-direction: column; gap: 4px; text-decoration: none; color: #141416; }
+.tile.g { background: #e6f0e8; } .tile.o { background: #f7e8de; } .tile.p { background: #f8e5e5; }
+.tile b { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: #67676b; font-weight: 600; }
+.tile .big { font-size: 30px; font-weight: 600; letter-spacing: -.02em; margin-top: 6px; font-variant-numeric: tabular-nums; }
+.tile .sub { font-size: 11.5px; color: #67676b; line-height: 1.4; }
+.chip { display: inline-block; padding: 3px 9px; border-radius: 999px; font-size: 10.5px; font-weight: 600; background: #ececea; color: #141416; }
+.chip.live { background: #fbe9d9; color: #9a3412; }
+.chip.ok { background: #dcefe1; color: #1f6a37; }
+.say { display: flex; gap: 12px; align-items: center; justify-content: space-between; padding: 8px 8px 8px 14px; border-radius: 12px; background: #f0f0ee; }
+.say span { font-size: 12.5px; color: #141416; min-width: 0; }
+.say button { flex: 0 0 auto; min-height: 44px; padding: 0 18px; border-radius: 999px; border: 0; background: #141416; color: #ffffff; font-family: inherit; font-size: 12px; font-weight: 600; cursor: pointer; }
+.row { display: flex; gap: 14px; align-items: center; justify-content: space-between; padding: 14px 0; border-bottom: 1px solid #ececea; text-decoration: none; color: #141416; font-size: 13.5px; }
+.row:last-child { border-bottom: 0; }
+.row small { display: block; font-size: 11.5px; color: #67676b; margin-top: 3px; font-weight: 400; }
+.ch { color: #67676b; font-size: 12.5px; white-space: nowrap; }
+.sw { flex: 0 0 auto; width: 44px; height: 26px; border-radius: 999px; position: relative; border: 0; cursor: pointer; }
+.sw i { position: absolute; top: 3px; width: 20px; height: 20px; border-radius: 999px; background: #ffffff; }
+table { border-collapse: collapse; width: 100%; font-size: 13px; }
+th, td { text-align: left; padding: 11px 12px; border-bottom: 1px solid #ececea; }
+th { color: #67676b; font-weight: 600; font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase; }
+td { font-variant-numeric: tabular-nums; }
+.av { width: 34px; height: 34px; border-radius: 999px; background: #f2cdb8; display: grid; place-items: center; font-weight: 600; font-size: 13px; position: relative; flex: 0 0 auto; }
+.av::after { content: ""; position: absolute; right: -1px; bottom: -1px; width: 9px; height: 9px; border-radius: 999px; background: #2f7d45; border: 2px solid #f5f5f3; }
+
+</style>
+</helmet>
+
+<div style="display: flex; flex-wrap: wrap; min-height: 900px; align-items: stretch">
+  <aside style="flex: 0 0 218px; min-width: 0; border-right: 1px solid #ececea; padding: 24px 14px; display: flex; flex-direction: column; gap: 18px; box-sizing: border-box; background: #f7f7f5">
+    <span style="font-size: 17px; font-weight: 700; padding: 0 10px; letter-spacing: -.02em">Shredpace</span>
+    <nav class="nav" style="display: flex; flex-direction: column; gap: 2px"><a href="TodayDesktop.dc.html">Today</a><a href="SessionsDesktop.dc.html">Training</a><a href="FoodDesktop.dc.html">Food</a><a href="BodyDesktop.dc.html">Body</a><a class="on" href="GoalsDesktop.dc.html">Goals</a></nav>
+    <div><p class="lbl" style="padding: 0 10px; margin-bottom: 6px">Tools</p><nav class="nav" style="display: flex; flex-direction: column; gap: 2px"><a href="ConnectAgentV2.dc.html">Ask Claude</a><a href="ConnectAgentV2.dc.html">Your agents</a><a href="ProCoach.dc.html">Coach</a><a href="Settings.dc.html">Settings</a></nav></div>
+    <a href="ConnectAgentV2.dc.html" class="panel" style="margin-top: auto; padding: 12px 14px; text-decoration: none; display: block"><strong style="font-size: 12px; color: #141416; display: block">Claude is connected</strong><span style="font-size: 11.5px; color: #67676b; line-height: 1.5">Last heard 18:02 · logs every set you send</span></a>
+  </aside>
+  <main style="flex: 999 1 560px; min-width: 0; padding: 18px 34px 28px; display: flex; flex-direction: column; gap: 16px; box-sizing: border-box">
+<div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 16px"><div><a href="GoalsDesktop.dc.html" style="font-size: 13px; text-decoration: none; min-height: 44px; display: inline-flex; align-items: center">‹ Goals</a><h1 style="font-size: 30px; margin-top: 2px">Body fat down to 15%</h1></div><div style="display: flex; gap: 12px; align-items: center; min-height: 44px"><span style="font-size: 11.5px; color: #67676b">Wed, Nov 18, 2026</span><span class="av">S</span></div></div>
+    <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start; max-width: 900px">
+      <div class="panel" style="flex: 1 1 380px; min-width: 0; padding: 20px"><div style="display: flex; justify-content: space-between"><p class="lbl">Body · body fat</p><span class="chip">Early days</span></div>
+        <div style="display: flex; gap: 40px; margin-top: 14px"><div><p class="lbl">Start</p><strong style="font-size: 24px">18%</strong></div><div><p class="lbl">Now</p><strong style="font-size: 24px">18%</strong></div><div><p class="lbl">Target</p><strong style="font-size: 24px">15%</strong></div></div>
+        <p class="lbl" style="margin-top: 18px">Since 18 November</p>
+        <div style="margin-top: 8px; position: relative; height: 110px; border-left: 1px solid #ececea; border-bottom: 1px solid #ececea"><span style="position: absolute; left: -26px; top: -6px; font-size: 10.5px; color: #67676b">18</span><span style="position: absolute; left: -30px; top: 44px; font-size: 10.5px; color: #67676b">16.5</span><span style="position: absolute; left: -26px; bottom: -6px; font-size: 10.5px; color: #67676b">15</span><span style="position: absolute; left: 8px; top: 0; width: 9px; height: 9px; border-radius: 999px; background: #141416"></span></div><p class="mut" style="font-size: 10.5px; margin-top: 6px">18 Nov</p></div>
+      <div style="flex: 1 1 280px; min-width: 0; display: flex; flex-direction: column; gap: 12px"><div class="panel" style="padding: 6px 20px"><p class="lbl" style="padding-top: 14px">Details</p>
+        <div class="row"><span class="mut">Measures</span><span>Body fat, from scans</span></div><div class="row"><span class="mut">Due</span><span>28 February</span></div><div class="row"><span class="mut">Why</span><span style="text-align: right; max-width: 190px">Body fat down 3 points by February</span></div><div class="row"><span class="mut">Set</span><span>18 Nov by Claude</span></div><div class="row"><span class="mut">Goes with</span><span>Food: lose fat and build muscle · <a href="NutritionSettings.dc.html">Goal and food targets ›</a></span></div></div>
+        <div style="display: flex; flex-direction: column; gap: 8px"><p class="lbl">Tell Claude</p><div class="say"><span>“Mark the Body fat down to 15% goal done”</span><button type="button">Copy</button></div></div></div>
+    </div>
+<p style="margin: auto 0 0; font-size: 11.5px; color: #67676b; line-height: 1.55; max-width: 96ch">Redrawn from the live dashboard on 18 Nov 2026 after the account held real data (Studio, light). Labels, copy, structure and order were observed. The body figure is a placeholder for the real illustration, tile tints are approximate, and figures and times are sample data. A goal opens at #goal/{id}, an id and not a number.</p>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

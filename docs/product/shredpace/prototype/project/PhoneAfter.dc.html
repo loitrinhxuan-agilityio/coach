@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>After a session</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:ital,wdth,wght@0,62..125,100..900;1,62..125,100..900&family=Inter:wght@400;500;600;700&display=swap">
+<style>
+body { margin: 0; background: #0e0e10; color: #f4f4f5; font-family: 'Inter', system-ui, sans-serif; }
+a { color: #a1a1aa; } a:hover { color: #f4f4f5; }
+.hd { font-family: 'Archivo', sans-serif; font-style: italic; font-stretch: 78%; font-weight: 800; text-transform: uppercase; line-height: .95; margin: 0; }
+.card { background: #18181b; border: 1px solid #2e2e33; border-radius: 20px; }
+.lbl { font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: #a1a1aa; font-weight: 600; margin: 0; }
+.seg { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border: 1px solid #2e2e33; border-radius: 999px; overflow: hidden; }
+.seg a { padding: 8px 0; font-size: 12px; text-align: center; text-decoration: none; }
+.seg a.on { background: #f4f4f5; color: #0e0e10; font-weight: 600; }
+.t { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; padding: 11px 0; border-bottom: 1px solid #2e2e33; font-size: 12.5px; }
+</style>
+</helmet>
+
+<div style="width: 390px; height: 844px; box-sizing: border-box; display: flex; flex-direction: column; overflow: hidden">
+  <header style="padding: 16px 18px 10px; display: flex; flex-direction: column; gap: 11px">
+    <div style="display: flex; align-items: baseline; justify-content: space-between">
+      <h1 class="hd" style="font-size: 24px">Legs · done</h1>
+      <span style="font-size: 11.5px; color: #a1a1aa">52 min</span>
+    </div>
+    <nav class="seg">
+      <a href="PhoneBefore.dc.html">Before</a>
+      <a href="PhoneDuring.dc.html">During</a>
+      <a class="on" href="PhoneAfter.dc.html">After</a>
+    </nav>
+  </header>
+
+  <div style="flex: 1; min-height: 0; overflow-y: auto; padding: 4px 18px 18px; display: flex; flex-direction: column; gap: 12px">
+    <div class="card" style="padding: 16px; border-color: #f6c445">
+      <p class="lbl" style="color: #f6c445">2 records</p>
+      <p style="margin: 9px 0 0; font-size: 12.5px; color: #d4d4d8; line-height: 1.55">Back Squat 100 kg × 5 — your best at 5 reps. Leg Press 170 kg × 10 — first time at that weight.</p>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px">
+      <div class="card" style="padding: 13px"><p class="lbl">Sets</p><p class="hd" style="font-size: 21px; margin-top: 5px">14</p></div>
+      <div class="card" style="padding: 13px"><p class="lbl">Volume</p><p class="hd" style="font-size: 21px; margin-top: 5px">6.1 t</p></div>
+      <div class="card" style="padding: 13px"><p class="lbl">vs last</p><p class="hd" style="font-size: 21px; margin-top: 5px; color: #8bd17c">+2%</p></div>
+    </div>
+
+    <div class="card" style="padding: 16px">
+      <p class="lbl" style="margin-bottom: 8px">Plan against done</p>
+      <div class="t"><span>Back Squat</span><span style="font-variant-numeric: tabular-nums; color: #8bd17c">100 × 5 × 3 ✓</span></div>
+      <div class="t"><span>Romanian Deadlift</span><span style="font-variant-numeric: tabular-nums; color: #8bd17c">80 × 8 × 3 ✓</span></div>
+      <div class="t"><span>Leg Press</span><span style="font-variant-numeric: tabular-nums; color: #8bd17c">170 × 10 × 3 ✓</span></div>
+      <div class="t" style="border: 0"><span style="color: #a1a1aa">Calf Raise</span><span style="color: #a1a1aa">skipped</span></div>
+    </div>
+
+    <div class="card" style="padding: 16px; display: flex; flex-direction: column; gap: 14px">
+      <div>
+        <p style="margin: 0 0 8px; font-size: 12.5px; color: #d4d4d8">How hard was it, Easy to Max?</p>
+        <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 5px">
+          <button type="button" style="padding: 9px 0; border-radius: 999px; border: 1px solid #2e2e33; background: none; color: #a1a1aa; font-family: inherit; font-size: 11px; cursor: pointer">Easy</button>
+          <button type="button" style="padding: 9px 0; border-radius: 999px; border: 1px solid #2e2e33; background: none; color: #a1a1aa; font-family: inherit; font-size: 11px; cursor: pointer">Good</button>
+          <button type="button" style="padding: 9px 0; border-radius: 999px; border: 1px solid #f4f4f5; background: #f4f4f5; color: #0e0e10; font-family: inherit; font-size: 11px; font-weight: 600; cursor: pointer">Hard</button>
+          <button type="button" style="padding: 9px 0; border-radius: 999px; border: 1px solid #2e2e33; background: none; color: #a1a1aa; font-family: inherit; font-size: 11px; cursor: pointer">Max</button>
+        </div>
+      </div>
+      <div>
+        <p style="margin: 0 0 8px; font-size: 12.5px; color: #d4d4d8">How did it feel, Bad to Great?</p>
+        <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 5px">
+          <button type="button" style="padding: 9px 0; border-radius: 999px; border: 1px solid #2e2e33; background: none; color: #a1a1aa; font-family: inherit; font-size: 11px; cursor: pointer">Bad</button>
+          <button type="button" style="padding: 9px 0; border-radius: 999px; border: 1px solid #2e2e33; background: none; color: #a1a1aa; font-family: inherit; font-size: 11px; cursor: pointer">OK</button>
+          <button type="button" style="padding: 9px 0; border-radius: 999px; border: 1px solid #8bd17c; background: rgba(139,209,124,.14); color: #8bd17c; font-family: inherit; font-size: 11px; font-weight: 600; cursor: pointer">Great</button>
+        </div>
+      </div>
+      <p style="margin: 0; font-size: 11px; color: #a1a1aa">Two questions, never read as one.</p>
+    </div>
+
+    <a href="PhoneToday.dc.html" style="height: 46px; border-radius: 999px; background: #ff5b1f; color: #0e0e10; font-size: 14px; font-weight: 700; text-decoration: none; display: grid; place-items: center">Save and finish</a>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

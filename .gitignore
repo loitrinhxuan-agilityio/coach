@@ -1,0 +1,4 @@
+# ShredPace captures: the publisher's own material, kept on the capturing machine.
+# See docs/product/shredpace/evidence/README.md for what is there and how to re-fetch it.
+docs/product/shredpace/evidence/*
+!docs/product/shredpace/evidence/README.md

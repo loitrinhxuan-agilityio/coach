@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Today: the comeback question</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:ital,wdth,wght@0,62..125,100..900;1,62..125,100..900&family=Inter:wght@400;500;600;700&display=swap">
+<style>
+body { margin: 0; background: #0e0e10; color: #f4f4f5; font-family: 'Inter', system-ui, sans-serif; }
+a { color: #a1a1aa; } a:hover { color: #f4f4f5; }
+.hd { font-family: 'Archivo', sans-serif; font-style: italic; font-stretch: 78%; font-weight: 800; text-transform: uppercase; line-height: .95; margin: 0; }
+.card { background: #18181b; border: 1px solid #2e2e33; border-radius: 20px; }
+.nav a { display: block; padding: 9px 13px; border-radius: 999px; text-decoration: none; font-size: 13.5px; }
+.nav a.on { background: #18181b; color: #f4f4f5; font-weight: 600; }
+.lbl { font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; color: #a1a1aa; font-weight: 600; margin: 0; }
+.btn { flex: 1 1 150px; min-width: 0; height: 44px; border-radius: 999px; border: 1px solid #2e2e33; background: #131316; color: #f4f4f5; font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer; padding: 0 16px; }
+.btn:hover { border-color: #a1a1aa; }
+.btn.on { background: #ff5b1f; border-color: #ff5b1f; color: #0e0e10; }
+.say { margin: 0; padding: 11px 14px; border-radius: 12px; background: #131316; border: 1px solid #2e2e33; font-size: 12px; color: #d4d4d8; line-height: 1.5; }
+</style>
+</helmet>
+
+<div style="display: flex; flex-wrap: wrap; min-height: 900px; align-items: stretch">
+  <aside style="flex: 0 0 232px; min-width: 0; border-right: 1px solid #2e2e33; padding: 22px 16px; display: flex; flex-direction: column; gap: 20px; box-sizing: border-box">
+    <span class="hd" style="font-size: 19px; padding: 0 8px">Shred<span style="color: #ff5b1f">pace</span></span>
+    <nav class="nav" style="display: flex; flex-direction: column; gap: 2px">
+      <a class="on" href="TodayDesktop.dc.html">Today</a>
+      <a href="SessionsDesktop.dc.html">Sessions</a>
+      <a href="ProProgress.dc.html">Progress</a>
+      <a href="Exercises.dc.html">Exercises</a>
+      <a href="PlanPage.dc.html">Your plan</a>
+      <a href="ProCoach.dc.html">Coach</a>
+      <a href="FoodDesktop.dc.html">Food</a>
+      <a href="BodyDesktop.dc.html">Body</a>
+      <a href="GoalsDesktop.dc.html">Goals</a>
+      <a href="ActivityHistory.dc.html">What changed</a>
+      <a href="Settings.dc.html">Settings</a>
+    </nav>
+  </aside>
+
+  <main style="flex: 999 1 560px; min-width: 0; padding: 26px 30px; display: flex; flex-direction: column; gap: 18px; box-sizing: border-box">
+    <div>
+      <h1 class="hd" style="font-size: 34px">Today</h1>
+      <p style="margin: 6px 0 0; font-size: 13px; color: #a1a1aa; max-width: 70ch; line-height: 1.55">The comeback question, asked once on the first session day back, together with the check-in. Answer your agent, or answer here. The three kinds below are three days, not three cards.</p>
+    </div>
+
+    <div class="card" style="padding: 22px; display: flex; flex-direction: column; gap: 14px">
+      <p class="lbl">Short break · up to 3 weeks</p>
+      <h2 class="hd" style="font-size: 22px">Back after 4 days off</h2>
+      <p style="margin: 0; font-size: 13.5px; line-height: 1.5">Same weights as last time, or ease in?</p>
+      <div style="display: flex; flex-wrap: wrap; gap: 10px"><button type="button" class="btn on">Same weights</button><button type="button" class="btn">Ease in</button></div>
+      <p class="say"><strong style="color: #f4f4f5">If same:</strong> Same weights as last time, as you said. Each set follows what you lift.</p>
+    </div>
+
+    <div class="card" style="padding: 22px; display: flex; flex-direction: column; gap: 14px">
+      <p class="lbl">Long break · over 3 weeks · ease in is offered first</p>
+      <h2 class="hd" style="font-size: 22px">Back after 5 weeks off</h2>
+      <p style="margin: 0; font-size: 13.5px; line-height: 1.5">Ease in, or same weights as last time?</p>
+      <div style="display: flex; flex-wrap: wrap; gap: 10px"><button type="button" class="btn on">Ease in</button><button type="button" class="btn">Same weights</button></div>
+      <p class="say"><strong style="color: #f4f4f5">If ease in:</strong> Easing in, about 10% lighter, as you said. Each set follows what you lift.</p>
+    </div>
+
+    <div class="card" style="padding: 22px; display: flex; flex-direction: column; gap: 14px">
+      <p class="lbl">After being ill · replaces “Fully recovered?”</p>
+      <h2 class="hd" style="font-size: 22px">Back after 10 days off ill</h2>
+      <p style="margin: 0; font-size: 13.5px; line-height: 1.5">Ease in, or same weights as last time if you feel fully recovered?</p>
+      <div style="display: flex; flex-wrap: wrap; gap: 10px"><button type="button" class="btn on">Ease in</button><button type="button" class="btn">Same weights, fully recovered</button></div>
+      <p class="say"><strong style="color: #f4f4f5">Easing after illness is about 20% lighter, not 10%.</strong> Saying “same” also ends the lighter week.</p>
+    </div>
+
+    <p style="margin: 0; font-size: 11.5px; color: #a1a1aa; line-height: 1.55">Reconstructed from the agent guide and the 17 Nov changelog entry. The question wording and the two replies are quoted from the guide; the buttons and layout are ours. This state has no board name in the shipped code.</p>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

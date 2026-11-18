@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>More</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:ital,wdth,wght@0,62..125,100..900;1,62..125,100..900&family=Inter:wght@400;500;600;700&display=swap">
+<style>
+body { margin: 0; background: #0e0e10; color: #f4f4f5; font-family: 'Inter', system-ui, sans-serif; }
+a { color: #f4f4f5; } a:hover { color: #ff8a4c; }
+.hd { font-family: 'Archivo', sans-serif; font-style: italic; font-stretch: 78%; font-weight: 800; text-transform: uppercase; line-height: .95; margin: 0; }
+.lbl { font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: #a1a1aa; font-weight: 600; margin: 0; }
+.sheet { background: #18181b; border: 1px solid #2e2e33; border-radius: 24px 24px 0 0; padding: 8px 18px 22px; }
+.r { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 13px 0; border-bottom: 1px solid #2e2e33; text-decoration: none; font-size: 13.5px; }
+.r:last-child { border-bottom: 0; }
+.ch { color: #a1a1aa; font-size: 13px; }
+</style>
+</helmet>
+
+<div style="width: 390px; height: 844px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: flex-end; background: #0e0e10">
+
+  <div style="flex: 1; min-height: 0; padding: 20px 18px; opacity: .3; pointer-events: none" aria-hidden="true">
+    <h1 class="hd" style="font-size: 27px">Today</h1>
+    <p style="margin: 4px 0 0; font-size: 11.5px; color: #a1a1aa">Tue 17 Nov · Legs planned</p>
+  </div>
+
+  <div class="sheet">
+    <div style="width: 38px; height: 4px; border-radius: 999px; background: #3a3a40; margin: 6px auto 16px"></div>
+    <div style="display: flex; align-items: center; gap: 12px; padding-bottom: 14px; border-bottom: 1px solid #2e2e33">
+      <span style="width: 40px; height: 40px; border-radius: 999px; background: #131316; border: 1px solid #2e2e33; display: grid; place-items: center; font-weight: 700; font-size: 14px">S</span>
+      <span style="min-width: 0; flex: 1">
+        <strong style="font-size: 14px; display: block">Sam</strong>
+        <span style="font-size: 11.5px; color: #a1a1aa">sam@example.com</span>
+      </span>
+      <span style="font-size: 10px; letter-spacing: .09em; text-transform: uppercase; font-weight: 700; padding: 4px 10px; border-radius: 999px; background: rgba(255,91,31,.15); color: #ff8a4c">Early Pro</span>
+    </div>
+    <a class="r" href="PlanPage.dc.html"><span>Your plan</span><span class="ch">Set it up ›</span></a>
+    <a class="r" href="PhoneProCoach.dc.html"><span>Coach</span><span class="ch">›</span></a>
+    <a class="r" href="ConnectAgentV2.dc.html"><span>Your agents</span><span class="ch">Claude ›</span></a>
+    <a class="r" href="AgentTrail.dc.html"><span>What changed</span><span class="ch">›</span></a>
+    <a class="r" href="Settings.dc.html"><span>Settings</span><span class="ch">›</span></a>
+    <a class="r" href="Appearance.dc.html"><span>Appearance</span><span class="ch">Ember · dark ›</span></a>
+    <a class="r" href="Billing.dc.html"><span>Subscription</span><span class="ch">Pro ›</span></a>
+    <a class="r" href="PhoneContactPage.dc.html"><span>Contact us</span><span class="ch">›</span></a>
+    <a href="PhoneLanding.dc.html" style="display: grid; place-items: center; height: 46px; margin-top: 16px; border-radius: 999px; border: 1px solid #2e2e33; background: #131316; font-size: 13.5px; font-weight: 700; text-decoration: none">Sign out</a>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

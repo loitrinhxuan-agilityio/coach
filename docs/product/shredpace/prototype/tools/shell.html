@@ -1,0 +1,309 @@
+<title>Shredpace Prototype</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:ital,wdth,wght@0,62..125,100..900;1,62..125,100..900&family=Inter:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: a quiet instrument panel wrapped around a loud product. The chrome is
+   graphite and recedes; the only ember in it marks what is currently on.       */
+:root{
+  --ink:#09090a;        /* stage, behind the board            */
+  --chrome:#0d0d0f;     /* the panel itself                   */
+  --raise:#17171b;      /* controls, cards in the chrome      */
+  --line:#26262b;
+  --fg:#e9e9ec;
+  --muted:#8a8a93;
+  --ember:#ff5b1f;      /* Shredpace's own accent, Ember dark */
+  --on:#0e0e10;
+  --good:#8bd17c;
+  --warn:#f6c445;
+  --sans:'Inter',system-ui,-apple-system,sans-serif;
+  --display:'Archivo','Inter',system-ui,sans-serif;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{min-height:100%}
+body{background:var(--ink);color:var(--fg);font-family:var(--sans);margin:0;
+  -webkit-font-smoothing:antialiased}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);
+  z-index:30;background:var(--chrome)}
+.wrap{padding-left:max(16px,env(safe-area-inset-left,0px));
+  padding-right:max(16px,env(safe-area-inset-right,0px))}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+:focus-visible{outline:2px solid var(--ember);outline-offset:2px;border-radius:4px}
+
+/* ---- chrome -------------------------------------------------------------- */
+.chrome{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--chrome);
+  border-bottom:1px solid var(--line)}
+.chrome .wrap{display:flex;flex-wrap:wrap;gap:12px 18px;align-items:center;padding-block:11px}
+.mark{font-family:var(--display);font-style:italic;font-stretch:78%;font-weight:800;
+  text-transform:uppercase;font-size:16px;letter-spacing:.01em;white-space:nowrap}
+.mark i{color:var(--ember);font-style:inherit}
+.mark span{font-family:var(--sans);font-style:normal;font-stretch:normal;font-weight:600;
+  font-size:9.5px;letter-spacing:.14em;color:var(--muted);margin-left:9px;vertical-align:2px}
+.controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-left:auto}
+.seg{display:inline-flex;background:var(--raise);border:1px solid var(--line);border-radius:999px;padding:2px}
+.seg button{padding:5px 11px;border-radius:999px;font-size:11.5px;font-weight:600;color:var(--muted);
+  white-space:nowrap;transition:background .12s,color .12s}
+.seg button[aria-pressed="true"]{background:var(--fg);color:var(--on)}
+.seg.live button[aria-pressed="true"]{background:var(--ember);color:var(--on)}
+.seg .lbl{padding:5px 9px 5px 11px;font-size:9.5px;letter-spacing:.11em;text-transform:uppercase;
+  color:var(--muted);font-weight:600;align-self:center;cursor:default}
+.open{display:inline-flex;align-items:center;gap:7px;background:var(--raise);border:1px solid var(--line);
+  border-radius:999px;padding:6px 14px;font-size:11.5px;font-weight:600}
+.open:hover{border-color:var(--muted)}
+.open b{font-variant-numeric:tabular-nums;color:var(--muted);font-weight:600}
+
+/* readout strip */
+.readout{border-bottom:1px solid var(--line);background:var(--ink)}
+.readout .wrap{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:baseline;padding-block:8px;
+  font-family:var(--mono);font-size:11.5px;min-width:0}
+.readout .r{color:var(--ember)}
+.readout .arrow{color:var(--muted)}
+.readout .b{color:var(--fg)}
+.readout .meta{color:var(--muted);margin-left:auto;display:flex;gap:14px;flex-wrap:wrap}
+.readout .note{color:var(--warn)}
+
+/* ---- stage --------------------------------------------------------------- */
+.stage{padding-block:26px 56px}
+.stage .wrap{display:flex;flex-direction:column;align-items:center;gap:14px}
+.fit{position:relative;overflow:hidden;background:#0e0e10;border:1px solid var(--line);max-width:100%}
+.fit.desk{border-radius:10px}
+.fit.phone{border-radius:34px;padding:0;box-shadow:0 30px 70px -30px #000}
+.bd{position:absolute;top:0;left:0;transform-origin:top left}
+.fit.phone .bd{border-radius:33px;overflow:hidden}
+.cap{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;justify-content:center;
+  font-size:11.5px;color:var(--muted);text-align:center}
+.cap b{color:var(--fg);font-weight:600}
+.cap .z{font-family:var(--mono);font-variant-numeric:tabular-nums}
+
+/* ---- screen directory ---------------------------------------------------- */
+.sheet{position:fixed;inset:0;z-index:40;background:rgba(5,5,6,.82);display:grid;
+  grid-template-rows:auto 1fr;overflow:hidden}
+.sheet[hidden]{display:none!important}
+.sheet .top{background:var(--chrome);border-bottom:1px solid var(--line);
+  padding-top:env(safe-area-inset-top,0px)}
+.sheet .top .wrap{display:flex;gap:14px;align-items:center;padding-block:13px}
+.sheet h2{font-family:var(--display);font-style:italic;font-stretch:80%;font-weight:800;
+  text-transform:uppercase;font-size:17px;margin:0}
+.sheet .count{font-size:11.5px;color:var(--muted);font-family:var(--mono)}
+.sheet .body{overflow-y:auto;background:var(--ink);padding-block:18px 60px}
+.grp{margin-bottom:22px}
+.grp h3{font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);
+  margin:0 0 9px;font-weight:600}
+.rows{display:grid;grid-template-columns:repeat(auto-fill,minmax(248px,1fr));gap:7px}
+.row{display:flex;gap:10px;align-items:baseline;width:100%;text-align:left;background:var(--raise);
+  border:1px solid var(--line);border-radius:11px;padding:10px 13px;min-width:0}
+.row:hover{border-color:var(--muted)}
+.row[aria-current="true"]{border-color:var(--ember)}
+.row .rt{font-family:var(--mono);font-size:11.5px;color:var(--fg);min-width:0;overflow-wrap:anywhere}
+.row .bn{font-size:10.5px;color:var(--muted);margin-left:auto;white-space:nowrap}
+.row .tag{font-size:9px;letter-spacing:.08em;text-transform:uppercase;font-weight:700;
+  padding:2px 6px;border-radius:999px;white-space:nowrap}
+.tag.pro{background:rgba(255,91,31,.15);color:#ff8a4c}
+.tag.lock{background:rgba(246,196,69,.14);color:var(--warn)}
+.tag.pub{background:rgba(139,209,124,.13);color:var(--good)}
+.close{margin-left:auto;background:var(--raise);border:1px solid var(--line);border-radius:999px;
+  padding:6px 14px;font-size:11.5px;font-weight:600}
+
+.note-bar{background:rgba(246,196,69,.09);border-bottom:1px solid var(--line)}
+.note-bar .wrap{padding-block:7px;font-size:11.5px;color:var(--warn)}
+.note-bar[hidden]{display:none!important}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+<style id="boards">/*__BOARDS_CSS__*/</style>
+
+<header class="chrome">
+  <div class="wrap">
+    <span class="mark">Shred<i>pace</i><span>PROTOTYPE</span></span>
+    <div class="controls">
+      <span class="seg"><span class="lbl">View</span>
+        <button type="button" data-set="phone" data-val="0">Desktop</button>
+        <button type="button" data-set="phone" data-val="1">Phone</button></span>
+      <span class="seg live"><span class="lbl">Plan</span>
+        <button type="button" data-set="pro" data-val="0">Free</button>
+        <button type="button" data-set="pro" data-val="1">Pro</button></span>
+      <span class="seg"><span class="lbl">Account</span>
+        <button type="button" data-set="auth" data-val="1">Signed in</button>
+        <button type="button" data-set="auth" data-val="0">Signed out</button></span>
+      <button type="button" class="open" id="openIndex">All screens <b id="openCount">0</b></button>
+    </div>
+  </div>
+</header>
+
+<div class="readout">
+  <div class="wrap">
+    <span class="r" id="rRoute">#today</span>
+    <span class="arrow">&rarr;</span>
+    <span class="b" id="rBoard">TodayDesktop</span>
+    <span class="meta">
+      <span id="rScreen"></span>
+      <span id="rFrame"></span>
+    </span>
+  </div>
+</div>
+
+<div class="note-bar" id="noteBar" hidden><div class="wrap"><span id="noteText"></span></div></div>
+
+<main class="stage">
+  <div class="wrap">
+    <div class="fit" id="fit"><div class="bd" id="bd"></div></div>
+    <p class="cap"><span>Board <b id="cBoard"></b></span><span id="cRoute"></span>
+      <span class="z" id="cZoom"></span></p>
+  </div>
+</main>
+
+<section class="sheet" id="sheet" hidden aria-label="All screens">
+  <div class="top"><div class="wrap">
+    <h2>All screens</h2>
+    <span class="count" id="sheetCount"></span>
+    <button type="button" class="close" id="closeIndex">Close</button>
+  </div></div>
+  <div class="body"><div class="wrap" id="sheetBody"></div></div>
+</section>
+
+<script type="application/json" id="data">/*__BOARDS_JSON__*/</script>
+<script>
+(function () {
+  var DATA = JSON.parse(document.getElementById('data').textContent);
+  var SCREENS = DATA.screens, BOARDS = DATA.boards;
+  var byHash = {}, byId = {};
+  SCREENS.forEach(function (s) { byHash[s.hash] = s; byId[s.id] = s; });
+
+  var state = { phone: window.innerWidth < 760, pro: false, auth: true };
+  try {
+    var saved = JSON.parse(localStorage.getItem('sp.state') || 'null');
+    if (saved) { state.pro = !!saved.pro; state.auth = !!saved.auth;
+                 if (typeof saved.phone === 'boolean') state.phone = saved.phone; }
+  } catch (e) {}
+  function save() { try { localStorage.setItem('sp.state', JSON.stringify(state)); } catch (e) {} }
+
+  // The shipped router, as read from the bundle's four registries.
+  function resolve(s) {
+    var note = '';
+    if (!state.auth && !s.public) return { board: 'SignIn', note: 'Signed out: every private screen falls back to the SignIn board.' };
+    if (state.auth && (s.id === 'landing' || s.id === 'signin' || s.id === 'connector'))
+      note = 'The real router sends a signed-in visitor from here to #today.';
+    var board;
+    if (s.pro) {
+      if (state.pro || s.limited) {
+        board = state.phone ? s.pro[1] : s.pro[0];
+        if (!state.pro && s.limited) note = 'Reachable on Free, but degraded: charts stop at 90 days.';
+      } else { board = s.locked; note = 'Free plan: Coach and Programs are hard-locked to FreeCoachLocked.'; }
+    } else {
+      board = (state.phone && s.phone) ? s.phone : s.desk;
+      if (state.phone && !s.phone && s.desk) note = 'No phone board: the desktop board is drawn at every width.';
+    }
+    if (!board) board = s.desk || s.phone;
+    return { board: board, note: note };
+  }
+
+  var fit = document.getElementById('fit'), bd = document.getElementById('bd');
+  var current = null;
+
+  function layout() {
+    if (!current) return;
+    var b = BOARDS[current.board];
+    var avail = fit.parentNode.clientWidth;
+    bd.style.transform = 'none';
+    bd.style.width = b.w + 'px';
+    var natural = b.w === 390 ? b.h : Math.max(bd.scrollHeight, 400);
+    var scale = Math.min(1, avail / b.w);
+    bd.style.transform = 'scale(' + scale + ')';
+    fit.style.width = Math.round(b.w * scale) + 'px';
+    fit.style.height = Math.round(natural * scale) + 'px';
+    document.getElementById('cZoom').textContent =
+      Math.round(scale * 100) + '%  ·  ' + b.w + '×' + Math.round(natural);
+  }
+
+  function show(s) {
+    var r = resolve(s), b = BOARDS[r.board];
+    current = { screen: s, board: r.board };
+    bd.dataset.board = r.board;
+    bd.innerHTML = b.html;
+    fit.className = 'fit ' + (b.w === 390 ? 'phone' : 'desk');
+
+    document.getElementById('rRoute').textContent = s.route;
+    document.getElementById('rBoard').textContent = r.board;
+    document.getElementById('rScreen').textContent = 'screen: ' + s.id;
+    document.getElementById('rFrame').textContent = b.w === 390 ? 'phone 390×844' : 'desktop 1280';
+    document.getElementById('cBoard').textContent = r.board;
+    document.getElementById('cRoute').textContent = b.title;
+    var nb = document.getElementById('noteBar');
+    nb.hidden = !r.note;
+    document.getElementById('noteText').textContent = r.note || '';
+
+    document.querySelectorAll('.row').forEach(function (el) {
+      el.setAttribute('aria-current', el.dataset.go === s.hash ? 'true' : 'false');
+    });
+    layout();
+    window.scrollTo({ top: 0, behavior: 'auto' });
+  }
+
+  function go() {
+    var h = (location.hash || '#today').slice(1);
+    var s = byHash[h] || byId.today;
+    show(s);
+  }
+
+  // toggles
+  document.querySelectorAll('[data-set]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      state[btn.dataset.set] = btn.dataset.val === '1';
+      save(); paint(); go();
+    });
+  });
+  function paint() {
+    document.querySelectorAll('[data-set]').forEach(function (btn) {
+      var on = state[btn.dataset.set] === (btn.dataset.val === '1');
+      btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
+    buildSheet();
+  }
+
+  // in-board anchors scroll inside the board instead of reaching the router
+  bd.addEventListener('click', function (e) {
+    var a = e.target.closest('[data-scroll]');
+    if (!a) return;
+    e.preventDefault();
+    var t = bd.querySelector('#' + CSS.escape(a.dataset.scroll));
+    if (t) t.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+
+  // screen directory
+  var sheet = document.getElementById('sheet'), sheetBody = document.getElementById('sheetBody');
+  function buildSheet() {
+    var groups = [], seen = {};
+    SCREENS.forEach(function (s) {
+      if (!seen[s.group]) { seen[s.group] = []; groups.push(s.group); }
+      seen[s.group].push(s);
+    });
+    sheetBody.innerHTML = groups.map(function (g) {
+      return '<div class="grp"><h3>' + g + '</h3><div class="rows">' + seen[g].map(function (s) {
+        var r = resolve(s);
+        var tag = s.pro ? '<span class="tag ' + (r.board === s.locked ? 'lock' : 'pro') + '">' +
+                          (r.board === s.locked ? 'Locked' : 'Pro') + '</span>'
+                        : (s.public ? '<span class="tag pub">Public</span>' : '');
+        return '<button type="button" class="row" data-go="' + s.hash + '">' +
+               '<span class="rt">' + s.route + '</span>' + tag +
+               '<span class="bn">' + r.board + '</span></button>';
+      }).join('') + '</div></div>';
+    }).join('');
+    document.getElementById('sheetCount').textContent = SCREENS.length + ' screens · ' + Object.keys(BOARDS).length + ' boards';
+    document.getElementById('openCount').textContent = SCREENS.length;
+    sheetBody.querySelectorAll('.row').forEach(function (el) {
+      el.addEventListener('click', function () { location.hash = '#' + el.dataset.go; closeSheet(); });
+      if (current && el.dataset.go === current.screen.hash) el.setAttribute('aria-current', 'true');
+    });
+  }
+  function openSheet() { sheet.hidden = false; document.getElementById('closeIndex').focus(); }
+  function closeSheet() { sheet.hidden = true; document.getElementById('openIndex').focus(); }
+  document.getElementById('openIndex').addEventListener('click', openSheet);
+  document.getElementById('closeIndex').addEventListener('click', closeSheet);
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !sheet.hidden) closeSheet(); });
+
+  var t; window.addEventListener('resize', function () { clearTimeout(t); t = setTimeout(layout, 90); });
+  window.addEventListener('hashchange', go);
+  document.fonts && document.fonts.ready.then(layout);
+  paint(); go();
+})();
+</script>

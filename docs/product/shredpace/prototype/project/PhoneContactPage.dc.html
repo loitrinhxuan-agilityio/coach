@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Contact on a phone</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:ital,wdth,wght@0,62..125,100..900;1,62..125,100..900&family=Inter:wght@400;500;600;700&display=swap">
+<style>
+body { margin: 0; background: #0e0e10; color: #f4f4f5; font-family: 'Inter', system-ui, sans-serif; }
+a { color: #ff8a4c; } a:hover { color: #ff5b1f; }
+.hd { font-family: 'Archivo', sans-serif; font-style: italic; font-stretch: 78%; font-weight: 800; text-transform: uppercase; line-height: .95; margin: 0; }
+.card { background: #18181b; border: 1px solid #2e2e33; border-radius: 20px; }
+.lbl { font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: #a1a1aa; font-weight: 600; margin: 0; }
+label { font-size: 10.5px; letter-spacing: .07em; text-transform: uppercase; color: #a1a1aa; font-weight: 600; display: block; margin-bottom: 6px; }
+input, textarea, select { width: 100%; box-sizing: border-box; background: #18181b; border: 1px solid #2e2e33; border-radius: 12px; color: #f4f4f5; font-family: inherit; font-size: 13.5px; padding: 12px 13px; }
+input:focus-visible, textarea:focus-visible, select:focus-visible { outline: 2px solid #ff5b1f; outline-offset: 2px; }
+textarea { min-height: 110px; resize: vertical; }
+</style>
+</helmet>
+
+<div style="width: 390px; height: 844px; box-sizing: border-box; display: flex; flex-direction: column; overflow: hidden">
+  <header style="padding: 16px 18px 10px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #2e2e33">
+    <a href="PhoneLanding.dc.html" class="hd" style="font-size: 18px; text-decoration: none; color: #f4f4f5">Shred<span style="color: #ff5b1f">pace</span></a>
+    <a href="PhoneLanding.dc.html" style="font-size: 11.5px; color: #a1a1aa; text-decoration: none">Close</a>
+  </header>
+
+  <div style="flex: 1; min-height: 0; overflow-y: auto; padding: 20px 18px 18px; display: flex; flex-direction: column; gap: 16px">
+    <div>
+      <h1 class="hd" style="font-size: 30px">Contact us</h1>
+      <p style="margin: 11px 0 0; font-size: 13px; color: #a1a1aa; line-height: 1.6">A person reads every message. Write in your own words; there’s no wrong topic.</p>
+    </div>
+
+    <form style="display: flex; flex-direction: column; gap: 18px">
+        <div>
+          <label for="ct">What’s it about?</label>
+          <select id="ct">
+            <option>Something’s broken</option>
+            <option>An idea</option>
+            <option>Plan or billing</option>
+            <option>Privacy request</option>
+            <option>Something else</option>
+          </select>
+        </div>
+        <div>
+          <label for="cs">Subject <span style="float: right; font-weight: 400; letter-spacing: 0">0 / 200</span></label>
+          <input id="cs" type="text" maxlength="200">
+        </div>
+        <div>
+          <label for="cm">Message <span style="float: right; font-weight: 400; letter-spacing: 0">0 / 2,000</span></label>
+          <textarea id="cm" maxlength="2000"></textarea>
+        </div>
+        <div style="font-size: 12px; color: #a1a1aa; line-height: 1.6">
+          <p style="margin: 0">Reply to <strong style="color: #f4f4f5">you@example.com</strong> · your account email</p>
+          <p style="margin: 6px 0 0">Sent with this: the page you came from (Food), app version 2026.11.18, your browser · <a href="ContactPage.dc.html" style="font-size: 12px">Remove</a></p>
+          <p style="margin: 6px 0 0">Please don’t include health details, passwords or API keys. We’ll never ask for them.</p>
+        </div>
+        <button type="button" style="align-self: flex-start; height: 46px; padding: 0 26px; border-radius: 999px; border: 0; background: #ff5b1f; color: #0e0e10; font-family: inherit; font-size: 14px; font-weight: 700; cursor: pointer">Send</button>
+        <p style="margin: 0; font-size: 12px; color: #a1a1aa">Pick a topic and write a message to send.</p>
+      </form>
+
+    <div class="card" style="padding: 15px">
+      <p class="lbl" style="margin-bottom: 8px">Agents don’t use this form</p>
+      <p style="margin: 0; font-size: 12px; color: #a1a1aa; line-height: 1.6">An agent holding your key calls <code style="color: #ff8a4c">contact_support</code>, and reports API trouble with <code style="color: #ff8a4c">report_issue</code>.</p>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
