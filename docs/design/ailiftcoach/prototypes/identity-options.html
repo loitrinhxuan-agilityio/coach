@@ -1,0 +1,285 @@
+<title>AI Lift Coach Identity Options</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@500&family=Spline+Sans:wght@400;500;600&family=Spline+Sans+Mono:wght@500&family=Manrope:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+  /* Layout: a stacked comparison — each direction gets a header, a palette strip, and the same UI fragment in both themes. */
+  :root {
+    --bg: #f4f6f8; --card: #ffffff; --line: #d7dee5; --ink: #0f1519; --muted: #5a6872; --accent: #1f5fd0; --soft: #e4edfc;
+    --ui: "Instrument Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0c1013; --card: #141a1f; --line: #242d35; --ink: #e8eef3; --muted: #94a3ae; --accent: #6fa6ff; --soft: #16253a;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0c1013; --card: #141a1f; --line: #242d35; --ink: #e8eef3; --muted: #94a3ae; --accent: #6fa6ff; --soft: #16253a;
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--ui); font-size: 15px; line-height: 23px; -webkit-font-smoothing: antialiased; }
+  .page {
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    padding-block: 40px 72px;
+    max-width: 1180px; margin: 0 auto;
+  }
+  h1 { font-size: 34px; line-height: 38px; font-weight: 600; letter-spacing: -0.02em; margin: 0 0 8px; text-wrap: balance; }
+  .lede { color: var(--muted); max-width: 62ch; margin: 0 0 36px; }
+
+  .dir { border-top: 1px solid var(--line); padding-top: 24px; margin-bottom: 40px; }
+  .dir-head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 4px; }
+  .dir-n { font-size: 12px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+  .dir-t { font-size: 22px; font-weight: 600; letter-spacing: -0.01em; }
+  .tag { font-size: 12px; font-weight: 600; padding: 3px 9px; border-radius: 3px; background: var(--soft); color: var(--accent); }
+  .dir-why { color: var(--muted); font-size: 14px; line-height: 21px; max-width: 70ch; margin: 0 0 6px; }
+  .dir-type { color: var(--muted); font-size: 13px; margin: 0 0 16px; }
+  .dir-type b { color: var(--ink); font-weight: 600; }
+
+  .swatches { display: flex; gap: 0; border-radius: 6px; overflow: hidden; border: 1px solid var(--line); margin-bottom: 18px; }
+  .swatches span { flex: 1; height: 38px; }
+
+  .pair { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 16px; }
+  @media (max-width: 760px) { .pair { grid-template-columns: minmax(0,1fr); } }
+
+  /* ---- sample: self-contained, explicit colours (a specimen of both themes at once) ---- */
+  .s { border-radius: 10px; border: 1px solid; padding: 18px; min-width: 0; }
+  .s-lab { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 14px; }
+  .s-tiles { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 10px; margin-bottom: 14px; }
+  .s-tile { border: 1px solid; border-radius: 8px; padding: 10px; min-width: 0; }
+  .s-tl { font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; }
+  .s-fig { display: flex; align-items: baseline; gap: 3px; margin-top: 4px; }
+  .s-fig b { font-size: 24px; line-height: 26px; font-weight: 500; }
+  .s-fig i { font-size: 12px; font-style: normal; }
+  .s-tbl { width: 100%; border-collapse: collapse; margin-bottom: 12px; }
+  .s-tbl th { font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; text-align: left; padding: 6px 8px; border-bottom: 1px solid; }
+  .s-tbl td { font-size: 13px; font-weight: 500; padding: 8px; border-bottom: 1px solid; }
+  .s-tbl td.r { text-align: right; }
+  .s-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+  .s-chip { font-size: 10px; font-weight: 600; letter-spacing: 0.04em; padding: 3px 7px; border-radius: 3px; border: 1px solid transparent; }
+  .s-foot { font-size: 12px; line-height: 18px; margin-top: 12px; }
+
+  /* Direction A — Instrument */
+  .a-l { background:#f4f6f8; border-color:#d7dee5; color:#0f1519; font-family:"Instrument Sans",sans-serif; }
+  .a-l .s-lab,.a-l .s-tl,.a-l .s-foot,.a-l .s-tbl th { color:#5a6872; }
+  .a-l .s-tile { background:#fff; border-color:#d7dee5; }
+  .a-l .s-tbl th,.a-l .s-tbl td { border-color:#d7dee5; }
+  .a-l .s-fig b,.a-l .s-tbl td,.a-l .s-fig i { font-family:"JetBrains Mono",monospace; font-variant-numeric:tabular-nums; }
+  .a-l .s-fig i { color:#5a6872; }
+  .a-d { background:#0c1013; border-color:#242d35; color:#e8eef3; font-family:"Instrument Sans",sans-serif; }
+  .a-d .s-lab,.a-d .s-tl,.a-d .s-foot,.a-d .s-tbl th { color:#94a3ae; }
+  .a-d .s-tile { background:#141a1f; border-color:#242d35; }
+  .a-d .s-tbl th,.a-d .s-tbl td { border-color:#242d35; }
+  .a-d .s-fig b,.a-d .s-tbl td,.a-d .s-fig i { font-family:"JetBrains Mono",monospace; font-variant-numeric:tabular-nums; }
+  .a-d .s-fig i { color:#94a3ae; }
+
+  /* Direction B — Blueprint */
+  .b-l { background:#eef2f6; border-color:#ccd8e4; color:#10243a; font-family:"Spline Sans",sans-serif; }
+  .b-l .s-lab,.b-l .s-tl,.b-l .s-foot,.b-l .s-tbl th { color:#4e6782; }
+  .b-l .s-tile { background:#fff; border-color:#ccd8e4; }
+  .b-l .s-tbl th,.b-l .s-tbl td { border-color:#ccd8e4; }
+  .b-l .s-fig b,.b-l .s-tbl td,.b-l .s-fig i { font-family:"Spline Sans Mono",monospace; font-variant-numeric:tabular-nums; }
+  .b-l .s-fig i { color:#4e6782; }
+  .b-d { background:#0a1622; border-color:#1d3447; color:#dcebf7; font-family:"Spline Sans",sans-serif; }
+  .b-d .s-lab,.b-d .s-tl,.b-d .s-foot,.b-d .s-tbl th { color:#8aa6bf; }
+  .b-d .s-tile { background:#102333; border-color:#1d3447; }
+  .b-d .s-tbl th,.b-d .s-tbl td { border-color:#1d3447; }
+  .b-d .s-fig b,.b-d .s-tbl td,.b-d .s-fig i { font-family:"Spline Sans Mono",monospace; font-variant-numeric:tabular-nums; }
+  .b-d .s-fig i { color:#8aa6bf; }
+
+  /* Direction C — Graphite and copper */
+  .c-l { background:#f5f3f1; border-color:#e0dbd6; color:#1a1714; font-family:"Manrope",sans-serif; }
+  .c-l .s-lab,.c-l .s-tl,.c-l .s-foot,.c-l .s-tbl th { color:#6b625a; }
+  .c-l .s-tile { background:#fff; border-color:#e0dbd6; }
+  .c-l .s-tbl th,.c-l .s-tbl td { border-color:#e0dbd6; }
+  .c-l .s-fig b,.c-l .s-tbl td,.c-l .s-fig i { font-family:"IBM Plex Mono",monospace; font-variant-numeric:tabular-nums; }
+  .c-l .s-fig i { color:#6b625a; }
+  .c-d { background:#14110f; border-color:#2e2924; color:#f0ebe5; font-family:"Manrope",sans-serif; }
+  .c-d .s-lab,.c-d .s-tl,.c-d .s-foot,.c-d .s-tbl th { color:#a3978b; }
+  .c-d .s-tile { background:#1c1815; border-color:#2e2924; }
+  .c-d .s-tbl th,.c-d .s-tbl td { border-color:#2e2924; }
+  .c-d .s-fig b,.c-d .s-tbl td,.c-d .s-fig i { font-family:"IBM Plex Mono",monospace; font-variant-numeric:tabular-nums; }
+  .c-d .s-fig i { color:#a3978b; }
+
+  .note { border: 1px solid var(--line); border-radius: 10px; padding: 18px 20px; background: var(--card); }
+  .note h2 { font-size: 17px; margin: 0 0 8px; font-weight: 600; }
+  .note p { margin: 0 0 10px; color: var(--muted); font-size: 14px; line-height: 21px; }
+  .note p:last-child { margin: 0; }
+  .note b { color: var(--ink); }
+</style>
+
+<div class="page">
+  <h1>Three identity directions</h1>
+  <p class="lede">The same fragment — stat tiles, a set table, provenance chips, a coaching rule — drawn three ways,
+  each in light and dark. Structure, spacing and components are identical throughout; only palette and type change.
+  Pick one and I will carry it through the system and both prototypes.</p>
+
+  <!-- A -->
+  <section class="dir">
+    <div class="dir-head">
+      <span class="dir-n">A</span>
+      <span class="dir-t">Instrument</span>
+      <span class="tag">Current</span>
+    </div>
+    <p class="dir-why">Cool grey with one signal blue. The quietest of the three: the figures are the loudest thing on
+    the page, and colour appears only where it means something. Safest, and the most likely to look like other
+    dashboards.</p>
+    <p class="dir-type"><b>Instrument Sans</b> + <b>JetBrains Mono</b></p>
+    <div class="swatches">
+      <span style="background:#f4f6f8"></span><span style="background:#d7dee5"></span><span style="background:#5a6872"></span>
+      <span style="background:#0f1519"></span><span style="background:#1f5fd0"></span><span style="background:#6fa6ff"></span>
+    </div>
+    <div class="pair">
+      <div class="s a-l">
+        <div class="s-lab">Light</div>
+        <div class="s-tiles">
+          <div class="s-tile"><div class="s-tl">Sets</div><div class="s-fig"><b>4</b><i>working</i></div></div>
+          <div class="s-tile"><div class="s-tl">Volume</div><div class="s-fig"><b>2.1</b><i>k kg</i></div></div>
+          <div class="s-tile"><div class="s-tl">Time</div><div class="s-fig"><b>31</b><i>min</i></div></div>
+        </div>
+        <table class="s-tbl"><thead><tr><th>Set</th><th>Today</th><th class="r">e1RM</th></tr></thead>
+          <tbody><tr><td>1</td><td>100 × 5</td><td class="r">117</td></tr><tr><td>2</td><td>100 × 5</td><td class="r">117</td></tr></tbody></table>
+        <div class="s-chips">
+          <span class="s-chip" style="background:#dff2e8;color:#1f7a4d">Logged</span>
+          <span class="s-chip" style="background:#e4edfc;color:#1f5fd0">You said</span>
+          <span class="s-chip" style="border-color:#d7dee5;color:#5a6872">Computed</span>
+          <span class="s-chip" style="background:#fbeed6;color:#8a5a00">Estimated</span>
+        </div>
+        <div class="s-foot">Three sessions at the same weight. Next time: 102.5 kg.</div>
+      </div>
+      <div class="s a-d">
+        <div class="s-lab">Dark</div>
+        <div class="s-tiles">
+          <div class="s-tile"><div class="s-tl">Sets</div><div class="s-fig"><b>4</b><i>working</i></div></div>
+          <div class="s-tile"><div class="s-tl">Volume</div><div class="s-fig"><b>2.1</b><i>k kg</i></div></div>
+          <div class="s-tile"><div class="s-tl">Time</div><div class="s-fig"><b>31</b><i>min</i></div></div>
+        </div>
+        <table class="s-tbl"><thead><tr><th>Set</th><th>Today</th><th class="r">e1RM</th></tr></thead>
+          <tbody><tr><td>1</td><td>100 × 5</td><td class="r">117</td></tr><tr><td>2</td><td>100 × 5</td><td class="r">117</td></tr></tbody></table>
+        <div class="s-chips">
+          <span class="s-chip" style="background:#10281d;color:#4fbe86">Logged</span>
+          <span class="s-chip" style="background:#16253a;color:#6fa6ff">You said</span>
+          <span class="s-chip" style="border-color:#242d35;color:#94a3ae">Computed</span>
+          <span class="s-chip" style="background:#2b2008;color:#e0a33a">Estimated</span>
+        </div>
+        <div class="s-foot">Three sessions at the same weight. Next time: 102.5 kg.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- B -->
+  <section class="dir">
+    <div class="dir-head">
+      <span class="dir-n">B</span>
+      <span class="dir-t">Blueprint</span>
+    </div>
+    <p class="dir-why">A drafting aesthetic: blue-grey paper, deep navy ground, a precise cyan. The strongest technical
+    identity of the three, and the one that best matches a product whose coaching is a set of stated rules. The risk is
+    that navy reads corporate if the accent is used too freely.</p>
+    <p class="dir-type"><b>Spline Sans</b> + <b>Spline Sans Mono</b></p>
+    <div class="swatches">
+      <span style="background:#eef2f6"></span><span style="background:#ccd8e4"></span><span style="background:#4e6782"></span>
+      <span style="background:#10243a"></span><span style="background:#0b6e8f"></span><span style="background:#4fc3e8"></span>
+    </div>
+    <div class="pair">
+      <div class="s b-l">
+        <div class="s-lab">Light</div>
+        <div class="s-tiles">
+          <div class="s-tile"><div class="s-tl">Sets</div><div class="s-fig"><b>4</b><i>working</i></div></div>
+          <div class="s-tile"><div class="s-tl">Volume</div><div class="s-fig"><b>2.1</b><i>k kg</i></div></div>
+          <div class="s-tile"><div class="s-tl">Time</div><div class="s-fig"><b>31</b><i>min</i></div></div>
+        </div>
+        <table class="s-tbl"><thead><tr><th>Set</th><th>Today</th><th class="r">e1RM</th></tr></thead>
+          <tbody><tr><td>1</td><td>100 × 5</td><td class="r">117</td></tr><tr><td>2</td><td>100 × 5</td><td class="r">117</td></tr></tbody></table>
+        <div class="s-chips">
+          <span class="s-chip" style="background:#dcefe4;color:#1b6b45">Logged</span>
+          <span class="s-chip" style="background:#d9edf5;color:#0b6e8f">You said</span>
+          <span class="s-chip" style="border-color:#ccd8e4;color:#4e6782">Computed</span>
+          <span class="s-chip" style="background:#f7e9cf;color:#86601a">Estimated</span>
+        </div>
+        <div class="s-foot">Three sessions at the same weight. Next time: 102.5 kg.</div>
+      </div>
+      <div class="s b-d">
+        <div class="s-lab">Dark</div>
+        <div class="s-tiles">
+          <div class="s-tile"><div class="s-tl">Sets</div><div class="s-fig"><b>4</b><i>working</i></div></div>
+          <div class="s-tile"><div class="s-tl">Volume</div><div class="s-fig"><b>2.1</b><i>k kg</i></div></div>
+          <div class="s-tile"><div class="s-tl">Time</div><div class="s-fig"><b>31</b><i>min</i></div></div>
+        </div>
+        <table class="s-tbl"><thead><tr><th>Set</th><th>Today</th><th class="r">e1RM</th></tr></thead>
+          <tbody><tr><td>1</td><td>100 × 5</td><td class="r">117</td></tr><tr><td>2</td><td>100 × 5</td><td class="r">117</td></tr></tbody></table>
+        <div class="s-chips">
+          <span class="s-chip" style="background:#102a1e;color:#52c08a">Logged</span>
+          <span class="s-chip" style="background:#10303d;color:#4fc3e8">You said</span>
+          <span class="s-chip" style="border-color:#1d3447;color:#8aa6bf">Computed</span>
+          <span class="s-chip" style="background:#2b2208;color:#dba93f">Estimated</span>
+        </div>
+        <div class="s-foot">Three sessions at the same weight. Next time: 102.5 kg.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- C -->
+  <section class="dir">
+    <div class="dir-head">
+      <span class="dir-n">C</span>
+      <span class="dir-t">Graphite and copper</span>
+    </div>
+    <p class="dir-why">Warm graphite with a desaturated copper. The most physical of the three — it reads as equipment
+    rather than software, which suits a product about loaded bars. It is the closest to ShredPace's warm family, though
+    copper is darker and far less saturated than its orange, and the type and geometry are nothing alike.</p>
+    <p class="dir-type"><b>Manrope</b> + <b>IBM Plex Mono</b></p>
+    <div class="swatches">
+      <span style="background:#f5f3f1"></span><span style="background:#e0dbd6"></span><span style="background:#6b625a"></span>
+      <span style="background:#1a1714"></span><span style="background:#9a5b2d"></span><span style="background:#d08c52"></span>
+    </div>
+    <div class="pair">
+      <div class="s c-l">
+        <div class="s-lab">Light</div>
+        <div class="s-tiles">
+          <div class="s-tile"><div class="s-tl">Sets</div><div class="s-fig"><b>4</b><i>working</i></div></div>
+          <div class="s-tile"><div class="s-tl">Volume</div><div class="s-fig"><b>2.1</b><i>k kg</i></div></div>
+          <div class="s-tile"><div class="s-tl">Time</div><div class="s-fig"><b>31</b><i>min</i></div></div>
+        </div>
+        <table class="s-tbl"><thead><tr><th>Set</th><th>Today</th><th class="r">e1RM</th></tr></thead>
+          <tbody><tr><td>1</td><td>100 × 5</td><td class="r">117</td></tr><tr><td>2</td><td>100 × 5</td><td class="r">117</td></tr></tbody></table>
+        <div class="s-chips">
+          <span class="s-chip" style="background:#e2efe4;color:#22683f">Logged</span>
+          <span class="s-chip" style="background:#f3e5d8;color:#9a5b2d">You said</span>
+          <span class="s-chip" style="border-color:#e0dbd6;color:#6b625a">Computed</span>
+          <span class="s-chip" style="background:#f6ead1;color:#7d5c12">Estimated</span>
+        </div>
+        <div class="s-foot">Three sessions at the same weight. Next time: 102.5 kg.</div>
+      </div>
+      <div class="s c-d">
+        <div class="s-lab">Dark</div>
+        <div class="s-tiles">
+          <div class="s-tile"><div class="s-tl">Sets</div><div class="s-fig"><b>4</b><i>working</i></div></div>
+          <div class="s-tile"><div class="s-tl">Volume</div><div class="s-fig"><b>2.1</b><i>k kg</i></div></div>
+          <div class="s-tile"><div class="s-tl">Time</div><div class="s-fig"><b>31</b><i>min</i></div></div>
+        </div>
+        <table class="s-tbl"><thead><tr><th>Set</th><th>Today</th><th class="r">e1RM</th></tr></thead>
+          <tbody><tr><td>1</td><td>100 × 5</td><td class="r">117</td></tr><tr><td>2</td><td>100 × 5</td><td class="r">117</td></tr></tbody></table>
+        <div class="s-chips">
+          <span class="s-chip" style="background:#13281b;color:#5cbd80">Logged</span>
+          <span class="s-chip" style="background:#2d1f14;color:#d08c52">You said</span>
+          <span class="s-chip" style="border-color:#2e2924;color:#a3978b">Computed</span>
+          <span class="s-chip" style="background:#2b2208;color:#d9a93f">Estimated</span>
+        </div>
+        <div class="s-foot">Three sessions at the same weight. Next time: 102.5 kg.</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="note">
+    <h2>What does not change, whichever you pick</h2>
+    <p><b>Chroma means something.</b> One accent for interaction, a state ramp for status, a series ramp for data.
+    Only the hues move.</p>
+    <p><b>Mono for every measurement.</b> The split between language and measurement is structural, so each direction
+    keeps a sans and a mono — only the pairing changes.</p>
+    <p><b>Square geometry and hairlines.</b> 10px maximum corner, 3px chips, rules rather than boxes.</p>
+    <p><b>The IWF plate colours stay fixed</b> in every direction. A 20 kg plate is blue whatever the brand does.</p>
+  </section>
+</div>

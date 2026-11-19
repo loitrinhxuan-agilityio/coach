@@ -1,0 +1,97 @@
+<!-- @dsCard group="Agent" height=250 subtitle="Where a button would be: the sentence to say, and a copy control" -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Spline+Sans:wght@400;500;600&family=Spline+Sans+Mono:wght@500&display=swap">
+<style>
+  .wrap {
+    font-family: var(--font-ui, sans-serif);
+    background: var(--surface-page);
+    color: var(--ink);
+    padding: var(--space-4, 16px);
+  }
+  .card {
+    background: var(--surface-card);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg, 10px);
+    padding: var(--space-4, 16px);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3, 12px);
+  }
+  .lead { font-size: 14px; line-height: 21px; font-weight: 600; }
+  .sub { font-size: 12.5px; line-height: 18px; color: var(--ink-muted); margin-top: -8px; }
+  .cmd {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3, 12px);
+    background: var(--surface-sunken);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm, 3px);
+    padding: var(--space-2, 8px) var(--space-3, 12px);
+    min-width: 0;
+  }
+  .cmd code {
+    font-family: var(--font-mono, monospace);
+    font-size: 13px;
+    line-height: 20px;
+    color: var(--ink);
+    min-width: 0;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+  .copy {
+    margin-left: auto;
+    flex: none;
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--accent);
+    background: transparent;
+    border: 1px solid var(--line-strong);
+    border-radius: var(--radius-sm, 3px);
+    padding: 4px 10px;
+    cursor: pointer;
+  }
+  .copy:hover { background: var(--accent-soft); }
+  .copy:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .copy[data-done="1"] { color: var(--state-ok); border-color: var(--state-ok); }
+  .note { font-size: 12.5px; line-height: 18px; color: var(--ink-muted); }
+</style>
+<div class="wrap">
+  <div class="card">
+    <div class="lead">Something wrong with this session?</div>
+    <div class="sub">Say it to your agent. It writes the correction and this page follows.</div>
+
+    <div class="cmd">
+      <code>"Fix set 2 of back squat on Wed 18 Nov to 100 × 4"</code>
+      <button class="copy" type="button">Copy</button>
+    </div>
+    <div class="cmd">
+      <code>"Delete the third set of back squat on Wed 18 Nov"</code>
+      <button class="copy" type="button">Copy</button>
+    </div>
+
+    <div class="note">Your agent can undo anything it wrote for 7 days.</div>
+  </div>
+</div>
+<script>
+  document.querySelectorAll(".copy").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var text = btn.parentElement.querySelector("code").textContent;
+      var done = function () {
+        btn.textContent = "Copied";
+        btn.dataset.done = "1";
+        setTimeout(function () { btn.textContent = "Copy"; btn.dataset.done = ""; }, 1600);
+      };
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(done, function () {
+            var r = document.createRange();
+            r.selectNodeContents(btn.parentElement.querySelector("code"));
+            var s = window.getSelection();
+            s.removeAllRanges();
+            s.addRange(r);
+          });
+        }
+      } catch (e) { /* selection fallback above */ }
+    });
+  });
+</script>
