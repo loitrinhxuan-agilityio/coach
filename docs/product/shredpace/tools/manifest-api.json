@@ -1,0 +1,547 @@
+[
+  {
+    "group": "api",
+    "slug": "api-001-get-account",
+    "url": "https://shredpace.com/docs/api/get-account"
+  },
+  {
+    "group": "api",
+    "slug": "api-002-get-summary",
+    "url": "https://shredpace.com/docs/api/get-summary"
+  },
+  {
+    "group": "api",
+    "slug": "api-003-get-today",
+    "url": "https://shredpace.com/docs/api/get-today"
+  },
+  {
+    "group": "api",
+    "slug": "api-004-get-settings",
+    "url": "https://shredpace.com/docs/api/get-settings"
+  },
+  {
+    "group": "api",
+    "slug": "api-005-update-settings",
+    "url": "https://shredpace.com/docs/api/update-settings"
+  },
+  {
+    "group": "api",
+    "slug": "api-006-list-gyms",
+    "url": "https://shredpace.com/docs/api/list-gyms"
+  },
+  {
+    "group": "api",
+    "slug": "api-007-create-gym",
+    "url": "https://shredpace.com/docs/api/create-gym"
+  },
+  {
+    "group": "api",
+    "slug": "api-008-get-gym",
+    "url": "https://shredpace.com/docs/api/get-gym"
+  },
+  {
+    "group": "api",
+    "slug": "api-009-update-gym",
+    "url": "https://shredpace.com/docs/api/update-gym"
+  },
+  {
+    "group": "api",
+    "slug": "api-010-remove-gym",
+    "url": "https://shredpace.com/docs/api/remove-gym"
+  },
+  {
+    "group": "api",
+    "slug": "api-011-search-exercises",
+    "url": "https://shredpace.com/docs/api/search-exercises"
+  },
+  {
+    "group": "api",
+    "slug": "api-012-create-exercise",
+    "url": "https://shredpace.com/docs/api/create-exercise"
+  },
+  {
+    "group": "api",
+    "slug": "api-013-get-exercise",
+    "url": "https://shredpace.com/docs/api/get-exercise"
+  },
+  {
+    "group": "api",
+    "slug": "api-014-update-exercise",
+    "url": "https://shredpace.com/docs/api/update-exercise"
+  },
+  {
+    "group": "api",
+    "slug": "api-015-delete-exercise",
+    "url": "https://shredpace.com/docs/api/delete-exercise"
+  },
+  {
+    "group": "api",
+    "slug": "api-016-get-exercise-history",
+    "url": "https://shredpace.com/docs/api/get-exercise-history"
+  },
+  {
+    "group": "api",
+    "slug": "api-017-get-suggestion",
+    "url": "https://shredpace.com/docs/api/get-suggestion"
+  },
+  {
+    "group": "api",
+    "slug": "api-018-hide-exercise",
+    "url": "https://shredpace.com/docs/api/hide-exercise"
+  },
+  {
+    "group": "api",
+    "slug": "api-019-show-exercise",
+    "url": "https://shredpace.com/docs/api/show-exercise"
+  },
+  {
+    "group": "api",
+    "slug": "api-020-list-sessions",
+    "url": "https://shredpace.com/docs/api/list-sessions"
+  },
+  {
+    "group": "api",
+    "slug": "api-021-start-session",
+    "url": "https://shredpace.com/docs/api/start-session"
+  },
+  {
+    "group": "api",
+    "slug": "api-022-get-open-session",
+    "url": "https://shredpace.com/docs/api/get-open-session"
+  },
+  {
+    "group": "api",
+    "slug": "api-023-get-session",
+    "url": "https://shredpace.com/docs/api/get-session"
+  },
+  {
+    "group": "api",
+    "slug": "api-024-update-session",
+    "url": "https://shredpace.com/docs/api/update-session"
+  },
+  {
+    "group": "api",
+    "slug": "api-025-delete-session",
+    "url": "https://shredpace.com/docs/api/delete-session"
+  },
+  {
+    "group": "api",
+    "slug": "api-026-get-last-session",
+    "url": "https://shredpace.com/docs/api/get-last-session"
+  },
+  {
+    "group": "api",
+    "slug": "api-027-get-previous-session",
+    "url": "https://shredpace.com/docs/api/get-previous-session"
+  },
+  {
+    "group": "api",
+    "slug": "api-028-log-said",
+    "url": "https://shredpace.com/docs/api/log-said"
+  },
+  {
+    "group": "api",
+    "slug": "api-029-get-session-detail",
+    "url": "https://shredpace.com/docs/api/get-session-detail"
+  },
+  {
+    "group": "api",
+    "slug": "api-030-get-session-summary",
+    "url": "https://shredpace.com/docs/api/get-session-summary"
+  },
+  {
+    "group": "api",
+    "slug": "api-031-get-targets",
+    "url": "https://shredpace.com/docs/api/get-targets"
+  },
+  {
+    "group": "api",
+    "slug": "api-032-check-in",
+    "url": "https://shredpace.com/docs/api/check-in"
+  },
+  {
+    "group": "api",
+    "slug": "api-033-get-next-set",
+    "url": "https://shredpace.com/docs/api/get-next-set"
+  },
+  {
+    "group": "api",
+    "slug": "api-034-log-sets",
+    "url": "https://shredpace.com/docs/api/log-sets"
+  },
+  {
+    "group": "api",
+    "slug": "api-035-end-session",
+    "url": "https://shredpace.com/docs/api/end-session"
+  },
+  {
+    "group": "api",
+    "slug": "api-036-fix-set",
+    "url": "https://shredpace.com/docs/api/fix-set"
+  },
+  {
+    "group": "api",
+    "slug": "api-037-delete-set",
+    "url": "https://shredpace.com/docs/api/delete-set"
+  },
+  {
+    "group": "api",
+    "slug": "api-038-get-plan",
+    "url": "https://shredpace.com/docs/api/get-plan"
+  },
+  {
+    "group": "api",
+    "slug": "api-039-update-plan",
+    "url": "https://shredpace.com/docs/api/update-plan"
+  },
+  {
+    "group": "api",
+    "slug": "api-040-preview-focus",
+    "url": "https://shredpace.com/docs/api/preview-focus"
+  },
+  {
+    "group": "api",
+    "slug": "api-041-plan-day",
+    "url": "https://shredpace.com/docs/api/plan-day"
+  },
+  {
+    "group": "api",
+    "slug": "api-042-clear-plan-day",
+    "url": "https://shredpace.com/docs/api/clear-plan-day"
+  },
+  {
+    "group": "api",
+    "slug": "api-043-fill-week",
+    "url": "https://shredpace.com/docs/api/fill-week"
+  },
+  {
+    "group": "api",
+    "slug": "api-044-shift-plan",
+    "url": "https://shredpace.com/docs/api/shift-plan"
+  },
+  {
+    "group": "api",
+    "slug": "api-045-list-away",
+    "url": "https://shredpace.com/docs/api/list-away"
+  },
+  {
+    "group": "api",
+    "slug": "api-046-set-away",
+    "url": "https://shredpace.com/docs/api/set-away"
+  },
+  {
+    "group": "api",
+    "slug": "api-047-update-away",
+    "url": "https://shredpace.com/docs/api/update-away"
+  },
+  {
+    "group": "api",
+    "slug": "api-048-remove-away",
+    "url": "https://shredpace.com/docs/api/remove-away"
+  },
+  {
+    "group": "api",
+    "slug": "api-049-list-goals",
+    "url": "https://shredpace.com/docs/api/list-goals"
+  },
+  {
+    "group": "api",
+    "slug": "api-050-set-goal",
+    "url": "https://shredpace.com/docs/api/set-goal"
+  },
+  {
+    "group": "api",
+    "slug": "api-051-get-goal",
+    "url": "https://shredpace.com/docs/api/get-goal"
+  },
+  {
+    "group": "api",
+    "slug": "api-052-update-goal",
+    "url": "https://shredpace.com/docs/api/update-goal"
+  },
+  {
+    "group": "api",
+    "slug": "api-053-remove-goal",
+    "url": "https://shredpace.com/docs/api/remove-goal"
+  },
+  {
+    "group": "api",
+    "slug": "api-054-search-skill-ladders",
+    "url": "https://shredpace.com/docs/api/search-skill-ladders"
+  },
+  {
+    "group": "api",
+    "slug": "api-055-list-habits",
+    "url": "https://shredpace.com/docs/api/list-habits"
+  },
+  {
+    "group": "api",
+    "slug": "api-056-create-habit",
+    "url": "https://shredpace.com/docs/api/create-habit"
+  },
+  {
+    "group": "api",
+    "slug": "api-057-get-habit",
+    "url": "https://shredpace.com/docs/api/get-habit"
+  },
+  {
+    "group": "api",
+    "slug": "api-058-update-habit",
+    "url": "https://shredpace.com/docs/api/update-habit"
+  },
+  {
+    "group": "api",
+    "slug": "api-059-stop-habit",
+    "url": "https://shredpace.com/docs/api/stop-habit"
+  },
+  {
+    "group": "api",
+    "slug": "api-060-tick-habit",
+    "url": "https://shredpace.com/docs/api/tick-habit"
+  },
+  {
+    "group": "api",
+    "slug": "api-061-list-benchmarks",
+    "url": "https://shredpace.com/docs/api/list-benchmarks"
+  },
+  {
+    "group": "api",
+    "slug": "api-062-create-benchmark",
+    "url": "https://shredpace.com/docs/api/create-benchmark"
+  },
+  {
+    "group": "api",
+    "slug": "api-063-get-benchmark",
+    "url": "https://shredpace.com/docs/api/get-benchmark"
+  },
+  {
+    "group": "api",
+    "slug": "api-064-update-benchmark",
+    "url": "https://shredpace.com/docs/api/update-benchmark"
+  },
+  {
+    "group": "api",
+    "slug": "api-065-stop-benchmark",
+    "url": "https://shredpace.com/docs/api/stop-benchmark"
+  },
+  {
+    "group": "api",
+    "slug": "api-066-get-zones",
+    "url": "https://shredpace.com/docs/api/get-zones"
+  },
+  {
+    "group": "api",
+    "slug": "api-067-set-zones",
+    "url": "https://shredpace.com/docs/api/set-zones"
+  },
+  {
+    "group": "api",
+    "slug": "api-068-correct-benchmark-result",
+    "url": "https://shredpace.com/docs/api/correct-benchmark-result"
+  },
+  {
+    "group": "api",
+    "slug": "api-069-list-measurements",
+    "url": "https://shredpace.com/docs/api/list-measurements"
+  },
+  {
+    "group": "api",
+    "slug": "api-070-log-measurements",
+    "url": "https://shredpace.com/docs/api/log-measurements"
+  },
+  {
+    "group": "api",
+    "slug": "api-071-fix-measurement",
+    "url": "https://shredpace.com/docs/api/fix-measurement"
+  },
+  {
+    "group": "api",
+    "slug": "api-072-delete-measurement",
+    "url": "https://shredpace.com/docs/api/delete-measurement"
+  },
+  {
+    "group": "api",
+    "slug": "api-073-rename-body-device",
+    "url": "https://shredpace.com/docs/api/rename-body-device"
+  },
+  {
+    "group": "api",
+    "slug": "api-074-list-programs",
+    "url": "https://shredpace.com/docs/api/list-programs"
+  },
+  {
+    "group": "api",
+    "slug": "api-075-set-program",
+    "url": "https://shredpace.com/docs/api/set-program"
+  },
+  {
+    "group": "api",
+    "slug": "api-076-update-program",
+    "url": "https://shredpace.com/docs/api/update-program"
+  },
+  {
+    "group": "api",
+    "slug": "api-077-remove-program",
+    "url": "https://shredpace.com/docs/api/remove-program"
+  },
+  {
+    "group": "api",
+    "slug": "api-078-log-meal",
+    "url": "https://shredpace.com/docs/api/log-meal"
+  },
+  {
+    "group": "api",
+    "slug": "api-079-list-meals",
+    "url": "https://shredpace.com/docs/api/list-meals"
+  },
+  {
+    "group": "api",
+    "slug": "api-080-list-saved-meals",
+    "url": "https://shredpace.com/docs/api/list-saved-meals"
+  },
+  {
+    "group": "api",
+    "slug": "api-081-save-meal",
+    "url": "https://shredpace.com/docs/api/save-meal"
+  },
+  {
+    "group": "api",
+    "slug": "api-082-delete-saved-meal",
+    "url": "https://shredpace.com/docs/api/delete-saved-meal"
+  },
+  {
+    "group": "api",
+    "slug": "api-083-update-meal",
+    "url": "https://shredpace.com/docs/api/update-meal"
+  },
+  {
+    "group": "api",
+    "slug": "api-084-delete-meal",
+    "url": "https://shredpace.com/docs/api/delete-meal"
+  },
+  {
+    "group": "api",
+    "slug": "api-085-list-notes",
+    "url": "https://shredpace.com/docs/api/list-notes"
+  },
+  {
+    "group": "api",
+    "slug": "api-086-add-note",
+    "url": "https://shredpace.com/docs/api/add-note"
+  },
+  {
+    "group": "api",
+    "slug": "api-087-update-note",
+    "url": "https://shredpace.com/docs/api/update-note"
+  },
+  {
+    "group": "api",
+    "slug": "api-088-delete-note",
+    "url": "https://shredpace.com/docs/api/delete-note"
+  },
+  {
+    "group": "api",
+    "slug": "api-089-search-metrics",
+    "url": "https://shredpace.com/docs/api/search-metrics"
+  },
+  {
+    "group": "api",
+    "slug": "api-090-create-metric",
+    "url": "https://shredpace.com/docs/api/create-metric"
+  },
+  {
+    "group": "api",
+    "slug": "api-091-get-metric",
+    "url": "https://shredpace.com/docs/api/get-metric"
+  },
+  {
+    "group": "api",
+    "slug": "api-092-update-metric",
+    "url": "https://shredpace.com/docs/api/update-metric"
+  },
+  {
+    "group": "api",
+    "slug": "api-093-archive-metric",
+    "url": "https://shredpace.com/docs/api/archive-metric"
+  },
+  {
+    "group": "api",
+    "slug": "api-094-log-metric",
+    "url": "https://shredpace.com/docs/api/log-metric"
+  },
+  {
+    "group": "api",
+    "slug": "api-095-fix-metric-reading",
+    "url": "https://shredpace.com/docs/api/fix-metric-reading"
+  },
+  {
+    "group": "api",
+    "slug": "api-096-delete-metric-reading",
+    "url": "https://shredpace.com/docs/api/delete-metric-reading"
+  },
+  {
+    "group": "api",
+    "slug": "api-097-list-pain",
+    "url": "https://shredpace.com/docs/api/list-pain"
+  },
+  {
+    "group": "api",
+    "slug": "api-098-log-pain",
+    "url": "https://shredpace.com/docs/api/log-pain"
+  },
+  {
+    "group": "api",
+    "slug": "api-099-fix-pain",
+    "url": "https://shredpace.com/docs/api/fix-pain"
+  },
+  {
+    "group": "api",
+    "slug": "api-100-delete-pain",
+    "url": "https://shredpace.com/docs/api/delete-pain"
+  },
+  {
+    "group": "api",
+    "slug": "api-101-get-nutrition",
+    "url": "https://shredpace.com/docs/api/get-nutrition"
+  },
+  {
+    "group": "api",
+    "slug": "api-102-get-progress",
+    "url": "https://shredpace.com/docs/api/get-progress"
+  },
+  {
+    "group": "api",
+    "slug": "api-103-get-coach",
+    "url": "https://shredpace.com/docs/api/get-coach"
+  },
+  {
+    "group": "api",
+    "slug": "api-104-update-insight",
+    "url": "https://shredpace.com/docs/api/update-insight"
+  },
+  {
+    "group": "api",
+    "slug": "api-105-list-activity",
+    "url": "https://shredpace.com/docs/api/list-activity"
+  },
+  {
+    "group": "api",
+    "slug": "api-106-undo-change",
+    "url": "https://shredpace.com/docs/api/undo-change"
+  },
+  {
+    "group": "api",
+    "slug": "api-107-report-issue",
+    "url": "https://shredpace.com/docs/api/report-issue"
+  },
+  {
+    "group": "api",
+    "slug": "api-108-get-report-status",
+    "url": "https://shredpace.com/docs/api/get-report-status"
+  },
+  {
+    "group": "api",
+    "slug": "api-109-contact-support",
+    "url": "https://shredpace.com/docs/api/contact-support"
+  }
+]
