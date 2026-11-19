@@ -1,10 +1,14 @@
-// STATUS: UNVERIFIED. This script has never run end to end.
-// It was written for the signed-in sweep, but Chrome 136+ refuses
-// --remote-debugging-port on the default profile ("DevTools remote debugging
-// requires a non-default data directory"), so it was never exercised against a
-// real session. Treat it as a starting point, not working code: it is kept only
-// because the alternative is rewriting it from scratch. capture.mjs, by
-// contrast, produced all 205 captures and is known good.
+// STATUS: superseded by capture-profile.mjs. Kept for the attach pattern only.
+//
+// This does work: it attaches to a running, signed-in Chrome over its debugging
+// port and captures. But an attached real browser has no per-context
+// deviceScaleFactor or isMobile, so Playwright cannot emulate viewport or pixel
+// density: captures come back at the window's own size and 1x (observed:
+// 1425x1245 instead of 1440x900 at 2x), which does not match the rest of the set.
+//
+// capture-profile.mjs LAUNCHES the signed-in profile instead of attaching, which
+// restores full emulation. Prefer it. See README.md, "How the signed-in sets
+// were captured".
 //
 // Capture the signed-in ShredPace dashboard by attaching to an already-running
 // Chrome over its local debugging port, so the existing session is reused and no
@@ -34,10 +38,13 @@ const wantViewports = argOf('--viewports', 'desktop,phone').split(',').filter(Bo
 const settleMs = Number(argOf('--settle', '2000'));
 
 const ALL_VIEWPORTS = {
-  desktop: { name: 'desktop', width: 1440, height: 900 },
-  tablet: { name: 'tablet', width: 834, height: 1112 },
-  phone: { name: 'phone', width: 390, height: 844 },
+  desktop: { name: 'desktop', width: 1440, height: 900, mobile: false },
+  tablet: { name: 'tablet', width: 834, height: 1112, mobile: true },
+  phone: { name: 'phone', width: 390, height: 844, mobile: true },
 };
+// An attached real browser has no per-context deviceScaleFactor, so it is
+// forced through CDP to match the 2x captures of the public set.
+const dsf = Number(argOf('--dsf', '2'));
 const viewports = wantViewports.map(v => ALL_VIEWPORTS[v]);
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -53,6 +60,7 @@ const context = browser.contexts()[0];
 if (!context) throw new Error('No browser context found over CDP.');
 
 const page = await context.newPage();
+const cdpSession = await context.newCDPSession(page);
 const results = [];
 
 async function capture(entry, vp, scheme, n, total) {
@@ -84,6 +92,15 @@ async function capture(entry, vp, scheme, n, total) {
     for (const h of meta.hashLinks) {
       if (ID_ROUTE.test(h) && !discovered.has(h)) discovered.set(h, true);
     }
+
+    // Force the pixel density just before capture. Playwright still performs the
+    // full-page capture itself, which is what keeps tall pages from repeating.
+    await cdpSession.send('Emulation.setDeviceMetricsOverride', {
+      width: vp.width,
+      height: vp.height,
+      deviceScaleFactor: dsf,
+      mobile: !!vp.mobile,
+    });
 
     const buf = await page.screenshot({ fullPage: true, type: 'png', scale: 'device' });
     writeFileSync(file, buf);

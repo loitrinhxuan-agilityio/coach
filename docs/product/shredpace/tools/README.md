@@ -42,15 +42,20 @@ node gen-index.mjs ../evidence/screenshots
 
 | File | What it is |
 |---|---|
-| `capture.mjs` | The capture sweep. Known good: produced all 205 images |
+| `capture.mjs` | Public sweep: launches a clean browser. Produced the 205 public and API images |
+| `capture-profile.mjs` | Signed-in sweep: launches an already signed-in profile. Produced the 212 dashboard images |
 | `gen-api-manifest.mjs` | Builds and verifies the 109 API reference URLs |
 | `gen-index.mjs` | Writes the README and the filterable contact sheet |
 | `manifest-public.json` | 9 app hash routes, 15 docs pages, the 404 board |
 | `manifest-api.json` | The 109 per-operation API reference pages |
-| `manifest-signedin.json` | The 28 dashboard routes — **never captured**, see below |
-| `capture-attached.mjs` | **Unverified.** Never ran; see the header comment |
+| `manifest-signedin.json` | The 28 dashboard routes |
+| `capture-attached.mjs` | Superseded: attaches instead of launching, and loses emulation. See its header |
 
-## Two traps these scripts exist to avoid
+The manifest of id-bearing detail routes (`#session/{id}`, `#goal/{id}` …) is **deliberately not
+committed**: those are real record ids from a live account. Rebuild it per account from the
+Shredpace MCP connector, as described below.
+
+## Three traps these scripts exist to avoid
 
 **1. Full-page capture needs Playwright, not raw CDP.** Driving `Page.captureScreenshot` with
 `captureBeyondViewport` (or with a `clip` taller than the viewport) silently *repeats a band of the
@@ -65,26 +70,61 @@ different operation, all returning HTTP 200. The real pages are `/docs/api/get-a
 `gen-api-manifest.mjs` checks every URL with `redirect: "manual"` and reports anything that is not
 a direct 200.
 
-## The signed-in dashboard is not covered
+**3. Attaching to a browser loses viewport and pixel-density emulation.** `connectOverCDP` gives a
+context built from a real window, which has no per-context `deviceScaleFactor` or `isMobile`.
+`setViewportSize` does not take and `scale: "device"` yields 1x, so captures come back at the
+window's own size — 1425x1245 where 1440x900 at 2x was asked for. Forcing
+`Emulation.setDeviceMetricsOverride` through a CDP session does not fix it either, because
+Playwright re-applies its own emulation around the screenshot. Launching the profile
+(`launchPersistentContext`) instead of attaching restores all of it, which is why
+`capture-profile.mjs` exists and `capture-attached.mjs` is superseded.
 
-`manifest-signedin.json` lists the 28 routes but no capture exists for them. The account is
-Google-federated, holding AWS Cognito tokens in `localStorage` (no cookies), and every automated
-route was blocked:
+## Capturing the signed-in dashboard
 
-- Google blocks OAuth inside an automation-controlled browser.
-- Email sign-in does not apply to a Google-federated account.
-- Chrome 136+ refuses `--remote-debugging-port` on the default profile.
-- Chrome blocks an HTTPS page from reaching `http://127.0.0.1` (Local Network Access).
-- A file-based session handoff was refused by the agent safety classifier, as credential
-  exfiltration.
+The account is Google-federated and holds its session as AWS Cognito tokens in `localStorage` (no
+cookies). The working method separates **sign-in** from **capture**:
 
-**No session-handling script is kept here on purpose.** The local token receiver and the
-sign-in helper written during that attempt are deliberately not committed: a tool whose job is to
-move auth tokens out of a browser does not belong in the repository.
+```bash
+# 1. Plain Chrome on a scratch profile, with the debug port. NOT Playwright.
+"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
+  --user-data-dir=/tmp/sp-profile --remote-debugging-port=9222 \
+  --no-first-run "https://shredpace.com/#signin"
 
-What remains possible is capturing through the Claude in Chrome extension against a live session —
-no credentials move, but the output is viewport-sized JPEG needing scroll-stitching rather than the
-full-page retina PNGs here.
+# 2. Sign in with Google in that window, by hand. Then close it.
+
+# 3. Launch that same profile and sweep.
+node capture-profile.mjs <outDir> manifest-signedin.json --profile /tmp/sp-profile
+```
+
+Each step avoids a block that defeats the obvious approach:
+
+| Approach | Outcome |
+|---|---|
+| Playwright signs in | Google refuses OAuth in an automation-launched browser |
+| Email sign-in instead | Not applicable to a Google-federated account |
+| Debug port on the **default** profile | Chrome 136+ refuses: *"requires a non-default data directory"* |
+| Debug port on a **scratch** profile | Allowed |
+| Handing the session to a local receiver | Chrome blocks HTTPS pages reaching `http://127.0.0.1` |
+| **Attaching** to the signed-in browser | Captures at the window's own size and 1x (see trap 3) |
+| **Launching** the signed-in profile | Full emulation; matches the public set |
+
+**No session token is ever read, copied or written.** The session stays in the profile directory.
+Delete that directory when the sweep is done. No token-handling script is committed here on
+purpose: a tool whose job is moving auth tokens out of a browser does not belong in a repository.
+
+### Detail routes need ids from the API, not the page
+
+Most detail links in the DOM carry no `href`, so sweeping pages discovers only a few. Get the real
+ids from the Shredpace MCP connector instead — `list_sessions`, `list_goals`, `list_habits`,
+`list_benchmarks`, `search_metrics`, `list_pain`, `list_saved_meals` — and build a manifest of
+`#session/{id}`, `#after/{id}`, `#goal/{id}`, `#habit/{id}`, `#metric/{id}`, `#ache/{area}/{side}`
+and `#food/usual/{id}`. Keep that manifest out of the repository.
+
+### What the sweep will not do
+
+It only navigates and screenshots: it never clicks, types, submits or changes a setting. So the
+Connect screen's key-creation flow is out of reach (reaching it creates an API key), and themes
+other than the account's own are not switched.
 
 ## Note on phone layouts
 

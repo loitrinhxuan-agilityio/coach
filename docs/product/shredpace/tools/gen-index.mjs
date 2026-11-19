@@ -70,24 +70,35 @@ if (failed.length) {
   md += `\n`;
 }
 
-md += `## Not captured: the signed-in dashboard\n\n`;
-md += `The ~28 dashboard routes (\`#today\`, \`#sessions\`, \`#progress\`, \`#coach\`, \`#food\`, \`#body\`,\n`;
-md += `\`#goals\`, \`#plan\`, \`#settings\` and the id-bearing detail routes) are **not** in this set.\n\n`;
-md += `The account signs in through Google, and its session is held as AWS Cognito tokens in\n`;
-md += `localStorage (no cookies). Every route to an automated capture was closed:\n\n`;
-md += `| Attempt | Outcome |\n|---|---|\n`;
-md += `| Sign in inside the automated browser | Google blocks OAuth in an automation-controlled browser |\n`;
+md += `## How the signed-in sets were captured\n\n`;
+md += `The account signs in through Google and holds its session as AWS Cognito tokens in\n`;
+md += `localStorage (no cookies), which defeats the obvious approaches. What works is splitting\n`;
+md += `sign-in from capture:\n\n`;
+md += `1. Launch **plain Chrome** on a scratch \`--user-data-dir\`, with \`--remote-debugging-port\`.\n`;
+md += `2. The person signs in with Google themselves, in that window.\n`;
+md += `3. Close it, then let **Playwright launch that same profile** and sweep.\n\n`;
+md += `Both halves matter, and each avoids a different block:\n\n`;
+md += `| Approach | Outcome |\n|---|---|\n`;
+md += `| Playwright signs in | Google refuses OAuth in an automation-launched browser |\n`;
 md += `| Email sign-in instead | Not applicable: the account is Google-federated |\n`;
-md += `| Attach to the real Chrome over a debugging port | Chrome 136+ refuses: *"DevTools remote debugging requires a non-default data directory"* |\n`;
-md += `| Hand the session to a local receiver | Chrome blocks an HTTPS page from reaching \`http://127.0.0.1\` (Local Network Access) |\n`;
-md += `| Hand the session over as a file download | Refused by the agent's safety classifier, as credential exfiltration |\n\n`;
-md += `**No session token was ever extracted, stored, or transferred.**\n\n`;
-md += `What remains possible is capturing through the Claude in Chrome extension against the live\n`;
-md += `session: no credential moves, but viewport-sized JPEGs needing scroll-stitching rather than\n`;
-md += `the full-page retina PNGs here.\n\n`;
-md += `One finding worth carrying forward: the earlier note that a browser "would not narrow below\n`;
-md += `desktop width", which left 12 phone boards as reconstructions, is **not a real constraint**.\n`;
-md += `Proper device emulation renders phone layouts correctly, as every \`__phone__\` image here shows.\n\n`;
+md += `| Debug port on the **default** profile | Chrome 136+ refuses: *"requires a non-default data directory"* |\n`;
+md += `| Debug port on a **scratch** profile | **Allowed** |\n`;
+md += `| *Attaching* to the signed-in browser | Works, but an attached browser has no per-context\n`;
+md += `  deviceScaleFactor or isMobile, so captures come back at the window's own size and 1x |\n`;
+md += `| *Launching* the signed-in profile | **Full emulation**: 2x, exact viewports, phone layouts |\n\n`;
+md += `**No session token was ever read, copied or written.** The session stays inside the profile\n`;
+md += `directory, which is deleted after the sweep.\n\n`;
+md += `Phone layouts render correctly throughout, so an earlier note that a browser "would not narrow\n`;
+md += `below desktop width" — which left 12 phone boards as reconstructions — is not a real constraint.\n\n`;
+
+md += `## Still not captured\n\n`;
+md += `- \`#benchmark/{id}\` — the account has **no benchmarks**, so the screen has nothing to render.\n`;
+md += `- The **Free-plan locked** Coach and Programs screens: the account is Pro.\n`;
+md += `- **Checkout, payment and card-failure** screens.\n`;
+md += `- The connector **consent page**, and the Connect screen's key-creation flow: reaching it means\n`;
+md += `  clicking "Add another agent", which creates an API key. The sweep never clicks.\n`;
+md += `- Themes other than **Studio**: switching theme would change the account's own setting.\n`;
+md += `- A brand-new account's first-run state.\n\n`;
 
 md += `## Reproducing\n\n`;
 md += `The capture scripts drive the installed Google Chrome through \`playwright-core\`:\n\n`;
