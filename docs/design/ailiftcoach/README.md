@@ -30,6 +30,7 @@ prototypes/
   identity-options.html  the three directions, and why Blueprint won
 tools/
   check-contrast.mjs     every colour pair the system uses, against WCAG, both themes
+  audit-rendered.mjs     the rendered pages: computed colour against the surface it lands on
 system/
   README.md              the brand book: principles, content and visual foundations, token usage
   tokens.json            colour (2 themes), type, spacing, radius, shadow
@@ -66,6 +67,25 @@ the script with their reasons rather than skipped: `ink-faint` is placeholder an
 which WCAG exempts, and three hairline tokens are decorative separators that identify no component
 and so fall outside 1.4.11. Those rules are deliberately quiet — raising them to 3:1 would read as
 a border and rebuild the boxes this system avoids.
+
+**Both themes, every screen: 28 renders, 0 text elements below contrast.**
+
+```bash
+node tools/audit-rendered.mjs
+```
+
+`check-contrast.mjs` proves the palette is sound in the abstract; this proves the pages *use* it
+correctly. It walks the rendered DOM, reads each element's computed colour and the surface its text
+actually lands on — compositing translucent layers on the way up — and checks the ratio. It is the
+check that catches a literal colour readable in only one theme, or a token defined solely inside a
+`[data-theme]` block.
+
+It found one real defect, in the identity comparison page: **every dark specimen's table text was
+invisible**. The cause is the third instance of the same root problem — a standalone file has no
+`<!doctype html>` (the artifact skeleton supplies it), so it renders in **quirks mode, where a
+table does not inherit colour from its ancestors**. The cells fell back to the page theme while
+their panel kept its own background. The doctype cannot be added, because the published file must
+not carry one, so those cells now set colour explicitly.
 
 **Phone width: every screen rendered at 390px, no horizontal overflow.** Three defects surfaced
 only by rendering the files rather than the artifacts, and all three were invisible in the

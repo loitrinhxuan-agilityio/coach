@@ -107,6 +107,18 @@
   .c-d .s-fig b,.c-d .s-tbl td,.c-d .s-fig i { font-family:"IBM Plex Mono",monospace; font-variant-numeric:tabular-nums; }
   .c-d .s-fig i { color:#a3978b; }
 
+  /* A standalone file has no <!doctype html> — the artifact skeleton supplies one —
+     so it renders in quirks mode, where a table does NOT inherit colour from its
+     ancestors. The specimen cells therefore fell back to the page theme while the
+     panel kept its own background: dark-on-dark in every dark specimen. Set it
+     on the cells explicitly rather than relying on inheritance. */
+  .a-l .s-tbl td { color: #0f1519; }
+  .a-d .s-tbl td { color: #e8eef3; }
+  .b-l .s-tbl td { color: #10243a; }
+  .b-d .s-tbl td { color: #dcebf7; }
+  .c-l .s-tbl td { color: #1a1714; }
+  .c-d .s-tbl td { color: #f0ebe5; }
+
   .note { border: 1px solid var(--line); border-radius: 10px; padding: 18px 20px; background: var(--card); }
   .note h2 { font-size: 17px; margin: 0 0 8px; font-weight: 600; }
   .note p { margin: 0 0 10px; color: var(--muted); font-size: 14px; line-height: 21px; }
@@ -251,7 +263,7 @@
           <tbody><tr><td>1</td><td>100 × 5</td><td class="r">117</td></tr><tr><td>2</td><td>100 × 5</td><td class="r">117</td></tr></tbody></table>
         <div class="s-chips">
           <span class="s-chip" style="background:#e2efe4;color:#22683f">Logged</span>
-          <span class="s-chip" style="background:#f3e5d8;color:#9a5b2d">You said</span>
+          <span class="s-chip" style="background:#f3e5d8;color:#874a20">You said</span>
           <span class="s-chip" style="border-color:#e0dbd6;color:#6b625a">Computed</span>
           <span class="s-chip" style="background:#f6ead1;color:#7d5c12">Estimated</span>
         </div>
