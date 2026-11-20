@@ -12,6 +12,7 @@ and those edits do not come back here.
 | Today | <https://claude.ai/artifact/APK35PZ9JEeCuskz1ywm1a> |
 | Session | <https://claude.ai/artifact/25mkV8Pzo6zC1XhRZ9dsrW> |
 | Progress, Goals, Body, empty, first run | <https://claude.ai/artifact/MbdK4Ea9H8So5fiihsizV7> |
+| Sign in, First sign-in, Sessions, Exercises, Settings | <https://claude.ai/artifact/M6VFZfJ3KbrAQEYM8niibL> |
 | Identity options | <https://claude.ai/artifact/NxoJpKmDY7hF5EZBptT5KU> |
 
 All five are private. Nobody else can open them until they are shared from each page's Share menu.
@@ -23,7 +24,10 @@ prototypes/
   today.html             the Today dashboard
   session.html           a finished workout session
   screens.html           Progress, Goals, Body, not-enough-data, first run (hash-routed)
+  phase1.html            Sign in, First sign-in, Sessions, Exercises, Settings (hash-routed)
   identity-options.html  the three directions, and why Blueprint won
+tools/
+  check-contrast.mjs     every colour pair the system uses, against WCAG, both themes
 system/
   README.md              the brand book: principles, content and visual foundations, token usage
   tokens.json            colour (2 themes), type, spacing, radius, shadow
@@ -47,11 +51,33 @@ generated `tokens.css`, so they render unstyled on their own. Read them in the a
 **A proposal, not an approved design.** `AGENTS.md` requires design approval before implementation
 and that gate has not been passed.
 
-Two claims are not yet verified, and are the first work when this resumes:
+Both previously unverified claims are now measured.
 
-1. **Contrast.** `system/README.md` asserts 4.5:1 in both themes. The values were chosen by eye and
-   never measured.
-2. **Phone width.** The prototypes carry responsive CSS but were only ever rendered at desktop.
+**Contrast: 50 pairs, two themes, 0 failing.**
+
+```bash
+node tools/check-contrast.mjs
+```
+
+It exits non-zero on a failure, so it can gate a palette change. Four exceptions are recorded in
+the script with their reasons rather than skipped: `ink-faint` is placeholder and disabled text,
+which WCAG exempts, and three hairline tokens are decorative separators that identify no component
+and so fall outside 1.4.11. Those rules are deliberately quiet — raising them to 3:1 would read as
+a border and rebuild the boxes this system avoids.
+
+**Phone width: every screen rendered at 390px, no horizontal overflow.** Three defects surfaced
+only by rendering the files rather than the artifacts, and all three were invisible in the
+published pages because the artifact skeleton papers over them:
+
+1. **No `<meta name="viewport">`.** Standalone, Chrome fell back to a 980px layout, so every page
+   was zoomed out on a phone. The skeleton injects one; a file opened from disk has none.
+2. **`[hidden]` was being overridden.** `.shell { display: flex }` is a class selector and outranks
+   the browser default for `[hidden]`, so the whole signed-in shell rendered underneath the sign-in
+   screen. The skeleton supplies `[hidden] { display: none !important }`; standalone files now
+   carry it themselves.
+3. **Set-table columns scrolled out of reach** at phone width with no affordance. Cell padding is
+   tightened below 900px so all four columns fit — *Last time* is the comparison the table exists
+   for, and a column scrolled out of sight is a column lost.
 
 ## One trap worth knowing before editing colours
 

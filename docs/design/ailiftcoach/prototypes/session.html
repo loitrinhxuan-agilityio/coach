@@ -1,4 +1,5 @@
 <title>AI Lift Coach Session</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Spline+Sans:wght@400;500;600&family=Spline+Sans+Mono:wght@500&display=swap">
 <style>
@@ -53,6 +54,9 @@
   }
 
   * { box-sizing: border-box; }
+  /* Supplied by the artifact skeleton; needed when the file is opened directly,
+     because a class display rule outranks the browser default for [hidden]. */
+  [hidden] { display: none !important; }
   body {
     margin: 0; background: var(--surface-page); color: var(--ink);
     font-family: var(--font-ui); font-size: 14px; line-height: 21px;
@@ -150,6 +154,14 @@
 
   @media (max-width: 1150px) { .cols { grid-template-columns: minmax(0,1fr); } .tiles { grid-template-columns: repeat(3, minmax(0,1fr)); } }
   @media (max-width: 900px) {
+    /* Tighten the set table so all four columns fit a phone rather than
+       scrolling: Last time is the comparison the table exists for, and a
+       column scrolled out of sight with no affordance is a column lost. */
+    table.sets th, table.sets td { padding-left: 12px; padding-right: 12px; }
+    .ex-head { padding-left: 12px; padding-right: 12px; }
+    .foot { padding-left: 12px; padding-right: 12px; }
+    .best { margin-left: 6px; padding: 2px 4px; }
+
     .rail { display: none; }
     .main { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
     .tiles { grid-template-columns: repeat(2, minmax(0,1fr)); }
