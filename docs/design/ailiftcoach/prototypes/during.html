@@ -1,0 +1,336 @@
+<title>AI Lift Coach During</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Spline+Sans:wght@400;500;600&family=Spline+Sans+Mono:wght@500&display=swap">
+<style>
+  /* Layout: the one screen read mid-set, so the next set is the hero and
+     everything else is secondary. Sized to be legible at arm's length. */
+  :root {
+    --surface-page: #eef2f6; --surface-card: #ffffff; --surface-sunken: #e2e9f0;
+    --line: #ccd8e4; --line-strong: #a8bcd0;
+    --ink: #10243a; --ink-muted: #4e6782; --ink-faint: #7b92aa;
+    --accent: #0b6e8f; --accent-ink: #ffffff; --accent-soft: #d9edf5;
+    --ok: #1b6b45; --ok-soft: #dcefe4;
+    --caution: #86601a; --caution-soft: #f7e9cf;
+    --alert: #a8301f; --alert-soft: #f8e2de;
+    --series-1: #0b6e8f; --series-2: #6b4bbd; --series-2-soft: #ece4fa; --series-ghost: #b7c6d6;
+    --plate-25: #c0392b; --plate-20: #2458c8; --plate-15: #e0a33a; --plate-10: #1f7a4d; --plate-5: #e8edf1;
+    --font-ui: "Spline Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --font-mono: "Spline Sans Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    --r-sm: 3px; --r-md: 6px; --r-lg: 10px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --surface-page: #0a1622; --surface-card: #102333; --surface-sunken: #07111a;
+      --line: #1d3447; --line-strong: #2b4a63;
+      --ink: #dcebf7; --ink-muted: #8aa6bf; --ink-faint: #64809a;
+      --accent: #4fc3e8; --accent-ink: #06161f; --accent-soft: #10303d;
+      --ok: #52c08a; --ok-soft: #102a1e;
+      --caution: #dba93f; --caution-soft: #2b2208;
+      --alert: #ff8b78; --alert-soft: #2e1512;
+      --series-1: #4fc3e8; --series-2: #a98bf0; --series-2-soft: #241a3a; --series-ghost: #27404f;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --surface-page: #0a1622; --surface-card: #102333; --surface-sunken: #07111a;
+    --line: #1d3447; --line-strong: #2b4a63;
+    --ink: #dcebf7; --ink-muted: #8aa6bf; --ink-faint: #64809a;
+    --accent: #4fc3e8; --accent-ink: #06161f; --accent-soft: #10303d;
+    --ok: #52c08a; --ok-soft: #102a1e;
+    --caution: #dba93f; --caution-soft: #2b2208;
+    --alert: #ff8b78; --alert-soft: #2e1512;
+    --series-1: #4fc3e8; --series-2: #a98bf0; --series-2-soft: #241a3a; --series-ghost: #27404f;
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  body { margin: 0; background: var(--surface-page); color: var(--ink); font-family: var(--font-ui); font-size: 15px; line-height: 22px; -webkit-font-smoothing: antialiased; }
+  .mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+  .label { font-size: 11px; line-height: 14px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-muted); }
+  a { color: var(--accent); }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .banner { background: var(--caution-soft); color: var(--caution); font-size: 12.5px; font-weight: 600; text-align: center; padding: 6px 16px; border-bottom: 1px solid var(--line); }
+  .picker { display: flex; gap: 6px; flex-wrap: wrap; padding: 10px max(16px, env(safe-area-inset-left, 0px)); border-bottom: 1px solid var(--line); background: var(--surface-card); }
+  .picker button { font: inherit; font-size: 13px; font-weight: 600; color: var(--ink-muted); background: transparent; border: 1px solid var(--line); border-radius: var(--r-md); padding: 5px 12px; cursor: pointer; }
+  .picker button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+
+  .wrap {
+    max-width: 560px; margin: 0 auto;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    padding-block: 20px 56px;
+  }
+
+  /* ---- live strip ---- */
+  .live {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 14px; border-radius: var(--r-md);
+    border: 1px solid var(--line); background: var(--surface-card);
+    margin-bottom: 16px; font-size: 13px;
+  }
+  .live .dot { width: 8px; height: 8px; border-radius: 999px; background: var(--ok); flex: none; }
+  .live b { font-weight: 600; }
+  .live .ago { margin-left: auto; font-family: var(--font-mono); color: var(--ink-muted); font-size: 12.5px; }
+  .live.quiet { border-color: var(--caution); background: var(--caution-soft); color: var(--caution); }
+  .live.quiet .dot { background: var(--caution); }
+  .live.quiet .ago { color: var(--caution); }
+
+  .head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
+  .head h1 { font-size: 22px; line-height: 28px; font-weight: 600; margin: 0; }
+  .head .meta { font-size: 12.5px; color: var(--ink-muted); margin-left: auto; font-family: var(--font-mono); }
+
+  /* ---- the hero: what to do now ---- */
+  .next {
+    background: var(--surface-card); border: 1px solid var(--line);
+    border-radius: var(--r-lg); overflow: hidden; margin-bottom: 14px;
+  }
+  .next-top { padding: 16px 18px 0; display: flex; align-items: baseline; gap: 10px; }
+  .next-top .label { color: var(--accent); }
+  .next-top .of { margin-left: auto; font-family: var(--font-mono); font-size: 12.5px; color: var(--ink-muted); }
+  .next-name { padding: 2px 18px 0; font-size: 19px; font-weight: 600; }
+  .next-fig {
+    padding: 6px 18px 14px; display: flex; align-items: baseline; gap: 8px;
+    font-family: var(--font-mono); font-variant-numeric: tabular-nums;
+  }
+  .next-fig b { font-size: 46px; line-height: 50px; font-weight: 500; letter-spacing: -0.02em; }
+  .next-fig span { font-size: 17px; font-weight: 500; color: var(--ink-muted); }
+  .next-why { padding: 0 18px 14px; font-size: 13px; line-height: 19px; color: var(--ink-muted); }
+  .next-why b { color: var(--ink); font-weight: 600; }
+
+  .plates { padding: 0 18px 16px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .strip { display: flex; align-items: center; gap: 3px; }
+  .bar { height: 5px; width: 22px; background: var(--line-strong); border-radius: 2px; }
+  .pl { width: 16px; border-radius: 2px; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 2px; font-family: var(--font-mono); font-size: 9px; color: #fff; }
+  .p25 { background: var(--plate-25); height: 50px; }
+  .p20 { background: var(--plate-20); height: 46px; }
+  .p15 { background: var(--plate-15); height: 42px; color: #1b1405; }
+  .p10 { background: var(--plate-10); height: 36px; }
+  .p5  { background: var(--plate-5); height: 28px; color: #11181d; border: 1px solid var(--line-strong); }
+  .plates .side { font-family: var(--font-mono); font-size: 13px; color: var(--ink-muted); }
+
+  .rest {
+    border-top: 1px solid var(--line); background: var(--surface-sunken);
+    padding: 12px 18px; display: flex; align-items: center; gap: 12px;
+  }
+  .rest .label { color: var(--ink-muted); }
+  .rest .clock { margin-left: auto; font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 24px; font-weight: 500; }
+  .rest .clock.over { color: var(--ok); }
+  .rest-note { padding: 0 18px 14px; background: var(--surface-sunken); font-size: 12px; line-height: 18px; color: var(--ink-muted); }
+
+  /* ---- just logged ---- */
+  .card { background: var(--surface-card); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 16px 18px; margin-bottom: 14px; }
+  .card h2 { font-size: 15px; font-weight: 600; margin: 0 0 2px; }
+  .card .sub { font-size: 12.5px; color: var(--ink-muted); margin-bottom: 12px; }
+  .logged { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .logged .set { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 22px; font-weight: 500; }
+  .logged .vs { font-size: 13px; color: var(--ink-muted); }
+
+  .chip { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; line-height: 14px; font-weight: 600; letter-spacing: 0.04em; padding: 4px 8px; border-radius: var(--r-sm); border: 1px solid transparent; }
+  .c-ok { background: var(--ok-soft); color: var(--ok); }
+  .c-said { background: var(--series-2-soft); color: var(--series-2); }
+  .c-neutral { border-color: var(--line); color: var(--ink-muted); }
+  .c-caution { background: var(--caution-soft); color: var(--caution); }
+  .i { width: 6px; height: 6px; border-radius: 999px; background: currentColor; flex: none; }
+
+  /* ---- session so far ---- */
+  .lift { display: flex; align-items: center; gap: 12px; padding: 11px 0; border-bottom: 1px solid var(--line); }
+  .lift:last-child { border-bottom: 0; }
+  .lift-n { font-weight: 600; min-width: 0; flex: 1; }
+  .lift-n span { display: block; font-size: 12.5px; font-weight: 400; color: var(--ink-muted); }
+  .pips { display: flex; gap: 4px; flex: none; }
+  .pip { width: 9px; height: 9px; border-radius: 2px; background: var(--series-ghost); }
+  .pip.done { background: var(--series-1); }
+  .lift-v { flex: none; font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 13px; color: var(--ink-muted); width: 58px; text-align: right; }
+
+  .cmd { display: flex; align-items: center; gap: 12px; background: var(--surface-sunken); border: 1px solid var(--line); border-radius: var(--r-sm); padding: 9px 12px; margin-top: 8px; min-width: 0; }
+  .cmd code { font-family: var(--font-mono); font-size: 13px; color: var(--ink); min-width: 0; white-space: normal; overflow-wrap: anywhere; }
+  .copy { margin-left: auto; flex: none; font: inherit; font-size: 12px; font-weight: 600; color: var(--accent); background: transparent; border: 1px solid var(--line-strong); border-radius: var(--r-sm); padding: 4px 11px; cursor: pointer; }
+  .copy:hover { background: var(--accent-soft); }
+
+  .foot { font-size: 12.5px; line-height: 19px; color: var(--ink-muted); margin-top: 18px; }
+</style>
+
+<div class="banner">Prototype · example training data, not a real account</div>
+<div class="picker" id="picker">
+  <button type="button" data-v="live" aria-pressed="true">Live</button>
+  <button type="button" data-v="quiet" aria-pressed="false">Agent has gone quiet</button>
+</div>
+
+<div class="wrap">
+
+  <!-- live state strip -->
+  <div class="live" id="liveStrip">
+    <i class="dot"></i>
+    <b id="liveText">Claude is writing this session</b>
+    <span class="ago" id="liveAgo">12s ago</span>
+  </div>
+
+  <div class="head">
+    <h1>Upper A</h1>
+    <span class="meta">started 11:28 · 24 min</span>
+  </div>
+
+  <!-- ---------- the hero: what to do now ---------- -->
+  <section class="next">
+    <div class="next-top">
+      <span class="label">Next set</span>
+      <span class="of">set 3 of 3 · lift 2 of 4</span>
+    </div>
+    <div class="next-name">Bench Press</div>
+    <div class="next-fig"><b>80</b><span>kg × 5</span></div>
+    <div class="next-why">
+      <b>Same as your last two sets.</b> You pressed 80 × 5 twice today at RPE 8, so the plan holds
+      the weight and asks for 5 again.
+    </div>
+
+    <div class="plates">
+      <span class="strip">
+        <span class="bar"></span>
+        <span class="pl p25">25</span>
+        <span class="pl p5">5</span>
+      </span>
+      <span class="side">30 kg a side · 20 kg bar</span>
+    </div>
+
+    <div class="rest">
+      <span class="label">Rest</span>
+      <span class="clock" id="clock">1:12</span>
+    </div>
+    <div class="rest-note" id="restNote">
+      Counting down from 2:00, your plan's rest for this lift. Started when your agent logged set 2
+      at 11:50.
+    </div>
+  </section>
+
+  <!-- ---------- what just landed ---------- -->
+  <section class="card">
+    <h2>Just logged</h2>
+    <div class="sub">Set 2 of Bench Press · 11:50</div>
+    <div class="logged">
+      <span class="set">80 × 5</span>
+      <span class="chip c-ok"><i class="i"></i>Logged</span>
+      <span class="chip c-said"><i class="i"></i>RPE 8, you said</span>
+      <span class="vs">Last time: 77.5 × 5</span>
+    </div>
+  </section>
+
+  <!-- ---------- the session so far ---------- -->
+  <section class="card">
+    <h2>This session</h2>
+    <div class="sub">4 lifts · 5 of 12 working sets</div>
+
+    <div class="lift">
+      <span class="lift-n">Overhead Press<span>done · 45 kg</span></span>
+      <span class="pips"><i class="pip done"></i><i class="pip done"></i><i class="pip done"></i></span>
+      <span class="lift-v">3 of 3</span>
+    </div>
+    <div class="lift">
+      <span class="lift-n">Bench Press<span>in progress · 80 kg</span></span>
+      <span class="pips"><i class="pip done"></i><i class="pip done"></i><i class="pip"></i></span>
+      <span class="lift-v">2 of 3</span>
+    </div>
+    <div class="lift">
+      <span class="lift-n">Barbell Row<span>to come · 62.5 kg</span></span>
+      <span class="pips"><i class="pip"></i><i class="pip"></i><i class="pip"></i></span>
+      <span class="lift-v">0 of 3</span>
+    </div>
+    <div class="lift">
+      <span class="lift-n">Negative Pull-Up<span>to come · bodyweight</span></span>
+      <span class="pips"><i class="pip"></i><i class="pip"></i><i class="pip"></i></span>
+      <span class="lift-v">0 of 3</span>
+    </div>
+  </section>
+
+  <!-- ---------- say it ---------- -->
+  <section class="card">
+    <h2>Say it to your agent</h2>
+    <div class="sub">This page follows. It never logs.</div>
+    <div class="cmd"><code>"Done"</code><button class="copy" type="button">Copy</button></div>
+    <div class="cmd"><code>"That was only 4"</code><button class="copy" type="button">Copy</button></div>
+    <div class="cmd"><code>"Finish the session"</code><button class="copy" type="button">Copy</button></div>
+  </section>
+
+  <div class="foot">
+    Nothing on this screen is a control. AI Lift Coach has no model of its own, so your agent does
+    the logging and the talking — this is the board you glance at between sets.
+  </div>
+</div>
+
+<script>
+  (function () {
+    // Rest countdown, derived from when the last set was logged. Deterministic:
+    // the page shows the remaining time, it does not decide anything.
+    var remaining = 72; // 1:12 at load
+    var clock = document.getElementById("clock");
+    var quiet = false;
+
+    function paint() {
+      var m, s, sign = "";
+      var r = remaining;
+      if (r < 0) { sign = "+"; r = -r; clock.classList.add("over"); }
+      else { clock.classList.remove("over"); }
+      m = Math.floor(r / 60); s = r % 60;
+      clock.textContent = sign + m + ":" + String(s).padStart(2, "0");
+    }
+    paint();
+    setInterval(function () {
+      if (quiet) return;
+      remaining -= 1;
+      if (remaining < -599) remaining = -599;
+      paint();
+    }, 1000);
+
+    var strip = document.getElementById("liveStrip");
+    var text = document.getElementById("liveText");
+    var ago = document.getElementById("liveAgo");
+    var restNote = document.getElementById("restNote");
+
+    function show(v) {
+      quiet = v === "quiet";
+      document.querySelectorAll("#picker button").forEach(function (b) {
+        b.setAttribute("aria-pressed", String(b.dataset.v === v));
+      });
+      if (quiet) {
+        strip.classList.add("quiet");
+        text.textContent = "Nothing from Claude since 11:50";
+        ago.textContent = "14 min";
+        restNote.textContent =
+          "The clock is paused because the last thing we heard was set 2. If you have been lifting, " +
+          "your agent is not writing — check it is still connected before you rely on this session.";
+      } else {
+        strip.classList.remove("quiet");
+        text.textContent = "Claude is writing this session";
+        ago.textContent = "12s ago";
+        restNote.textContent =
+          "Counting down from 2:00, your plan's rest for this lift. Started when your agent logged " +
+          "set 2 at 11:50.";
+      }
+      try { window.scrollTo(0, 0); } catch (e) {}
+    }
+
+    document.getElementById("picker").addEventListener("click", function (e) {
+      var b = e.target.closest("button");
+      if (b) show(b.dataset.v);
+    });
+
+    document.querySelectorAll(".copy").forEach(function (b) {
+      b.addEventListener("click", function () {
+        var el = b.parentElement.querySelector("code");
+        try {
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(el.textContent).then(function () {
+              b.textContent = "Copied";
+              setTimeout(function () { b.textContent = "Copy"; }, 1500);
+            }, function () {
+              var r = document.createRange(); r.selectNodeContents(el);
+              var s = window.getSelection(); s.removeAllRanges(); s.addRange(r);
+            });
+          }
+        } catch (err) { /* selection fallback */ }
+      });
+    });
+  })();
+</script>
