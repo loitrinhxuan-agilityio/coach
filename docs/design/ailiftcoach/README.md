@@ -15,9 +15,12 @@ and those edits do not come back here.
 | Sign in, First sign-in, Sessions, Exercises, Settings | <https://claude.ai/artifact/M6VFZfJ3KbrAQEYM8niibL> |
 | During a workout | <https://claude.ai/artifact/PdVXKt4yykwLJ6HYDZJV5P> |
 | Food and Plan | <https://claude.ai/artifact/L7kUkWviavHxt1x1WirYQv> |
+| Activity | <https://claude.ai/artifact/C7EWkpjXw3tbX9ZjpSvCH3> |
 | Identity options | <https://claude.ai/artifact/NxoJpKmDY7hF5EZBptT5KU> |
 
-All five are private. Nobody else can open them until they are shared from each page's Share menu.
+An artifact is private until it is shared from its own page's Share menu, and nobody else can open
+it before then. Two were shared during the design sessions — the design system and the five-screen
+page — so read each page's Share menu rather than assuming from this table.
 
 ## What is here
 
@@ -29,6 +32,7 @@ prototypes/
   phase1.html            Sign in, First sign-in, Sessions, Exercises, Settings (hash-routed)
   during.html            the live mid-workout board, with its agent-gone-quiet state
   food-and-plan.html     intake against targets, and the plan week with a missed day
+  activity.html          the agent audit trail: who wrote what, when, and what is still undoable
   identity-options.html  the three directions, and why Blueprint won
 tools/
   check-contrast.mjs     every colour pair the system uses, against WCAG, both themes
@@ -38,7 +42,7 @@ system/
   tokens.json            colour (2 themes), type, spacing, radius, shadow
   ux-patterns.md         what the ShredPace captures taught, taken / adapted / refused
   navigation.md          information architecture, routes, page skeleton, responsive reduction
-  components/            seven components, each a README plus a live preview, and the Cover
+  components/            eleven components, each a README plus a live preview, and the Cover
 ```
 
 Open any prototype straight from disk — they are self-contained, with no build step and no
@@ -70,7 +74,7 @@ which WCAG exempts, and three hairline tokens are decorative separators that ide
 and so fall outside 1.4.11. Those rules are deliberately quiet — raising them to 3:1 would read as
 a border and rebuild the boxes this system avoids.
 
-**Both themes, every screen: 28 renders, 0 text elements below contrast.**
+**Both themes, every screen: 34 renders, 0 text elements below contrast.**
 
 ```bash
 node tools/audit-rendered.mjs
@@ -88,6 +92,12 @@ invisible**. The cause is the third instance of the same root problem — a stan
 table does not inherit colour from its ancestors**. The cells fell back to the page theme while
 their panel kept its own background. The doctype cannot be added, because the published file must
 not carry one, so those cells now set colour explicitly.
+
+It caught a second one on Activity: the "past 7 days" marker on a write too old to undo was set in
+`ink-faint`, which the system reserves for placeholder and disabled text. That marker is content —
+it is the page telling you a write can no longer be reversed — so it is `ink-muted` now. The
+distinction it carries lives in the wording (`undo until 27 Nov` against `past 7 days`), which is
+what the system requires anyway: colour alone never encodes a state.
 
 **Phone width: every screen rendered at 390px, no horizontal overflow.** Three defects surfaced
 only by rendering the files rather than the artifacts, and all three were invisible in the
