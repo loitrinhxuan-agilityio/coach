@@ -12,7 +12,7 @@
 // Exits non-zero on any failure.
 
 import { chromium } from 'playwright-core';
-import { readdirSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 
 const CHROME = process.env.CHROME_BIN
@@ -23,16 +23,15 @@ const argOf = (f, d) => { const i = process.argv.indexOf(f); return i === -1 ? d
 const schemes = argOf('--schemes', 'light,dark').split(',').filter(Boolean);
 
 // Every view, including the hash-routed ones, so nothing hides behind a picker.
+// The hashes are read out of each file's own `data-view` attributes rather than
+// listed here, so a new screen is audited the moment it exists.
 const VIEWS = [];
 for (const f of readdirSync(dir).filter(x => x.endsWith('.html')).sort()) {
   const url = 'file://' + path.join(dir, f);
-  if (f === 'screens.html') {
-    for (const h of ['progress', 'goals', 'body', 'empty', 'first-run']) VIEWS.push([`${f}#${h}`, `${url}#${h}`]);
-  } else if (f === 'phase1.html') {
-    for (const h of ['signin', 'first-signin', 'sessions', 'exercises', 'settings']) VIEWS.push([`${f}#${h}`, `${url}#${h}`]);
-  } else {
-    VIEWS.push([f, url]);
-  }
+  const src = readFileSync(path.join(dir, f), 'utf8');
+  const hashes = [...new Set([...src.matchAll(/\bdata-view="([^"]+)"/g)].map(m => m[1]))];
+  if (hashes.length > 1) for (const h of hashes) VIEWS.push([`${f}#${h}`, `${url}#${h}`]);
+  else VIEWS.push([f, url]);
 }
 
 const PROBE = () => {

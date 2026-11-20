@@ -14,6 +14,7 @@ and those edits do not come back here.
 | Progress, Goals, Body, empty, first run | <https://claude.ai/artifact/MbdK4Ea9H8So5fiihsizV7> |
 | Sign in, First sign-in, Sessions, Exercises, Settings | <https://claude.ai/artifact/M6VFZfJ3KbrAQEYM8niibL> |
 | During a workout | <https://claude.ai/artifact/PdVXKt4yykwLJ6HYDZJV5P> |
+| Food and Plan | <https://claude.ai/artifact/L7kUkWviavHxt1x1WirYQv> |
 | Identity options | <https://claude.ai/artifact/NxoJpKmDY7hF5EZBptT5KU> |
 
 All five are private. Nobody else can open them until they are shared from each page's Share menu.
@@ -27,6 +28,7 @@ prototypes/
   screens.html           Progress, Goals, Body, not-enough-data, first run (hash-routed)
   phase1.html            Sign in, First sign-in, Sessions, Exercises, Settings (hash-routed)
   during.html            the live mid-workout board, with its agent-gone-quiet state
+  food-and-plan.html     intake against targets, and the plan week with a missed day
   identity-options.html  the three directions, and why Blueprint won
 tools/
   check-contrast.mjs     every colour pair the system uses, against WCAG, both themes
