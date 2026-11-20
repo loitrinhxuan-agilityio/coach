@@ -1,0 +1,68 @@
+<!-- @dsCard group="Explainability" height=230 subtitle="Logged, You said, Computed, Estimated — the four sources a value can have" -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Spline+Sans:wght@400;500;600&family=Spline+Sans+Mono:wght@500&display=swap">
+<style>
+  .wrap {
+    font-family: var(--font-ui, sans-serif);
+    background: var(--surface-page);
+    color: var(--ink);
+    padding: var(--space-4, 16px);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4, 16px);
+  }
+  .row { display: flex; flex-wrap: wrap; gap: var(--space-2, 8px); }
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    line-height: 14px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    padding: 4px var(--space-2, 8px);
+    border-radius: var(--radius-sm, 3px);
+    border: 1px solid transparent;
+  }
+  .chip i { width: 6px; height: 6px; border-radius: var(--radius-round, 999px); background: currentColor; }
+  .logged { background: var(--state-ok-soft); color: var(--state-ok); }
+  .said { background: var(--series-2-soft); color: var(--series-2); }
+  .computed { border-color: var(--line); color: var(--ink-muted); }
+  .estimated { background: var(--state-caution-soft); color: var(--state-caution); }
+
+  .card {
+    background: var(--surface-card);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg, 10px);
+    padding: var(--space-4, 16px);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3, 12px);
+  }
+  .pair { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3, 12px); }
+  .pair-label { font-size: 14px; color: var(--ink-muted); }
+  .pair-value { font-size: 14px; font-weight: 600; color: var(--ink); margin-left: auto; }
+  .note { font-size: 12.5px; line-height: 18px; color: var(--ink-muted); }
+  .mono { font-family: var(--font-mono, monospace); font-variant-numeric: tabular-nums; }
+</style>
+<div class="wrap">
+  <div class="row">
+    <span class="chip logged"><i></i>Logged</span>
+    <span class="chip said"><i></i>You said</span>
+    <span class="chip computed"><i></i>Computed</span>
+    <span class="chip estimated"><i></i>Estimated</span>
+  </div>
+
+  <div class="card">
+    <div class="pair">
+      <span class="pair-label">Effort</span>
+      <span class="pair-value">Hard</span>
+      <span class="chip said"><i></i>You said</span>
+    </div>
+    <div class="pair">
+      <span class="pair-label">e1RM</span>
+      <span class="pair-value mono">117 kg</span>
+      <span class="chip computed"><i></i>Computed</span>
+    </div>
+    <div class="note">e1RM from 100&nbsp;kg × 5, Epley. Told to your agent at 12:05.</div>
+  </div>
+</div>

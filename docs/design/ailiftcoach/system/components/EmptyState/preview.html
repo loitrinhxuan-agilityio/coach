@@ -1,0 +1,54 @@
+<!-- @dsCard group="Explainability" height=300 subtitle="Names the threshold, where you stand against it, and the sentence that fills it" -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Spline+Sans:wght@400;500;600&family=Spline+Sans+Mono:wght@500&display=swap">
+<style>
+  .wrap { font-family: var(--font-ui, sans-serif); background: var(--surface-page); color: var(--ink); padding: var(--space-4, 16px); }
+  .card { background: var(--surface-card); border: 1px solid var(--line); border-radius: var(--radius-lg, 10px); padding: var(--space-5, 24px); }
+  h3 { font-size: 19px; line-height: 26px; font-weight: 600; margin: 0 0 2px; }
+  .sub { font-size: 12.5px; color: var(--ink-muted); margin-bottom: 16px; }
+  .empty { border: 1px dashed var(--line-strong); border-radius: var(--radius-lg, 10px); padding: var(--space-5, 24px); }
+  .empty h4 { font-size: 16px; font-weight: 600; margin: 0 0 6px; }
+  .empty p { margin: 0 0 12px; color: var(--ink-muted); font-size: 14px; line-height: 21px; max-width: 62ch; }
+  .empty p b { color: var(--ink); }
+  .cmd { display: flex; align-items: center; gap: 12px; background: var(--surface-sunken); border: 1px solid var(--line); border-radius: var(--radius-sm, 3px); padding: 8px 12px; min-width: 0; }
+  .cmd code { font-family: var(--font-mono, monospace); font-size: 12.5px; color: var(--ink); min-width: 0; white-space: normal; overflow-wrap: anywhere; }
+  .copy { margin-left: auto; flex: none; font: inherit; font-size: 12px; font-weight: 600; color: var(--accent); background: transparent; border: 1px solid var(--line-strong); border-radius: var(--radius-sm, 3px); padding: 3px 10px; cursor: pointer; }
+  .copy:hover { background: var(--accent-soft); }
+  .note { font-size: 12.5px; line-height: 19px; color: var(--ink-muted); margin-top: 14px; }
+</style>
+<div class="wrap">
+  <div class="card">
+    <h3>Estimated 1RM</h3>
+    <div class="sub">Top set of each session, Epley, kg</div>
+    <div class="empty">
+      <h4>The chart starts in week two</h4>
+      <p>A trend line needs at least two weeks of sessions, so there is nothing honest to draw yet.
+      One week gives a single point, and a single point is not a direction.</p>
+      <p><b>You have 3 sessions in week 1.</b> Train once more after Monday and this fills in on its
+      own — nothing to set up.</p>
+      <div class="cmd">
+        <code>"Log a pull workout: barbell row 62.5 × 8, 8, 8"</code>
+        <button class="copy" type="button">Copy</button>
+      </div>
+    </div>
+    <div class="note">Nothing here is a paywall. It is the threshold the coaching rules need before
+    a conclusion would be sound.</div>
+  </div>
+</div>
+<script>
+  document.querySelectorAll(".copy").forEach(function (b) {
+    b.addEventListener("click", function () {
+      var el = b.parentElement.querySelector("code");
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(el.textContent).then(function () {
+            b.textContent = "Copied";
+            setTimeout(function () { b.textContent = "Copy"; }, 1500);
+          }, function () {
+            var r = document.createRange(); r.selectNodeContents(el);
+            var s = window.getSelection(); s.removeAllRanges(); s.addRange(r);
+          });
+        }
+      } catch (e) { /* selection fallback */ }
+    });
+  });
+</script>

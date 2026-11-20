@@ -1,0 +1,649 @@
+<title>AI Lift Coach Phase 1</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Spline+Sans:wght@400;500;600&family=Spline+Sans+Mono:wght@500&display=swap">
+<style>
+  /* Layout: auth screens are a centred column with no rail; the rest use the
+     standard 240px rail and content column. A picker swaps the view. */
+  :root {
+    --surface-page: #eef2f6; --surface-card: #ffffff; --surface-sunken: #e2e9f0; --surface-raised: #ffffff;
+    --line: #ccd8e4; --line-strong: #a8bcd0;
+    --ink: #10243a; --ink-muted: #4e6782; --ink-faint: #7b92aa;
+    --accent: #0b6e8f; --accent-ink: #ffffff; --accent-soft: #d9edf5;
+    --ok: #1b6b45; --ok-soft: #dcefe4;
+    --caution: #86601a; --caution-soft: #f7e9cf;
+    --alert: #a8301f; --alert-soft: #f8e2de;
+    --series-1: #0b6e8f; --series-2: #6b4bbd; --series-2-soft: #ece4fa; --series-ghost: #b7c6d6;
+    --font-ui: "Spline Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --font-mono: "Spline Sans Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    --r-sm: 3px; --r-md: 6px; --r-lg: 10px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --surface-page: #0a1622; --surface-card: #102333; --surface-sunken: #07111a; --surface-raised: #162c3f;
+      --line: #1d3447; --line-strong: #2b4a63;
+      --ink: #dcebf7; --ink-muted: #8aa6bf; --ink-faint: #64809a;
+      --accent: #4fc3e8; --accent-ink: #06161f; --accent-soft: #10303d;
+      --ok: #52c08a; --ok-soft: #102a1e;
+      --caution: #dba93f; --caution-soft: #2b2208;
+      --alert: #ff8b78; --alert-soft: #2e1512;
+      --series-1: #4fc3e8; --series-2: #a98bf0; --series-2-soft: #241a3a; --series-ghost: #27404f;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --surface-page: #0a1622; --surface-card: #102333; --surface-sunken: #07111a; --surface-raised: #162c3f;
+    --line: #1d3447; --line-strong: #2b4a63;
+    --ink: #dcebf7; --ink-muted: #8aa6bf; --ink-faint: #64809a;
+    --accent: #4fc3e8; --accent-ink: #06161f; --accent-soft: #10303d;
+    --ok: #52c08a; --ok-soft: #102a1e;
+    --caution: #dba93f; --caution-soft: #2b2208;
+    --alert: #ff8b78; --alert-soft: #2e1512;
+    --series-1: #4fc3e8; --series-2: #a98bf0; --series-2-soft: #241a3a; --series-ghost: #27404f;
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  /* Supplied by the artifact skeleton; needed when the file is opened directly,
+     because a class display rule outranks the browser default for [hidden]. */
+  [hidden] { display: none !important; }
+  body { margin: 0; background: var(--surface-page); color: var(--ink); font-family: var(--font-ui); font-size: 14px; line-height: 21px; -webkit-font-smoothing: antialiased; }
+  .mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+  .label { font-size: 11px; line-height: 14px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-muted); }
+  a { color: var(--accent); }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .banner { background: var(--caution-soft); color: var(--caution); font-size: 12.5px; font-weight: 600; text-align: center; padding: 6px 16px; border-bottom: 1px solid var(--line); }
+  .picker { display: flex; gap: 6px; flex-wrap: wrap; padding: 10px max(16px, env(safe-area-inset-left, 0px)); border-bottom: 1px solid var(--line); background: var(--surface-card); }
+  .picker button { font: inherit; font-size: 13px; font-weight: 600; color: var(--ink-muted); background: transparent; border: 1px solid var(--line); border-radius: var(--r-md); padding: 5px 12px; cursor: pointer; }
+  .picker button:hover { background: var(--surface-sunken); color: var(--ink); }
+  .picker button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+
+  .shell { display: flex; align-items: flex-start; }
+  .rail { width: 240px; flex: none; border-right: 1px solid var(--line); background: var(--surface-card); min-height: 100vh; padding: 20px 12px 16px; display: flex; flex-direction: column; gap: 4px; position: sticky; top: 0; }
+  .mark { font-size: 16px; font-weight: 600; letter-spacing: -0.01em; padding: 4px 10px 14px; }
+  .mark span { color: var(--ink-muted); font-weight: 500; }
+  .nav-row { display: flex; align-items: center; gap: 12px; padding: 8px 10px; border-radius: var(--r-md); color: var(--ink-muted); text-decoration: none; min-height: 36px; font-size: 14px; }
+  .nav-row[aria-current="page"] { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+  .nav-row svg { width: 18px; height: 18px; flex: none; }
+  .nav-rule { height: 1px; background: var(--line); margin: 8px 0; }
+  .grow { flex: 1 1 auto; min-height: 16px; }
+  .agent { border: 1px solid var(--line); border-radius: var(--r-md); padding: 10px 12px; display: block; text-decoration: none; }
+  .agent-top { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: var(--ink); }
+  .dot { width: 7px; height: 7px; border-radius: 999px; background: var(--ok); flex: none; }
+  .agent-sub { font-size: 12px; line-height: 16px; color: var(--ink-muted); margin-top: 2px; }
+
+  .main { flex: 1 1 auto; min-width: 0; padding-left: max(32px, env(safe-area-inset-left, 0px)); padding-right: max(32px, env(safe-area-inset-right, 0px)); padding-block: 36px 64px; max-width: 1320px; }
+  h1 { font-size: 40px; line-height: 44px; font-weight: 600; letter-spacing: -0.02em; margin: 4px 0 24px; text-wrap: balance; }
+
+  .tiles { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 16px; margin-bottom: 24px; }
+  .tile { background: var(--surface-card); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 16px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+  .fig { display: flex; align-items: baseline; gap: 4px; }
+  .fig b { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 30px; line-height: 34px; font-weight: 500; }
+  .fig span { font-family: var(--font-mono); font-size: 14px; font-weight: 500; color: var(--ink-muted); }
+  .cap { font-size: 12.5px; line-height: 18px; color: var(--ink-muted); min-height: 18px; }
+
+  .cols { display: grid; grid-template-columns: minmax(0,1fr) 360px; gap: 16px; align-items: start; }
+  .card { background: var(--surface-card); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 20px; margin-bottom: 16px; }
+  .card.flush { padding: 0; overflow: hidden; }
+  .card h2 { font-size: 19px; line-height: 26px; font-weight: 600; margin: 0 0 4px; }
+  .card .sub { font-size: 12.5px; color: var(--ink-muted); margin-bottom: 16px; }
+  .card.flush h2, .card.flush .sub { margin: 0; }
+  .card-head { padding: 18px 20px; border-bottom: 1px solid var(--line); }
+
+  .chip, .pill { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; line-height: 14px; font-weight: 600; letter-spacing: 0.04em; padding: 4px 8px; border-radius: var(--r-sm); border: 1px solid transparent; }
+  .pill { font-size: 12px; line-height: 16px; padding: 4px 10px; letter-spacing: 0; }
+  .c-ok { background: var(--ok-soft); color: var(--ok); }
+  .c-said { background: var(--series-2-soft); color: var(--series-2); }
+  .c-neutral { border-color: var(--line); color: var(--ink-muted); }
+  .c-caution { background: var(--caution-soft); color: var(--caution); }
+  .c-alert { background: var(--alert-soft); color: var(--alert); }
+  .i { width: 6px; height: 6px; border-radius: 999px; background: currentColor; flex: none; }
+
+  .cmd { display: flex; align-items: center; gap: 12px; background: var(--surface-sunken); border: 1px solid var(--line); border-radius: var(--r-sm); padding: 8px 12px; margin-top: 8px; min-width: 0; }
+  .cmd code { font-family: var(--font-mono); font-size: 12.5px; color: var(--ink); min-width: 0; white-space: normal; overflow-wrap: anywhere; }
+  .copy { margin-left: auto; flex: none; font: inherit; font-size: 12px; font-weight: 600; color: var(--accent); background: transparent; border: 1px solid var(--line-strong); border-radius: var(--r-sm); padding: 3px 10px; cursor: pointer; }
+  .copy:hover { background: var(--accent-soft); }
+
+  /* ---------- auth ---------- */
+  .auth { min-height: 100vh; display: flex; align-items: flex-start; justify-content: center; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 64px; }
+  .auth-col { width: 100%; max-width: 420px; }
+  .auth-mark { font-size: 18px; font-weight: 600; letter-spacing: -0.01em; margin-bottom: 36px; }
+  .auth-mark span { color: var(--ink-muted); font-weight: 500; }
+  .auth h1 { font-size: 30px; line-height: 36px; margin: 0 0 8px; }
+  .auth-lede { color: var(--ink-muted); margin: 0 0 26px; }
+  .field { display: block; margin-bottom: 14px; }
+  .field span { display: block; font-size: 12.5px; font-weight: 600; margin-bottom: 6px; }
+  .field input { width: 100%; font: inherit; color: var(--ink); background: var(--surface-card); border: 1px solid var(--line-strong); border-radius: var(--r-sm); padding: 10px 12px; }
+  .field input::placeholder { color: var(--ink-faint); }
+  .field input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; border-color: var(--accent); }
+  .btn { width: 100%; font: inherit; font-weight: 600; cursor: pointer; border-radius: var(--r-md); padding: 11px 16px; border: 1px solid transparent; }
+  .btn-primary { background: var(--accent); color: var(--accent-ink); }
+  .btn-primary:hover { filter: brightness(1.08); }
+  .btn-secondary { background: var(--surface-card); color: var(--ink); border-color: var(--line-strong); display: flex; align-items: center; justify-content: center; gap: 10px; }
+  .btn-secondary:hover { background: var(--surface-sunken); }
+  .or { display: flex; align-items: center; gap: 12px; margin: 20px 0; color: var(--ink-muted); font-size: 12.5px; }
+  .or::before, .or::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+  .auth-foot { margin-top: 26px; padding-top: 18px; border-top: 1px solid var(--line); font-size: 12.5px; line-height: 19px; color: var(--ink-muted); }
+  .auth-alt { margin-top: 16px; font-size: 13px; color: var(--ink-muted); }
+
+  .steps { display: flex; flex-direction: column; }
+  .step { display: flex; gap: 14px; padding: 16px 0; border-bottom: 1px solid var(--line); }
+  .step:last-child { border-bottom: 0; }
+  .step-n { width: 24px; height: 24px; flex: none; border-radius: var(--r-sm); background: var(--surface-sunken); color: var(--ink-muted); font-family: var(--font-mono); font-size: 12px; display: flex; align-items: center; justify-content: center; }
+  .step-n.done { background: var(--ok-soft); color: var(--ok); }
+  .step-b { display: block; min-width: 0; flex: 1; }
+  .step-t { display: block; font-weight: 600; margin-bottom: 2px; }
+  .step-d { display: block; font-size: 13px; color: var(--ink-muted); }
+
+  /* ---------- lists ---------- */
+  .filters { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; }
+  .filters button { font: inherit; font-size: 13px; color: var(--ink-muted); background: var(--surface-card); border: 1px solid var(--line); border-radius: var(--r-sm); padding: 5px 12px; cursor: pointer; }
+  .filters button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); font-weight: 600; }
+
+  .wk { padding: 10px 20px; background: var(--surface-sunken); border-bottom: 1px solid var(--line); display: flex; align-items: baseline; gap: 10px; }
+  .wk b { font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-muted); }
+  .wk span { margin-left: auto; font-family: var(--font-mono); font-size: 12px; color: var(--ink-muted); }
+
+  .srow { display: flex; align-items: center; gap: 14px; padding: 14px 20px; border-bottom: 1px solid var(--line); text-decoration: none; color: inherit; }
+  .srow:last-child { border-bottom: 0; }
+  .srow:hover { background: var(--surface-sunken); }
+  .sdate { width: 62px; flex: none; font-family: var(--font-mono); font-size: 12.5px; color: var(--ink-muted); }
+  .sbody { min-width: 0; flex: 1; }
+  .sname { font-weight: 600; }
+  .smeta { font-size: 12.5px; color: var(--ink-muted); }
+  .snums { flex: none; display: flex; gap: 18px; font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 13px; color: var(--ink-muted); }
+  .snums b { color: var(--ink); font-weight: 500; }
+
+  table.t { width: 100%; border-collapse: collapse; }
+  table.t th { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-muted); text-align: left; padding: 9px 20px; background: var(--surface-sunken); border-bottom: 1px solid var(--line-strong); white-space: nowrap; }
+  table.t td { padding: 12px 20px; border-bottom: 1px solid var(--line); font-size: 14px; }
+  table.t td.n { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-weight: 500; text-align: right; white-space: nowrap; }
+  table.t tr:last-child td { border-bottom: 0; }
+  .scroll { overflow-x: auto; }
+
+  /* ---------- settings ---------- */
+  .group-h { font-size: 15px; font-weight: 600; margin: 26px 0 10px; }
+  .group-h:first-of-type { margin-top: 0; }
+  .group-note { font-size: 12.5px; line-height: 19px; color: var(--ink-muted); margin: 0 0 12px; max-width: 70ch; }
+  .srow2 { display: flex; align-items: center; gap: 14px; padding: 14px 20px; border-bottom: 1px solid var(--line); }
+  .srow2:last-child { border-bottom: 0; }
+  .srow2 .t { display: block; font-weight: 600; }
+  .srow2 .d { display: block; font-size: 12.5px; color: var(--ink-muted); }
+  .srow2 .v { margin-left: auto; flex: none; color: var(--ink-muted); font-size: 13px; text-align: right; }
+  .srow2 .v.mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+  .chev { color: var(--ink-faint); flex: none; }
+  .keyrow { display: flex; align-items: center; gap: 12px; padding: 12px 20px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+  .keyrow:last-child { border-bottom: 0; }
+  .keyrow code { font-family: var(--font-mono); font-size: 12.5px; }
+  .revoke { font: inherit; font-size: 12px; font-weight: 600; color: var(--alert); background: transparent; border: 1px solid var(--line-strong); border-radius: var(--r-sm); padding: 3px 10px; cursor: pointer; }
+  .revoke:hover { background: var(--alert-soft); border-color: var(--alert); }
+
+  @media (max-width: 1100px) { .cols { grid-template-columns: minmax(0,1fr); } }
+  @media (max-width: 900px) {
+    .rail { display: none; }
+    .main { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+    .tiles { grid-template-columns: repeat(2, minmax(0,1fr)); }
+    h1 { font-size: 30px; line-height: 34px; }
+    table.t th, table.t td { padding-left: 12px; padding-right: 12px; }
+    .srow, .srow2, .keyrow, .wk { padding-left: 12px; padding-right: 12px; }
+    .snums { gap: 12px; }
+    .srow { flex-wrap: wrap; }
+  }
+</style>
+
+<div class="banner">Prototype · example training data, not a real account</div>
+<div class="picker" id="picker">
+  <button type="button" data-v="signin" aria-pressed="true">Sign in</button>
+  <button type="button" data-v="first-signin" aria-pressed="false">First sign-in</button>
+  <button type="button" data-v="sessions" aria-pressed="false">Sessions</button>
+  <button type="button" data-v="exercises" aria-pressed="false">Exercises</button>
+  <button type="button" data-v="settings" aria-pressed="false">Settings</button>
+</div>
+
+<!-- ============ SIGN IN ============ -->
+<section data-view="signin">
+  <div class="auth">
+    <div class="auth-col">
+      <div class="auth-mark">AI Lift <span>Coach</span></div>
+      <h1>Sign in</h1>
+      <p class="auth-lede">Your training lives here. Your agent writes to it.</p>
+
+      <label class="field" for="email">
+        <span>Email</span>
+        <input id="email" type="email" inputmode="email" autocomplete="email" placeholder="you@example.com">
+      </label>
+      <button class="btn btn-primary" type="button">Email me a sign-in link</button>
+
+      <div class="or">or</div>
+
+      <button class="btn btn-secondary" type="button">
+        <svg width="16" height="16" viewBox="0 0 18 18" aria-hidden="true"><path fill="#4285F4" d="M17.6 9.2c0-.6-.1-1.3-.2-1.8H9v3.5h4.8a4.1 4.1 0 0 1-1.8 2.7v2.2h2.9c1.7-1.6 2.7-3.9 2.7-6.6z"/><path fill="#34A853" d="M9 18c2.4 0 4.5-.8 6-2.2l-2.9-2.2a5.4 5.4 0 0 1-8-2.8H1.1v2.3A9 9 0 0 0 9 18z"/><path fill="#FBBC05" d="M4 10.7a5.4 5.4 0 0 1 0-3.4V5H1.1a9 9 0 0 0 0 8z"/><path fill="#EA4335" d="M9 3.6c1.3 0 2.5.4 3.4 1.3l2.6-2.6A9 9 0 0 0 1.1 5L4 7.3A5.4 5.4 0 0 1 9 3.6z"/></svg>
+        Continue with Google
+      </button>
+
+      <div class="auth-alt">No account yet? <a href="#first-signin">Create one</a> — it takes about a minute.</div>
+
+      <div class="auth-foot">
+        AI Lift Coach has no model of its own. It stores your training, applies the coaching rules
+        and shows the result. The logging and the conversation happen in your own agent.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FIRST SIGN-IN ============ -->
+<section data-view="first-signin" hidden>
+  <div class="auth">
+    <div class="auth-col" style="max-width:520px">
+      <div class="auth-mark">AI Lift <span>Coach</span></div>
+      <h1>You're in</h1>
+      <p class="auth-lede">One thing left: give an agent a key, so it can write your training here.</p>
+
+      <div class="card" style="margin-bottom:16px">
+        <div class="steps">
+          <div class="step">
+            <span class="step-n done">✓</span>
+            <span class="step-b">
+              <span class="step-t">Account created</span>
+              <span class="step-d">Signed in with Google.</span>
+            </span>
+          </div>
+          <div class="step">
+            <span class="step-n">2</span>
+            <span class="step-b">
+              <span class="step-t">Copy your key</span>
+              <span class="step-d">Shown once. You can make another any time, and revoke this one.</span>
+              <span class="cmd"><code>alc_live_8s2mDq4xRvK0pLnT••••7f2a</code><button class="copy" type="button" data-key="1">Copy</button></span>
+            </span>
+          </div>
+          <div class="step">
+            <span class="step-n">3</span>
+            <span class="step-b">
+              <span class="step-t">Give it to your agent</span>
+              <span class="step-d">Add the MCP server, or paste the key and point it at the API docs.</span>
+              <span class="cmd"><code>https://ailiftcoach.com/mcp</code><button class="copy" type="button">Copy</button></span>
+            </span>
+          </div>
+          <div class="step">
+            <span class="step-n">4</span>
+            <span class="step-b">
+              <span class="step-t">Tell it what you did</span>
+              <span class="step-d">In your own words. The first set you send fills this dashboard.</span>
+              <span class="cmd"><code>"Squat 100 kg for 5, 5, 5"</code><button class="copy" type="button">Copy</button></span>
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <button class="btn btn-primary" type="button">Go to Today</button>
+      <div class="auth-alt" style="text-align:center">
+        <a href="#sessions">Skip for now</a> — the dashboard works without an agent, but it will stay empty.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ RAIL VIEWS ============ -->
+<div class="shell" id="shell" hidden>
+  <nav class="rail" aria-label="Main">
+    <div class="mark">AI Lift <span>Coach</span></div>
+    <a class="nav-row" href="#sessions"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M4 11l8-6 8 6v8a1 1 0 0 1-1 1h-5v-6h-4v6H5a1 1 0 0 1-1-1z"/></svg>Today</a>
+    <a class="nav-row" data-nav="sessions exercises" href="#sessions"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M4 9v6M20 9v6M7 6v12M17 6v12M7 12h10"/></svg>Training</a>
+    <a class="nav-row" href="#sessions"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 18l5-5 3 3 7-8"/><path d="M15 8h5v5"/></svg>Progress</a>
+    <a class="nav-row" href="#sessions"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5.5" r="2.2"/><path d="M12 8v7M8 10h8M9.5 20l2.5-5 2.5 5"/></svg>Body</a>
+    <a class="nav-row" href="#sessions"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4v16M5 4v4a2 2 0 0 0 4 0V4"/><path d="M16 4c-1.5 2-1.5 6 0 8v8"/></svg>Food</a>
+    <a class="nav-row" href="#sessions"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="7.5"/><circle cx="12" cy="12" r="3.2"/></svg>Goals</a>
+    <div class="nav-rule"></div>
+    <a class="nav-row" data-nav="settings" href="#settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 3v2.5M12 18.5V21M21 12h-2.5M5.5 12H3M18.4 5.6l-1.8 1.8M7.4 16.6l-1.8 1.8M18.4 18.4l-1.8-1.8M7.4 7.4L5.6 5.6"/></svg>Settings</a>
+    <div class="grow"></div>
+    <a class="agent" href="#settings">
+      <span class="agent-top"><i class="dot"></i>Claude · Connected</span>
+      <span class="agent-sub">Last wrote 16:07 · 4 sets yesterday</span>
+    </a>
+  </nav>
+
+  <main class="main">
+
+    <!-- ============ SESSIONS ============ -->
+    <section data-view="sessions" hidden>
+      <div class="label">Training · all time</div>
+      <h1>Sessions</h1>
+
+      <div class="tiles">
+        <div class="tile"><div class="label">Sessions</div><div class="fig"><b>34</b><span>logged</span></div><div class="cap">since 1 Sep</div></div>
+        <div class="tile"><div class="label">Average</div><div class="fig"><b>3.1</b><span>a week</span></div><div class="cap">plan asks for 4</div></div>
+        <div class="tile"><div class="label">Tonnage</div><div class="fig"><b>68.4</b><span>k kg</span></div><div class="cap">strength only</div></div>
+        <div class="tile"><div class="label">Longest run</div><div class="fig"><b>5</b><span>weeks</span></div><div class="cap">on plan, to 9 Nov</div></div>
+      </div>
+
+      <div class="filters">
+        <button type="button" aria-pressed="true">All</button>
+        <button type="button" aria-pressed="false">Strength</button>
+        <button type="button" aria-pressed="false">Cardio</button>
+        <button type="button" aria-pressed="false">This month</button>
+      </div>
+
+      <section class="card flush">
+        <div class="wk"><b>This week · 17–23 Nov</b><span>3 of 4 planned</span></div>
+
+        <a class="srow" href="#sessions">
+          <span class="sdate">Wed 18</span>
+          <span class="sbody">
+            <span class="sname">Leg workout</span>
+            <span class="smeta">Legs · Upper/Lower Muscle Builder · 2 lifts</span>
+          </span>
+          <span class="snums"><span><b>31</b> min</span><span><b>4</b> sets</span><span><b>2.1</b>k kg</span></span>
+        </a>
+
+        <a class="srow" href="#sessions">
+          <span class="sdate">Wed 18</span>
+          <span class="sbody">
+            <span class="sname">5 km run</span>
+            <span class="smeta">Run · 5:32 /km</span>
+          </span>
+          <span class="snums"><span><b>28</b> min</span><span><b>5.0</b> km</span><span><b>372</b> kcal</span></span>
+        </a>
+
+        <a class="srow" href="#sessions">
+          <span class="sdate">Tue 17</span>
+          <span class="sbody">
+            <span class="sname">Full Body A</span>
+            <span class="smeta">Started, no sets logged <span class="chip c-neutral" style="margin-left:6px"><i class="i"></i>Empty</span></span>
+          </span>
+          <span class="snums"><span><b>1</b> min</span><span><b>0</b> sets</span><span>—</span></span>
+        </a>
+
+        <div class="wk"><b>Last week · 10–16 Nov</b><span>4 of 4 planned</span></div>
+
+        <a class="srow" href="#sessions">
+          <span class="sdate">Fri 14</span>
+          <span class="sbody">
+            <span class="sname">Upper B</span>
+            <span class="smeta">Upper · Upper/Lower Muscle Builder · 4 lifts</span>
+          </span>
+          <span class="snums"><span><b>47</b> min</span><span><b>12</b> sets</span><span><b>4.8</b>k kg</span></span>
+        </a>
+
+        <a class="srow" href="#sessions">
+          <span class="sdate">Wed 12</span>
+          <span class="sbody">
+            <span class="sname">Lower B</span>
+            <span class="smeta">Legs · 3 lifts <span class="chip c-ok" style="margin-left:6px"><i class="i"></i>New best</span></span>
+          </span>
+          <span class="snums"><span><b>52</b> min</span><span><b>11</b> sets</span><span><b>6.2</b>k kg</span></span>
+        </a>
+
+        <a class="srow" href="#sessions">
+          <span class="sdate">Mon 10</span>
+          <span class="sbody">
+            <span class="sname">Upper A</span>
+            <span class="smeta">Upper · Upper/Lower Muscle Builder · 4 lifts</span>
+          </span>
+          <span class="snums"><span><b>44</b> min</span><span><b>12</b> sets</span><span><b>4.5</b>k kg</span></span>
+        </a>
+      </section>
+
+      <section class="card">
+        <h2>Correct a session</h2>
+        <div class="sub">The dashboard reads. Your agent writes.</div>
+        <div class="cmd"><code>"Delete the Full Body A session on Tue 17 Nov"</code><button class="copy" type="button">Copy</button></div>
+        <div class="cmd"><code>"Log a pull workout for Thu 20 Nov: barbell row 62.5 × 8, 8, 8"</code><button class="copy" type="button">Copy</button></div>
+      </section>
+    </section>
+
+    <!-- ============ EXERCISES ============ -->
+    <section data-view="exercises" hidden>
+      <div class="label">Training · your library</div>
+      <h1>Exercises</h1>
+
+      <div class="tiles">
+        <div class="tile"><div class="label">In your library</div><div class="fig"><b>23</b><span>lifts</span></div><div class="cap">4 you added</div></div>
+        <div class="tile"><div class="label">Trained this month</div><div class="fig"><b>11</b><span>lifts</span></div><div class="cap"></div></div>
+        <div class="tile"><div class="label">Best e1RM</div><div class="fig"><b>117</b><span>kg</span></div><div class="cap">Back Squat</div></div>
+        <div class="tile"><div class="label">Untouched</div><div class="fig"><b>6</b><span>lifts</span></div><div class="cap">90 days or more</div></div>
+      </div>
+
+      <div class="filters">
+        <button type="button" aria-pressed="true">All</button>
+        <button type="button" aria-pressed="false">Legs</button>
+        <button type="button" aria-pressed="false">Push</button>
+        <button type="button" aria-pressed="false">Pull</button>
+        <button type="button" aria-pressed="false">Yours</button>
+      </div>
+
+      <section class="card flush">
+        <div class="scroll">
+          <table class="t">
+            <thead>
+              <tr>
+                <th>Exercise</th>
+                <th>Muscle</th>
+                <th style="text-align:right">Last done</th>
+                <th style="text-align:right">Best set</th>
+                <th style="text-align:right">e1RM</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><b>Back Squat</b><div class="smeta">barbell</div></td>
+                <td>quads</td><td class="n">2 days ago</td><td class="n">100 × 5</td><td class="n">117</td>
+              </tr>
+              <tr>
+                <td><b>Bench Press</b><div class="smeta">barbell</div></td>
+                <td>chest</td><td class="n">5 days ago</td><td class="n">80 × 5</td><td class="n">93</td>
+              </tr>
+              <tr>
+                <td><b>Romanian Deadlift</b><div class="smeta">barbell</div></td>
+                <td>hamstrings</td><td class="n">2 days ago</td><td class="n">80 × 8</td><td class="n">101</td>
+              </tr>
+              <tr>
+                <td><b>Barbell Row</b><div class="smeta">barbell</div></td>
+                <td>back</td><td class="n">5 days ago</td><td class="n">62.5 × 8</td><td class="n">79</td>
+              </tr>
+              <tr>
+                <td><b>Negative Pull-Up</b><div class="smeta">bodyweight · <span class="chip c-said" style="margin-left:2px"><i class="i"></i>Yours</span></div></td>
+                <td>back</td><td class="n">—</td><td class="n">—</td><td class="n">—</td>
+              </tr>
+              <tr>
+                <td><b>Overhead Press</b><div class="smeta">barbell</div></td>
+                <td>shoulders</td><td class="n">5 days ago</td><td class="n">45 × 6</td><td class="n">52</td>
+              </tr>
+              <tr>
+                <td><b>Leg Press</b><div class="smeta">machine</div></td>
+                <td>quads</td><td class="n">97 days ago</td><td class="n">160 × 10</td><td class="n">213</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <div class="cols">
+        <div>
+          <section class="card">
+            <h2>Add or rename a lift</h2>
+            <div class="sub">Your library is yours; your agent edits it.</div>
+            <div class="cmd"><code>"Add an exercise: Bulgarian split squat, quads, dumbbell"</code><button class="copy" type="button">Copy</button></div>
+            <div class="cmd"><code>"Rename Negative Pull-Up to Eccentric Pull-Up"</code><button class="copy" type="button">Copy</button></div>
+          </section>
+        </div>
+        <div>
+          <section class="card">
+            <h2>Untouched for 90 days</h2>
+            <div class="sub">Not a problem — just worth knowing</div>
+            <p style="margin:0 0 8px">Leg Press, Lat Pulldown, Cable Fly and three others have no sets in 90 days.</p>
+            <div class="why" style="font-size:12.5px;line-height:18px;color:var(--ink-muted)">Hidden lifts stay in your history. Nothing is deleted by going quiet.</div>
+          </section>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ SETTINGS ============ -->
+    <section data-view="settings" hidden>
+      <div class="label">Account</div>
+      <h1>Settings</h1>
+
+      <div class="cols">
+        <div>
+          <div class="group-h">Yours, here</div>
+          <p class="group-note">Your account, your access. These are the only things this dashboard writes —
+          everything about your training is set by your agent.</p>
+
+          <section class="card flush">
+            <div class="srow2">
+              <span><span class="t">Appearance</span><span class="d">Blueprint · follows your device</span></span>
+              <span class="v">Auto</span><span class="chev">›</span>
+            </div>
+            <div class="srow2">
+              <span><span class="t">Agents and keys</span><span class="d">Make or revoke a key</span></span>
+              <span class="v">1 active</span><span class="chev">›</span>
+            </div>
+            <div class="srow2">
+              <span><span class="t">Privacy and consent</span><span class="d">What agents may read and write</span></span>
+              <span class="v">Health data on</span><span class="chev">›</span>
+            </div>
+            <div class="srow2">
+              <span><span class="t">Plan</span><span class="d">Free during early access</span></span>
+              <span class="v"><span class="pill c-ok"><i class="i"></i>Early Pro</span></span>
+            </div>
+            <div class="srow2">
+              <span><span class="t">Export and delete</span><span class="d">Take everything, or remove it</span></span>
+              <span class="v">JSON · CSV</span><span class="chev">›</span>
+            </div>
+          </section>
+
+          <div class="group-h">Set by your agent</div>
+          <p class="group-note">Read-only here on purpose. One writer means one audit trail, so these change
+          by telling your agent — the sentence is beside each group.</p>
+
+          <section class="card flush">
+            <div class="srow2">
+              <span><span class="t">Units</span><span class="d">Weight, distance</span></span>
+              <span class="v mono">kg · km</span>
+            </div>
+            <div class="srow2">
+              <span><span class="t">Your gym</span><span class="d">Bar, plates, dumbbells, machines</span></span>
+              <span class="v mono">20 kg bar</span><span class="chev">›</span>
+            </div>
+            <div class="srow2">
+              <span><span class="t">Focus</span><span class="d">What the coaching optimises for</span></span>
+              <span class="v">Recomp</span>
+            </div>
+            <div class="srow2">
+              <span><span class="t">Coach check-ins</span><span class="d">Morning plan, Monday recap, stalls</span></span>
+              <span class="v">All on</span>
+            </div>
+            <div class="srow2">
+              <span><span class="t">Standing notes</span><span class="d">Rules every agent reads first</span></span>
+              <span class="v mono">2</span><span class="chev">›</span>
+            </div>
+          </section>
+
+          <section class="card">
+            <h2>To change one, tell your agent</h2>
+            <div class="sub">It writes the setting; this page follows.</div>
+            <div class="cmd"><code>"Use pounds"</code><button class="copy" type="button">Copy</button></div>
+            <div class="cmd"><code>"My gym has 1.25 kg fractional plates"</code><button class="copy" type="button">Copy</button></div>
+            <div class="cmd"><code>"Remember: dumbbell weights are per hand"</code><button class="copy" type="button">Copy</button></div>
+          </section>
+        </div>
+
+        <div>
+          <section class="card flush">
+            <div class="card-head"><h2>Agent keys</h2><div class="sub">One key, one agent, so you can revoke just the one</div></div>
+            <div class="keyrow">
+              <span style="min-width:0">
+                <span style="font-weight:600;display:block">Claude</span>
+                <code>alc_live_••••7f2a</code>
+              </span>
+              <span class="v" style="margin-left:auto;font-size:12.5px;color:var(--ink-muted)">last used 16:07</span>
+              <button class="revoke" type="button">Revoke</button>
+            </div>
+            <div class="keyrow">
+              <span style="min-width:0">
+                <span style="font-weight:600;display:block">ChatGPT</span>
+                <code>alc_live_••••c019</code>
+              </span>
+              <span class="v" style="margin-left:auto;font-size:12.5px;color:var(--ink-muted)">never used</span>
+              <button class="revoke" type="button">Revoke</button>
+            </div>
+            <div style="padding:14px 20px">
+              <button class="btn btn-secondary" type="button" style="width:auto;padding:7px 14px;font-size:13px">Make a key</button>
+              <div style="font-size:12.5px;line-height:18px;color:var(--ink-muted);margin-top:10px">
+                A key is shown once. Revoking is immediate and does not touch anything the agent already wrote.
+              </div>
+            </div>
+          </section>
+
+          <section class="card">
+            <h2>Undo</h2>
+            <div class="sub">Anything an agent wrote</div>
+            <p style="margin:0 0 10px">Every write is attributed and reversible for 7 days — ask the agent that
+            made it, or any agent on your account.</p>
+            <div class="cmd"><code>"Undo the last thing you logged"</code><button class="copy" type="button">Copy</button></div>
+          </section>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<script>
+  (function () {
+    var views = ["signin", "first-signin", "sessions", "exercises", "settings"];
+    var railViews = ["sessions", "exercises", "settings"];
+
+    function show(v) {
+      if (views.indexOf(v) === -1) v = "signin";
+      var usesRail = railViews.indexOf(v) !== -1;
+      document.getElementById("shell").hidden = !usesRail;
+      document.querySelectorAll("[data-view]").forEach(function (s) {
+        s.hidden = s.getAttribute("data-view") !== v;
+      });
+      document.querySelectorAll("#picker button").forEach(function (b) {
+        b.setAttribute("aria-pressed", String(b.dataset.v === v));
+      });
+      document.querySelectorAll(".nav-row").forEach(function (a) {
+        var m = (a.dataset.nav || "").split(" ");
+        if (m.indexOf(v) !== -1) a.setAttribute("aria-current", "page");
+        else a.removeAttribute("aria-current");
+      });
+      try { window.scrollTo(0, 0); } catch (e) {}
+    }
+
+    document.getElementById("picker").addEventListener("click", function (e) {
+      var b = e.target.closest("button");
+      if (b) location.hash = b.dataset.v;
+    });
+    window.addEventListener("hashchange", function () { show((location.hash || "").slice(1)); });
+    show((location.hash || "").slice(1) || "signin");
+
+    // Filter chips are display-only in the prototype, but they should feel real.
+    document.querySelectorAll(".filters").forEach(function (group) {
+      group.addEventListener("click", function (e) {
+        var b = e.target.closest("button");
+        if (!b) return;
+        group.querySelectorAll("button").forEach(function (x) { x.setAttribute("aria-pressed", String(x === b)); });
+      });
+    });
+
+    document.querySelectorAll(".copy").forEach(function (b) {
+      b.addEventListener("click", function () {
+        var el = b.parentElement.querySelector("code");
+        var text = b.dataset.key ? "alc_live_8s2mDq4xRvK0pLnT7f2a" : el.textContent;
+        try {
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(function () {
+              b.textContent = "Copied";
+              setTimeout(function () { b.textContent = "Copy"; }, 1500);
+            }, function () {
+              var r = document.createRange(); r.selectNodeContents(el);
+              var s = window.getSelection(); s.removeAllRanges(); s.addRange(r);
+            });
+          }
+        } catch (err) { /* selection fallback */ }
+      });
+    });
+  })();
+</script>

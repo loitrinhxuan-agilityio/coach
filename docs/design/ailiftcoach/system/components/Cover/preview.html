@@ -1,0 +1,41 @@
+<!-- @dsCard height=320 -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Spline+Sans:wght@400;500;600&family=Spline+Sans+Mono:wght@500&display=swap">
+<style>
+  .cover { background: var(--surface-page); color: var(--ink); }
+  .cover svg { display: block; width: 100%; height: auto; }
+  .blk { rx: var(--radius-lg, 10px); }
+  .b-accent { fill: var(--accent); }
+  .b-ink { fill: var(--ink); }
+  .b-amber { fill: var(--series-3); }
+  .b-violet { fill: var(--series-2); }
+  .grid { stroke: var(--line-strong); stroke-width: 1.5; stroke-linecap: round; }
+  .name { font-family: var(--font-ui, sans-serif); font-size: 84px; font-weight: 600; letter-spacing: -0.03em; fill: var(--ink); }
+  .tag { font-family: var(--font-ui, sans-serif); font-size: 14px; font-weight: 400; fill: var(--ink-muted); }
+</style>
+<div class="cover">
+  <!--
+    blocks: accent 144×240 (the one hue, leading by area) · ink 112×112 · series-3 112×112 · series-2 152×112; sides are space-4 multiples, corners radius-lg
+    arrangement: one tall slab at the left of the block box with three satellites stepping right, gaps of space-4 — the summary-then-detail shape the pages use
+    pattern: plus grid at one spacing step — the Blueprint direction is a drafting aesthetic, and a plus array is a drawing grid made visible; it is also the 4px grid the whole system is built on
+    scales: pitch space-5 (24px), gaps space-4 (16px), inset space-7 (48px), radii radius-lg (10px)
+  -->
+  <svg viewBox="0 0 960 320" role="img" aria-label="AI Lift Coach">
+    <rect x="0" y="0" width="960" height="320" fill="var(--surface-page)"/>
+
+    <rect class="blk b-accent" x="480" y="40" width="144" height="240"/>
+    <rect class="blk b-ink" x="640" y="40" width="112" height="112"/>
+    <rect class="blk b-amber" x="640" y="168" width="112" height="112"/>
+    <rect class="blk b-violet" x="768" y="40" width="152" height="112"/>
+
+    <g class="grid">
+      <path d="M776 180h8M780 176v8 M800 180h8M804 176v8 M824 180h8M828 176v8 M848 180h8M852 176v8 M872 180h8M876 176v8 M896 180h8M900 176v8"/>
+      <path d="M776 204h8M780 200v8 M800 204h8M804 200v8 M824 204h8M828 200v8 M848 204h8M852 200v8 M872 204h8M876 200v8 M896 204h8M900 200v8"/>
+      <path d="M776 228h8M780 224v8 M800 228h8M804 224v8 M824 228h8M828 224v8 M848 228h8M852 224v8 M872 228h8M876 224v8 M896 228h8M900 224v8"/>
+      <path d="M776 252h8M780 248v8 M800 252h8M804 248v8 M824 252h8M828 248v8 M848 252h8M852 248v8 M872 252h8M876 248v8 M896 252h8M900 248v8"/>
+    </g>
+
+    <text class="name" x="48" y="178">AI Lift</text>
+    <text class="name" x="48" y="258">Coach</text>
+    <text class="tag" x="48" y="292">Deterministic coaching on the data your agent writes.</text>
+  </svg>
+</div>

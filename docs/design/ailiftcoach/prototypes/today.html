@@ -1,0 +1,394 @@
+<title>AI Lift Coach Today</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Spline+Sans:wght@400;500;600&family=Spline+Sans+Mono:wght@500&display=swap">
+<style>
+  /* Layout: fixed 240px rail, fluid content to 1280px, 360px context column. Summary before detail. */
+  :root {
+    --surface-page: #eef2f6;
+    --surface-card: #ffffff;
+    --surface-sunken: #e2e9f0;
+    --line: #ccd8e4;
+    --line-strong: #a8bcd0;
+    --ink: #10243a;
+    --ink-muted: #4e6782;
+    --accent: #0b6e8f;
+    --accent-ink: #ffffff;
+    --accent-soft: #d9edf5;
+    --ok: #1b6b45;
+    --ok-soft: #dcefe4;
+    --caution: #86601a;
+    --caution-soft: #f7e9cf;
+    --alert: #a8301f;
+    --alert-soft: #f8e2de;
+    --series-1: #0b6e8f;
+    --series-2: #6b4bbd; --series-2-soft: #ece4fa; --series-ghost: #b7c6d6;--plate-25: #c0392b;
+    --plate-20: #2458c8;
+    --plate-15: #e0a33a;
+    --plate-5: #e8edf1;
+
+    --font-ui: "Spline Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --font-mono: "Spline Sans Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+    --r-sm: 3px; --r-md: 6px; --r-lg: 10px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --surface-page: #0a1622;
+      --surface-card: #102333;
+      --surface-sunken: #07111a;
+      --line: #1d3447;
+      --line-strong: #2b4a63;
+      --ink: #dcebf7;
+      --ink-muted: #8aa6bf;
+      --accent: #4fc3e8;
+      --accent-ink: #06161f;
+      --accent-soft: #10303d;
+      --ok: #52c08a;
+      --ok-soft: #102a1e;
+      --caution: #dba93f;
+      --caution-soft: #2b2208;
+      --alert: #ff8b78;
+      --alert-soft: #2e1512;
+      --series-1: #4fc3e8;
+      --series-2: #a98bf0; --series-2-soft: #241a3a; --series-ghost: #27404f;color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --surface-page: #0a1622;
+    --surface-card: #102333;
+    --surface-sunken: #07111a;
+    --line: #1d3447;
+    --line-strong: #2b4a63;
+    --ink: #dcebf7;
+    --ink-muted: #8aa6bf;
+    --accent: #4fc3e8;
+    --accent-ink: #06161f;
+    --accent-soft: #10303d;
+    --ok: #52c08a;
+    --ok-soft: #102a1e;
+    --caution: #dba93f;
+    --caution-soft: #2b2208;
+    --alert: #ff8b78;
+    --alert-soft: #2e1512;
+    --series-1: #4fc3e8;
+    --series-2: #a98bf0; --series-2-soft: #241a3a; --series-ghost: #27404f;color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  /* Supplied by the artifact skeleton; needed when the file is opened directly,
+     because a class display rule outranks the browser default for [hidden]. */
+  [hidden] { display: none !important; }
+  body {
+    margin: 0;
+    background: var(--surface-page);
+    color: var(--ink);
+    font-family: var(--font-ui);
+    font-size: 14px;
+    line-height: 21px;
+    -webkit-font-smoothing: antialiased;
+  }
+  .mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+  .label {
+    font-size: 11px; line-height: 14px; font-weight: 600;
+    letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-muted);
+  }
+  a { color: var(--accent); }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .banner {
+    background: var(--caution-soft);
+    color: var(--caution);
+    font-size: 12.5px;
+    font-weight: 600;
+    text-align: center;
+    padding: 6px 16px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .shell { display: flex; align-items: flex-start; gap: 0; }
+
+  /* ---- rail ---- */
+  .rail {
+    width: 240px; flex: none;
+    border-right: 1px solid var(--line);
+    background: var(--surface-card);
+    min-height: 100vh;
+    padding: 20px 12px 16px;
+    display: flex; flex-direction: column; gap: 4px;
+    position: sticky; top: 0;
+  }
+  .mark { font-size: 16px; font-weight: 600; letter-spacing: -0.01em; padding: 4px 10px 14px; }
+  .mark span { color: var(--ink-muted); font-weight: 500; }
+  .nav-row {
+    display: flex; align-items: center; gap: 12px;
+    padding: 8px 10px; border-radius: var(--r-md);
+    color: var(--ink-muted); text-decoration: none; min-height: 36px;
+  }
+  .nav-row:hover { background: var(--surface-sunken); color: var(--ink); }
+  .nav-row[aria-current="page"] { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+  .nav-row svg { width: 18px; height: 18px; flex: none; }
+  .nav-rule { height: 1px; background: var(--line); margin: 8px 0; }
+  .grow { flex: 1 1 auto; min-height: 16px; }
+  .agent {
+    border: 1px solid var(--line); border-radius: var(--r-md);
+    padding: 10px 12px; text-decoration: none; display: block;
+  }
+  .agent:hover { background: var(--surface-sunken); }
+  .agent-top { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: var(--ink); }
+  .dot { width: 7px; height: 7px; border-radius: 999px; background: var(--ok); flex: none; }
+  .agent-sub { font-size: 12px; line-height: 16px; color: var(--ink-muted); margin-top: 2px; }
+
+  /* ---- content ---- */
+  .main {
+    flex: 1 1 auto; min-width: 0;
+    padding-left: max(32px, env(safe-area-inset-left, 0px));
+    padding-right: max(32px, env(safe-area-inset-right, 0px));
+    padding-block: 40px 64px;
+    max-width: 1320px;
+  }
+  .eyebrow { margin-bottom: 6px; }
+  h1 { font-size: 40px; line-height: 44px; font-weight: 600; letter-spacing: -0.02em; margin: 0 0 24px; text-wrap: balance; }
+
+  .tiles { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 16px; margin-bottom: 24px; }
+  .tile {
+    background: var(--surface-card); border: 1px solid var(--line);
+    border-radius: var(--r-lg); padding: 16px;
+    display: flex; flex-direction: column; gap: 8px; min-width: 0;
+  }
+  .fig { display: flex; align-items: baseline; gap: 4px; }
+  .fig b { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 34px; line-height: 36px; font-weight: 500; }
+  .fig span { font-family: var(--font-mono); font-size: 15px; font-weight: 500; color: var(--ink-muted); }
+  .cap { font-size: 12.5px; line-height: 18px; color: var(--ink-muted); min-height: 18px; }
+
+  .cols { display: grid; grid-template-columns: minmax(0,1fr) 360px; gap: 16px; align-items: start; }
+  .card {
+    background: var(--surface-card); border: 1px solid var(--line);
+    border-radius: var(--r-lg); padding: 20px; margin-bottom: 16px;
+  }
+  .card h2 { font-size: 19px; line-height: 26px; font-weight: 600; margin: 0 0 4px; }
+  .card .sub { font-size: 12.5px; color: var(--ink-muted); margin-bottom: 16px; }
+
+  .chip, .pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 11px; line-height: 14px; font-weight: 600; letter-spacing: 0.04em;
+    padding: 4px 8px; border-radius: var(--r-sm); border: 1px solid transparent;
+  }
+  .pill { font-size: 12px; line-height: 16px; padding: 4px 10px; letter-spacing: 0; }
+  .c-ok { background: var(--ok-soft); color: var(--ok); }
+  .c-said { background: var(--series-2-soft); color: var(--series-2); }
+  .c-neutral { border-color: var(--line); color: var(--ink-muted); }
+  .c-caution { background: var(--caution-soft); color: var(--caution); }
+  .i { width: 6px; height: 6px; border-radius: 999px; background: currentColor; flex: none; }
+
+  .plan-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
+  .plan-name { font-size: 15px; font-weight: 600; }
+  .lifts { width: 100%; border-collapse: collapse; }
+  .lifts th {
+    text-align: left; padding: 8px 0; border-bottom: 1px solid var(--line-strong);
+    font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-muted);
+  }
+  .lifts td { padding: 12px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
+  .lifts td.num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 15px; font-weight: 500; text-align: right; }
+  .lifts td.prev { font-family: var(--font-mono); font-variant-numeric: tabular-nums; color: var(--ink-muted); text-align: right; }
+  .lifts tr:last-child td { border-bottom: 0; }
+
+  .strip { display: flex; align-items: center; gap: 3px; }
+  .bar { height: 5px; width: 24px; background: var(--line-strong); border-radius: 2px; }
+  .pl { width: 15px; border-radius: 2px; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 2px; font-family: var(--font-mono); font-size: 8px; color: #fff; }
+  .pl25 { background: var(--plate-25); height: 48px; }
+  .pl20 { background: var(--plate-20); height: 44px; }
+  .pl15 { background: var(--plate-15); height: 40px; color: #1b1405; }
+  .pl5  { background: var(--plate-5); height: 28px; color: #11181d; border: 1px solid var(--line-strong); }
+
+  .goal { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+  .goal:last-child { border-bottom: 0; }
+  .goal-name { font-weight: 600; }
+  .goal-val { margin-left: auto; font-family: var(--font-mono); font-variant-numeric: tabular-nums; color: var(--ink-muted); }
+  .why { font-size: 12.5px; line-height: 18px; color: var(--ink-muted); width: 100%; margin-top: -4px; }
+
+  .cmd { display: flex; align-items: center; gap: 12px; background: var(--surface-sunken); border: 1px solid var(--line); border-radius: var(--r-sm); padding: 8px 12px; margin-top: 8px; min-width: 0; }
+  .cmd code { font-family: var(--font-mono); font-size: 12.5px; color: var(--ink); min-width: 0; white-space: normal; overflow-wrap: anywhere; }
+  .copy { margin-left: auto; flex: none; font: inherit; font-size: 12px; font-weight: 600; color: var(--accent); background: transparent; border: 1px solid var(--line-strong); border-radius: var(--r-sm); padding: 3px 10px; cursor: pointer; }
+  .copy:hover { background: var(--accent-soft); }
+
+  .empty { color: var(--ink-muted); font-size: 13px; }
+  .tl { display: flex; flex-direction: column; gap: 0; }
+  .tl-item { display: flex; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line); align-items: baseline; }
+  .tl-item:last-child { border-bottom: 0; }
+  .tl-time { font-family: var(--font-mono); font-size: 12.5px; color: var(--ink-muted); width: 46px; flex: none; }
+
+  @media (max-width: 1100px) { .cols { grid-template-columns: minmax(0,1fr); } }
+  @media (max-width: 900px) {
+    .rail { display: none; }
+    .main { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+    .tiles { grid-template-columns: repeat(2, minmax(0,1fr)); }
+    h1 { font-size: 30px; line-height: 34px; }
+  }
+</style>
+
+<div class="banner">Prototype · example training data, not a real account</div>
+
+<div class="shell">
+  <nav class="rail" aria-label="Main">
+    <div class="mark">AI Lift <span>Coach</span></div>
+    <a class="nav-row" aria-current="page" href="#today"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M4 11l8-6 8 6v8a1 1 0 0 1-1 1h-5v-6h-4v6H5a1 1 0 0 1-1-1z"/></svg>Today</a>
+    <a class="nav-row" href="#training"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M4 9v6M20 9v6M7 6v12M17 6v12M7 12h10"/></svg>Training</a>
+    <a class="nav-row" href="#progress"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 18l5-5 3 3 7-8"/><path d="M15 8h5v5"/></svg>Progress</a>
+    <a class="nav-row" href="#body"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5.5" r="2.2"/><path d="M12 8v7M8 10h8M9.5 20l2.5-5 2.5 5"/></svg>Body</a>
+    <a class="nav-row" href="#food"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4v16M5 4v4a2 2 0 0 0 4 0V4"/><path d="M16 4c-1.5 2-1.5 6 0 8v8"/></svg>Food</a>
+    <a class="nav-row" href="#goals"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="7.5"/><circle cx="12" cy="12" r="3.2"/></svg>Goals</a>
+    <div class="nav-rule"></div>
+    <a class="nav-row" href="#settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 3v2.5M12 18.5V21M21 12h-2.5M5.5 12H3M18.4 5.6l-1.8 1.8M7.4 16.6l-1.8 1.8M18.4 18.4l-1.8-1.8M7.4 7.4L5.6 5.6"/></svg>Settings</a>
+    <div class="grow"></div>
+    <a class="agent" href="#settings">
+      <span class="agent-top"><i class="dot"></i>Claude · Connected</span>
+      <span class="agent-sub">Last wrote 16:07 · 4 sets yesterday</span>
+    </a>
+  </nav>
+
+  <main class="main">
+    <div class="label eyebrow">Thu 19 Nov · Recomp · Week 1 of 12</div>
+    <h1>Today</h1>
+
+    <div class="tiles">
+      <div class="tile">
+        <div class="label">This week</div>
+        <div class="fig"><b>3</b><span>of 4</span></div>
+        <div class="cap">sessions · on plan</div>
+      </div>
+      <div class="tile">
+        <div class="label">Volume</div>
+        <div class="fig"><b>2.1</b><span>k kg</span></div>
+        <div class="cap">Mon–Sun</div>
+      </div>
+      <div class="tile">
+        <div class="label">Best lift</div>
+        <div class="fig"><b>100</b><span>kg</span></div>
+        <div class="cap">Back Squat, top set</div>
+      </div>
+      <div class="tile">
+        <div class="label">Time trained</div>
+        <div class="fig"><b>1:00</b><span>h</span></div>
+        <div class="cap"><span class="chip c-neutral"><i class="i"></i>Computed</span></div>
+      </div>
+    </div>
+
+    <div class="cols">
+      <div>
+        <section class="card">
+          <h2>Upper A</h2>
+          <div class="sub">From your plan · not started</div>
+
+          <div class="plan-row">
+            <span class="pill c-neutral"><i class="i"></i>Planned</span>
+            <span class="sub" style="margin:0">4 lifts · about 45 min</span>
+          </div>
+
+          <table class="lifts">
+            <thead>
+              <tr>
+                <th>Lift</th>
+                <th style="text-align:right">Target</th>
+                <th style="text-align:right">Last time</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td>Bench Press</td><td class="num">80 × 5</td><td class="prev">77.5 × 5</td></tr>
+              <tr><td>Barbell Row</td><td class="num">62.5 × 8</td><td class="prev">62.5 × 8</td></tr>
+              <tr><td>Overhead Press</td><td class="num">45 × 6</td><td class="prev">45 × 5</td></tr>
+              <tr><td>Negative Pull-Up</td><td class="num">3 × 5</td><td class="prev">—</td></tr>
+            </tbody>
+          </table>
+        </section>
+
+        <section class="card">
+          <h2>Load the bar</h2>
+          <div class="sub">Bench Press, first working set · 20 kg bar · per side</div>
+          <div class="plan-row">
+            <div class="strip">
+              <span class="bar"></span>
+              <span class="pl pl25">25</span>
+              <span class="pl pl5">5</span>
+            </div>
+            <span class="mono" style="font-size:19px;font-weight:500">80 kg</span>
+            <span class="sub" style="margin:0">30 kg a side</span>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2>Goals</h2>
+          <div class="sub">Two open</div>
+          <div class="goal">
+            <span class="goal-name">Body fat to 15%</span>
+            <span class="pill c-neutral"><i class="i"></i>Early days</span>
+            <span class="goal-val">18% → 15%</span>
+            <span class="why">Trends need three readings. One so far, from 18 Nov.</span>
+          </div>
+          <div class="goal">
+            <span class="goal-name">My first pull-up</span>
+            <span class="pill c-ok"><i class="i"></i>On track</span>
+            <span class="goal-val">Step 1 of 4</span>
+            <span class="why">Negatives 3 × 5 reaches step 1. It is in today's session.</span>
+          </div>
+        </section>
+      </div>
+
+      <div>
+        <section class="card">
+          <h2>Say it to your agent</h2>
+          <div class="sub">This dashboard reads. Your agent writes.</div>
+          <div class="cmd">
+            <code>"Starting upper A"</code>
+            <button class="copy" type="button">Copy</button>
+          </div>
+          <div class="cmd">
+            <code>"Bench 80 × 5, felt good"</code>
+            <button class="copy" type="button">Copy</button>
+          </div>
+          <div class="cmd">
+            <code>"How did I sleep affect today?"</code>
+            <button class="copy" type="button">Copy</button>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2>Today's timeline</h2>
+          <div class="sub">Nothing logged yet</div>
+          <div class="tl">
+            <div class="tl-item"><span class="tl-time">07:40</span><span class="empty">Weighed in · 82.3 kg <span class="chip c-ok" style="margin-left:6px"><i class="i"></i>Logged</span></span></div>
+            <div class="tl-item"><span class="tl-time">—</span><span class="empty">Upper A · planned</span></div>
+            <div class="tl-item"><span class="tl-time">—</span><span class="empty">Creatine · due</span></div>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2>From your coach</h2>
+          <div class="sub">Rules that fired this week</div>
+          <p style="margin:0 0 10px">Back Squat has held 100 kg for three sessions. Next legs day it steps to 102.5 kg.</p>
+          <span class="chip c-neutral"><i class="i"></i>Computed</span>
+          <span class="chip c-caution" style="margin-left:6px"><i class="i"></i>Stalling rule · 3 sessions</span>
+        </section>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+  document.querySelectorAll(".copy").forEach(function (b) {
+    b.addEventListener("click", function () {
+      var code = b.parentElement.querySelector("code");
+      var reset = function () { setTimeout(function () { b.textContent = "Copy"; }, 1500); };
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(code.textContent).then(function () {
+            b.textContent = "Copied"; reset();
+          }, function () {
+            var r = document.createRange(); r.selectNodeContents(code);
+            var s = window.getSelection(); s.removeAllRanges(); s.addRange(r);
+          });
+        }
+      } catch (e) { /* selection fallback */ }
+    });
+  });
+</script>

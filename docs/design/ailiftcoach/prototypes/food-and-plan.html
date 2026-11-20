@@ -1,0 +1,455 @@
+<title>AI Lift Coach Food and Plan</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Spline+Sans:wght@400;500;600&family=Spline+Sans+Mono:wght@500&display=swap">
+<style>
+  /* Layout: the standard rail and content column. Food leads with intake against
+     target; Plan leads with the week, because a plan is read a week at a time. */
+  :root {
+    --surface-page: #eef2f6; --surface-card: #ffffff; --surface-sunken: #e2e9f0;
+    --line: #ccd8e4; --line-strong: #a8bcd0;
+    --ink: #10243a; --ink-muted: #4e6782; --ink-faint: #7b92aa;
+    --accent: #0b6e8f; --accent-ink: #ffffff; --accent-soft: #d9edf5;
+    --ok: #1b6b45; --ok-soft: #dcefe4;
+    --caution: #86601a; --caution-soft: #f7e9cf;
+    --alert: #a8301f; --alert-soft: #f8e2de;
+    --series-1: #0b6e8f; --series-2: #6b4bbd; --series-2-soft: #ece4fa;
+    --series-3: #9a5f14; --series-4: #a83a63; --series-ghost: #b7c6d6;
+    --font-ui: "Spline Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --font-mono: "Spline Sans Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    --r-sm: 3px; --r-md: 6px; --r-lg: 10px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --surface-page: #0a1622; --surface-card: #102333; --surface-sunken: #07111a;
+      --line: #1d3447; --line-strong: #2b4a63;
+      --ink: #dcebf7; --ink-muted: #8aa6bf; --ink-faint: #64809a;
+      --accent: #4fc3e8; --accent-ink: #06161f; --accent-soft: #10303d;
+      --ok: #52c08a; --ok-soft: #102a1e;
+      --caution: #dba93f; --caution-soft: #2b2208;
+      --alert: #ff8b78; --alert-soft: #2e1512;
+      --series-1: #4fc3e8; --series-2: #a98bf0; --series-2-soft: #241a3a;
+      --series-3: #dba93f; --series-4: #ef84ab; --series-ghost: #27404f;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --surface-page: #0a1622; --surface-card: #102333; --surface-sunken: #07111a;
+    --line: #1d3447; --line-strong: #2b4a63;
+    --ink: #dcebf7; --ink-muted: #8aa6bf; --ink-faint: #64809a;
+    --accent: #4fc3e8; --accent-ink: #06161f; --accent-soft: #10303d;
+    --ok: #52c08a; --ok-soft: #102a1e;
+    --caution: #dba93f; --caution-soft: #2b2208;
+    --alert: #ff8b78; --alert-soft: #2e1512;
+    --series-1: #4fc3e8; --series-2: #a98bf0; --series-2-soft: #241a3a;
+    --series-3: #dba93f; --series-4: #ef84ab; --series-ghost: #27404f;
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  body { margin: 0; background: var(--surface-page); color: var(--ink); font-family: var(--font-ui); font-size: 14px; line-height: 21px; -webkit-font-smoothing: antialiased; }
+  .mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+  .label { font-size: 11px; line-height: 14px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-muted); }
+  a { color: var(--accent); }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .banner { background: var(--caution-soft); color: var(--caution); font-size: 12.5px; font-weight: 600; text-align: center; padding: 6px 16px; border-bottom: 1px solid var(--line); }
+  .picker { display: flex; gap: 6px; flex-wrap: wrap; padding: 10px max(16px, env(safe-area-inset-left, 0px)); border-bottom: 1px solid var(--line); background: var(--surface-card); }
+  .picker button { font: inherit; font-size: 13px; font-weight: 600; color: var(--ink-muted); background: transparent; border: 1px solid var(--line); border-radius: var(--r-md); padding: 5px 12px; cursor: pointer; }
+  .picker button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+
+  .shell { display: flex; align-items: flex-start; }
+  .rail { width: 240px; flex: none; border-right: 1px solid var(--line); background: var(--surface-card); min-height: 100vh; padding: 20px 12px 16px; display: flex; flex-direction: column; gap: 4px; position: sticky; top: 0; }
+  .mark { font-size: 16px; font-weight: 600; letter-spacing: -0.01em; padding: 4px 10px 14px; }
+  .mark span { color: var(--ink-muted); font-weight: 500; }
+  .nav-row { display: flex; align-items: center; gap: 12px; padding: 8px 10px; border-radius: var(--r-md); color: var(--ink-muted); text-decoration: none; min-height: 36px; font-size: 14px; }
+  .nav-row[aria-current="page"] { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+  .nav-row svg { width: 18px; height: 18px; flex: none; }
+  .nav-rule { height: 1px; background: var(--line); margin: 8px 0; }
+  .grow { flex: 1 1 auto; min-height: 16px; }
+  .agent { border: 1px solid var(--line); border-radius: var(--r-md); padding: 10px 12px; display: block; text-decoration: none; }
+  .agent-top { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: var(--ink); }
+  .dot { width: 7px; height: 7px; border-radius: 999px; background: var(--ok); flex: none; }
+  .agent-sub { display: block; font-size: 12px; line-height: 16px; color: var(--ink-muted); margin-top: 2px; }
+
+  .main { flex: 1 1 auto; min-width: 0; padding-left: max(32px, env(safe-area-inset-left, 0px)); padding-right: max(32px, env(safe-area-inset-right, 0px)); padding-block: 36px 64px; max-width: 1320px; }
+  h1 { font-size: 40px; line-height: 44px; font-weight: 600; letter-spacing: -0.02em; margin: 4px 0 24px; text-wrap: balance; }
+
+  .tiles { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 16px; margin-bottom: 24px; }
+  .tile { background: var(--surface-card); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 16px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+  .fig { display: flex; align-items: baseline; gap: 4px; }
+  .fig b { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 30px; line-height: 34px; font-weight: 500; }
+  .fig span { font-family: var(--font-mono); font-size: 14px; font-weight: 500; color: var(--ink-muted); }
+  .cap { font-size: 12.5px; line-height: 18px; color: var(--ink-muted); min-height: 18px; }
+
+  .cols { display: grid; grid-template-columns: minmax(0,1fr) 360px; gap: 16px; align-items: start; }
+  .card { background: var(--surface-card); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 20px; margin-bottom: 16px; }
+  .card h2 { font-size: 19px; line-height: 26px; font-weight: 600; margin: 0 0 4px; }
+  .card .sub { font-size: 12.5px; color: var(--ink-muted); margin-bottom: 16px; }
+
+  .chip, .pill { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; line-height: 14px; font-weight: 600; letter-spacing: 0.04em; padding: 4px 8px; border-radius: var(--r-sm); border: 1px solid transparent; }
+  .pill { font-size: 12px; line-height: 16px; padding: 4px 10px; letter-spacing: 0; }
+  .c-ok { background: var(--ok-soft); color: var(--ok); }
+  .c-said { background: var(--series-2-soft); color: var(--series-2); }
+  .c-neutral { border-color: var(--line); color: var(--ink-muted); }
+  .c-caution { background: var(--caution-soft); color: var(--caution); }
+  .i { width: 6px; height: 6px; border-radius: 999px; background: currentColor; flex: none; }
+
+  /* ---- macro bars: the track runs to 125% of target, with a tick AT target ---- */
+  .macro { padding: 12px 0; border-bottom: 1px solid var(--line); }
+  .macro:last-child { border-bottom: 0; }
+  .macro-top { display: flex; align-items: baseline; gap: 10px; margin-bottom: 7px; }
+  .macro-name { font-weight: 600; }
+  .macro-val { margin-left: auto; font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 13px; }
+  .macro-val span { color: var(--ink-muted); }
+  .track { position: relative; height: 10px; background: var(--surface-sunken); border-radius: 2px; overflow: hidden; }
+  .track i { display: block; height: 100%; border-radius: 2px; }
+  .tick { position: absolute; top: -3px; bottom: -3px; left: 80%; width: 2px; background: var(--line-strong); border-radius: 1px; }
+  .macro-note { font-size: 12px; line-height: 18px; color: var(--ink-muted); margin-top: 6px; }
+
+  .meal { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+  .meal:last-child { border-bottom: 0; }
+  .meal-t { width: 52px; flex: none; font-family: var(--font-mono); font-size: 12.5px; color: var(--ink-muted); }
+  .meal-b { min-width: 0; flex: 1; }
+  .meal-n { font-weight: 600; }
+  .meal-m { display: block; font-size: 12.5px; color: var(--ink-muted); }
+  .meal-k { flex: none; font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 14px; font-weight: 500; }
+
+  /* ---- plan week ---- */
+  .week { display: grid; grid-template-columns: repeat(7, minmax(0,1fr)); gap: 8px; margin-bottom: 4px; }
+  .day { border: 1px solid var(--line); border-radius: var(--r-md); padding: 10px 8px; min-height: 104px; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+  .day-d { font-family: var(--font-mono); font-size: 11px; color: var(--ink-muted); }
+  .day-n { font-size: 12.5px; font-weight: 600; line-height: 17px; }
+  .day-s { display: block; font-size: 11.5px; line-height: 16px; color: var(--ink-muted); margin-top: auto; }
+  .day.done { border-color: var(--series-1); background: var(--accent-soft); }
+  .day.done .day-n { color: var(--accent); }
+  .day.today { border-color: var(--line-strong); border-width: 2px; padding: 9px 7px; }
+  .day.missed { border-color: var(--caution); background: var(--caution-soft); }
+  .day.missed .day-n, .day.missed .day-s, .day.missed .day-d { color: var(--caution); }
+  .day.rest { background: var(--surface-sunken); }
+  .day.rest .day-n { color: var(--ink-muted); font-weight: 400; }
+
+  /* ---- 12-week block ---- */
+  .block { display: flex; gap: 3px; margin: 10px 0 6px; }
+  .blk { flex: 1; height: 28px; border-radius: 2px; background: var(--surface-sunken); border: 1px solid var(--line); display: flex; align-items: center; justify-content: center; font-family: var(--font-mono); font-size: 10px; color: var(--ink-muted); }
+  .blk.now { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); font-weight: 600; }
+  .blk.deload { background: var(--series-2-soft); border-color: var(--series-2); color: var(--series-2); }
+
+  .cmd { display: flex; align-items: center; gap: 12px; background: var(--surface-sunken); border: 1px solid var(--line); border-radius: var(--r-sm); padding: 8px 12px; margin-top: 8px; min-width: 0; }
+  .cmd code { font-family: var(--font-mono); font-size: 12.5px; color: var(--ink); min-width: 0; white-space: normal; overflow-wrap: anywhere; }
+  .copy { margin-left: auto; flex: none; font: inherit; font-size: 12px; font-weight: 600; color: var(--accent); background: transparent; border: 1px solid var(--line-strong); border-radius: var(--r-sm); padding: 3px 10px; cursor: pointer; }
+  .copy:hover { background: var(--accent-soft); }
+  .why { font-size: 12.5px; line-height: 19px; color: var(--ink-muted); }
+
+  @media (max-width: 1100px) { .cols { grid-template-columns: minmax(0,1fr); } }
+  @media (max-width: 900px) {
+    .rail { display: none; }
+    .main { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+    .tiles { grid-template-columns: repeat(2, minmax(0,1fr)); }
+    h1 { font-size: 30px; line-height: 34px; }
+    .week { grid-template-columns: repeat(2, minmax(0,1fr)); }
+    .blk { font-size: 9px; }
+  }
+</style>
+
+<div class="banner">Prototype · example training data, not a real account</div>
+<div class="picker" id="picker">
+  <button type="button" data-v="food" aria-pressed="true">Food</button>
+  <button type="button" data-v="plan" aria-pressed="false">Plan</button>
+</div>
+
+<div class="shell">
+  <nav class="rail" aria-label="Main">
+    <div class="mark">AI Lift <span>Coach</span></div>
+    <a class="nav-row" href="#food"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M4 11l8-6 8 6v8a1 1 0 0 1-1 1h-5v-6h-4v6H5a1 1 0 0 1-1-1z"/></svg>Today</a>
+    <a class="nav-row" data-nav="plan" href="#plan"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M4 9v6M20 9v6M7 6v12M17 6v12M7 12h10"/></svg>Training</a>
+    <a class="nav-row" href="#food"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 18l5-5 3 3 7-8"/><path d="M15 8h5v5"/></svg>Progress</a>
+    <a class="nav-row" href="#food"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5.5" r="2.2"/><path d="M12 8v7M8 10h8M9.5 20l2.5-5 2.5 5"/></svg>Body</a>
+    <a class="nav-row" data-nav="food" href="#food"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4v16M5 4v4a2 2 0 0 0 4 0V4"/><path d="M16 4c-1.5 2-1.5 6 0 8v8"/></svg>Food</a>
+    <a class="nav-row" href="#food"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="7.5"/><circle cx="12" cy="12" r="3.2"/></svg>Goals</a>
+    <div class="nav-rule"></div>
+    <a class="nav-row" href="#food"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 3v2.5M12 18.5V21M21 12h-2.5M5.5 12H3M18.4 5.6l-1.8 1.8M7.4 16.6l-1.8 1.8M18.4 18.4l-1.8-1.8M7.4 7.4L5.6 5.6"/></svg>Settings</a>
+    <div class="grow"></div>
+    <a class="agent" href="#food">
+      <span class="agent-top"><i class="dot"></i>Claude · Connected</span>
+      <span class="agent-sub">Last wrote 13:12 · a meal</span>
+    </a>
+  </nav>
+
+  <main class="main">
+
+    <!-- ============ FOOD ============ -->
+    <section data-view="food">
+      <div class="label">Fri 20 Nov · Recomp</div>
+      <h1>Food</h1>
+
+      <div class="tiles">
+        <div class="tile"><div class="label">Calories</div><div class="fig"><b>1,660</b><span>of 2,250</span></div><div class="cap">590 left today</div></div>
+        <div class="tile"><div class="label">Protein</div><div class="fig"><b>86</b><span>of 165 g</span></div><div class="cap">1.1 g per kg so far</div></div>
+        <div class="tile"><div class="label">Meals</div><div class="fig"><b>3</b><span>logged</span></div><div class="cap">last at 13:12</div></div>
+        <div class="tile"><div class="label">This week</div><div class="fig"><b>5</b><span>of 7 days</span></div><div class="cap">days with any food logged</div></div>
+      </div>
+
+      <div class="cols">
+        <div>
+          <section class="card">
+            <h2>Against target</h2>
+            <div class="sub">The mark is your target; the track runs a quarter past it</div>
+
+            <div class="macro">
+              <div class="macro-top">
+                <span class="macro-name">Calories</span>
+                <span class="macro-val">1,660 <span>/ 2,250 kcal</span></span>
+              </div>
+              <div class="track"><i style="width:59.0%;background:var(--series-1)"></i><span class="tick"></span></div>
+            </div>
+
+            <div class="macro">
+              <div class="macro-top">
+                <span class="macro-name">Protein</span>
+                <span class="macro-val">86 <span>/ 165 g</span></span>
+              </div>
+              <div class="track"><i style="width:41.7%;background:var(--series-2)"></i><span class="tick"></span></div>
+            </div>
+
+            <div class="macro">
+              <div class="macro-top">
+                <span class="macro-name">Carbs</span>
+                <span class="macro-val">206 <span>/ 225 g</span></span>
+              </div>
+              <div class="track"><i style="width:73.2%;background:var(--series-3)"></i><span class="tick"></span></div>
+            </div>
+
+            <div class="macro">
+              <div class="macro-top">
+                <span class="macro-name">Fat</span>
+                <span class="macro-val">54 <span>/ 70 g</span></span>
+              </div>
+              <div class="track"><i style="width:61.7%;background:var(--series-4)"></i><span class="tick"></span></div>
+            </div>
+
+            <div class="macro-note">
+              Targets come from your recomp focus: maintenance 2,500 kcal less 10%, protein at
+              2.0&nbsp;g per kg of bodyweight, fat at 25% of calories, carbs the remainder.
+              <span class="chip c-neutral" style="margin-left:4px"><i class="i"></i>Computed</span>
+            </div>
+          </section>
+
+          <section class="card">
+            <h2>Today</h2>
+            <div class="sub">Three meals · nothing after 13:12</div>
+
+            <div class="meal">
+              <span class="meal-t">07:40</span>
+              <span class="meal-b">
+                <span class="meal-n">Oats, whey, banana</span>
+                <span class="meal-m">42 g protein · 78 g carbs · 11 g fat</span>
+              </span>
+              <span class="chip c-ok"><i class="i"></i>Saved meal</span>
+              <span class="meal-k">580</span>
+            </div>
+
+            <div class="meal">
+              <span class="meal-t">10:30</span>
+              <span class="meal-b">
+                <span class="meal-n">Flat white and a pastry</span>
+                <span class="meal-m">from a photo · 9 g protein · 48 g carbs · 22 g fat</span>
+              </span>
+              <span class="chip c-caution"><i class="i"></i>Estimated</span>
+              <span class="meal-k">430</span>
+            </div>
+
+            <div class="meal">
+              <span class="meal-t">13:12</span>
+              <span class="meal-b">
+                <span class="meal-n">Chicken rice bowl</span>
+                <span class="meal-m">35 g protein · 80 g carbs · 21 g fat</span>
+              </span>
+              <span class="chip c-ok"><i class="i"></i>Saved meal</span>
+              <span class="meal-k">650</span>
+            </div>
+
+            <div class="why" style="margin-top:14px">
+              Protein is 79 g short with two thirds of the day gone, which is the gap the coaching
+              reads on a training day. One of the three meals was also read from a photo, so the
+              totals carry that estimate — correct it and every figure above follows.
+            </div>
+            <div class="cmd"><code>"The pastry was a croissant, about 240 kcal"</code><button class="copy" type="button">Copy</button></div>
+          </section>
+        </div>
+
+        <div>
+          <section class="card">
+            <h2>Log a meal</h2>
+            <div class="sub">In words, or by sending a photo to your agent</div>
+            <div class="cmd"><code>"My usual lunch"</code><button class="copy" type="button">Copy</button></div>
+            <div class="cmd"><code>"200 g chicken, rice, broccoli"</code><button class="copy" type="button">Copy</button></div>
+            <div class="cmd"><code>"Save that as my usual dinner"</code><button class="copy" type="button">Copy</button></div>
+          </section>
+
+          <section class="card">
+            <h2>Your usuals</h2>
+            <div class="sub">Saved, so a meal is one sentence</div>
+            <div class="meal" style="padding-top:0">
+              <span class="meal-b"><span class="meal-n">Oats, whey, banana</span><span class="meal-m">logged 23 times</span></span>
+              <span class="meal-k">580</span>
+            </div>
+            <div class="meal">
+              <span class="meal-b"><span class="meal-n">Chicken rice bowl</span><span class="meal-m">logged 11 times</span></span>
+              <span class="meal-k">650</span>
+            </div>
+            <div class="meal">
+              <span class="meal-b"><span class="meal-n">Greek yoghurt and berries</span><span class="meal-m">logged 6 times</span></span>
+              <span class="meal-k">220</span>
+            </div>
+          </section>
+
+          <section class="card">
+            <h2>Protein on training days</h2>
+            <div class="sub">Last 4 weeks</div>
+            <p style="margin:0 0 10px">You hit the protein target on <b>9 of 12</b> training days, and
+            on 4 of 16 rest days.</p>
+            <div class="why">Nothing here is a judgement. It is the pattern the coaching reads when
+            it decides whether a stall is training or fuelling.</div>
+          </section>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ PLAN ============ -->
+    <section data-view="plan" hidden>
+      <div class="label">Upper/Lower Muscle Builder · week 1 of 12</div>
+      <h1>Plan</h1>
+
+      <div class="tiles">
+        <div class="tile"><div class="label">This week</div><div class="fig"><b>2</b><span>of 4</span></div><div class="cap">sessions done</div></div>
+        <div class="tile"><div class="label">Training days</div><div class="fig"><b>4</b><span>a week</span></div><div class="cap">Tue, Wed, Thu, Sat</div></div>
+        <div class="tile"><div class="label">Next deload</div><div class="fig"><b>wk 6</b><span></span></div><div class="cap">in 5 weeks</div></div>
+        <div class="tile"><div class="label">Adherence</div><div class="fig"><b>85</b><span>%</span></div><div class="cap">since 1 Sep</div></div>
+      </div>
+
+      <div class="cols">
+        <div>
+          <section class="card">
+            <h2>This week</h2>
+            <div class="sub">Mon 16 – Sun 22 Nov</div>
+
+            <div class="week">
+              <div class="day rest"><span class="day-d">Mon 16</span><span class="day-n">Rest</span></div>
+              <div class="day"><span class="day-d">Tue 17</span><span class="day-n">Full Body A</span><span class="day-s">started, no sets</span></div>
+              <div class="day done"><span class="day-d">Wed 18</span><span class="day-n">Legs</span><span class="day-s">4 sets · 2.1k kg</span></div>
+              <div class="day missed"><span class="day-d">Thu 19</span><span class="day-n">Upper A</span><span class="day-s">missed</span></div>
+              <div class="day today"><span class="day-d">Fri 20</span><span class="day-n">Upper A</span><span class="day-s">today · moved</span></div>
+              <div class="day"><span class="day-d">Sat 21</span><span class="day-n">Lower B</span><span class="day-s">planned</span></div>
+              <div class="day rest"><span class="day-d">Sun 22</span><span class="day-n">Rest</span></div>
+            </div>
+          </section>
+
+          <section class="card">
+            <h2>Thursday was missed</h2>
+            <div class="sub">The plan moved it rather than dropping it</div>
+            <p style="margin:0 0 10px">Upper A was planned for Thursday and no sets arrived. Because
+            Friday was a rest day and the week still has room, the session moved to today and the
+            week's count is unchanged.</p>
+            <div class="why" style="margin-bottom:12px">
+              A session is counted missed once its day ends with nothing logged. Two in a row stops
+              the shuffling and asks whether the week should shrink instead.
+              <span class="chip c-neutral" style="margin-left:4px"><i class="i"></i>Computed</span>
+            </div>
+            <div class="cmd"><code>"I was ill Thursday, drop it"</code><button class="copy" type="button">Copy</button></div>
+            <div class="cmd"><code>"Make it 3 days a week"</code><button class="copy" type="button">Copy</button></div>
+          </section>
+
+          <section class="card">
+            <h2>The block</h2>
+            <div class="sub">12 weeks · deload at 6 and 12</div>
+            <div class="block">
+              <span class="blk now">1</span><span class="blk">2</span><span class="blk">3</span>
+              <span class="blk">4</span><span class="blk">5</span><span class="blk deload">6</span>
+              <span class="blk">7</span><span class="blk">8</span><span class="blk">9</span>
+              <span class="blk">10</span><span class="blk">11</span><span class="blk deload">12</span>
+            </div>
+            <div class="why">
+              A deload is about 60% of the sets at 90% of the weight. It is scheduled, not earned —
+              it lands on weeks 6 and 12 whether or not you have stalled, because that is what the
+              block is for.
+            </div>
+          </section>
+        </div>
+
+        <div>
+          <section class="card">
+            <h2>Why this plan</h2>
+            <div class="sub">Every choice, and what decided it</div>
+            <div class="macro" style="padding-top:0">
+              <div class="macro-top"><span class="macro-name">Upper/lower split</span></div>
+              <div class="why">4 days a week is the point where upper/lower beats full body for
+              volume per muscle.</div>
+            </div>
+            <div class="macro">
+              <div class="macro-top"><span class="macro-name">4 days</span></div>
+              <div class="why">What you said you could train when you set the focus.</div>
+            </div>
+            <div class="macro">
+              <div class="macro-top"><span class="macro-name">Recomp</span></div>
+              <div class="why">Holds volume and keeps protein high rather than chasing the scale.</div>
+            </div>
+          </section>
+
+          <section class="card">
+            <h2>Change the plan</h2>
+            <div class="sub">It is yours; your agent edits it</div>
+            <div class="cmd"><code>"I'm away Sat 21 to Mon 23, holiday"</code><button class="copy" type="button">Copy</button></div>
+            <div class="cmd"><code>"Move Saturday to Sunday"</code><button class="copy" type="button">Copy</button></div>
+            <div class="cmd"><code>"Swap Lower B for a run"</code><button class="copy" type="button">Copy</button></div>
+          </section>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<script>
+  (function () {
+    var views = ["food", "plan"];
+    function show(v) {
+      if (views.indexOf(v) === -1) v = "food";
+      document.querySelectorAll("[data-view]").forEach(function (s) {
+        s.hidden = s.getAttribute("data-view") !== v;
+      });
+      document.querySelectorAll("#picker button").forEach(function (b) {
+        b.setAttribute("aria-pressed", String(b.dataset.v === v));
+      });
+      document.querySelectorAll(".nav-row").forEach(function (a) {
+        if ((a.dataset.nav || "") === v) a.setAttribute("aria-current", "page");
+        else a.removeAttribute("aria-current");
+      });
+      try { window.scrollTo(0, 0); } catch (e) {}
+    }
+    document.getElementById("picker").addEventListener("click", function (e) {
+      var b = e.target.closest("button");
+      if (b) location.hash = b.dataset.v;
+    });
+    window.addEventListener("hashchange", function () { show((location.hash || "").slice(1)); });
+    show((location.hash || "").slice(1) || "food");
+
+    document.querySelectorAll(".copy").forEach(function (b) {
+      b.addEventListener("click", function () {
+        var el = b.parentElement.querySelector("code");
+        try {
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(el.textContent).then(function () {
+              b.textContent = "Copied";
+              setTimeout(function () { b.textContent = "Copy"; }, 1500);
+            }, function () {
+              var r = document.createRange(); r.selectNodeContents(el);
+              var s = window.getSelection(); s.removeAllRanges(); s.addRange(r);
+            });
+          }
+        } catch (err) { /* selection fallback */ }
+      });
+    });
+  })();
+</script>

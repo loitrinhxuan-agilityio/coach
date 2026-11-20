@@ -1,0 +1,437 @@
+<title>AI Lift Coach Activity</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Spline+Sans:wght@400;500;600&family=Spline+Sans+Mono:wght@500&display=swap">
+<style>
+  /* Layout: the standard rail and content column. The feed is the subject, so it
+     gets the wide column and the rail carries scope and undo. */
+  :root {
+    --surface-page: #eef2f6; --surface-card: #ffffff; --surface-sunken: #e2e9f0;
+    --line: #ccd8e4; --line-strong: #a8bcd0;
+    --ink: #10243a; --ink-muted: #4e6782; --ink-faint: #7b92aa;
+    --accent: #0b6e8f; --accent-ink: #ffffff; --accent-soft: #d9edf5;
+    --ok: #1b6b45; --ok-soft: #dcefe4;
+    --caution: #86601a; --caution-soft: #f7e9cf;
+    --alert: #a8301f; --alert-soft: #f8e2de;
+    --series-1: #0b6e8f; --series-2: #6b4bbd; --series-2-soft: #ece4fa;
+    --series-3: #9a5f14; --series-4: #a83a63; --series-ghost: #b7c6d6;
+    --font-ui: "Spline Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --font-mono: "Spline Sans Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    --r-sm: 3px; --r-md: 6px; --r-lg: 10px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --surface-page: #0a1622; --surface-card: #102333; --surface-sunken: #07111a;
+      --line: #1d3447; --line-strong: #2b4a63;
+      --ink: #dcebf7; --ink-muted: #8aa6bf; --ink-faint: #64809a;
+      --accent: #4fc3e8; --accent-ink: #06161f; --accent-soft: #10303d;
+      --ok: #52c08a; --ok-soft: #102a1e;
+      --caution: #dba93f; --caution-soft: #2b2208;
+      --alert: #ff8b78; --alert-soft: #2e1512;
+      --series-1: #4fc3e8; --series-2: #a98bf0; --series-2-soft: #241a3a;
+      --series-3: #dba93f; --series-4: #ef84ab; --series-ghost: #27404f;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --surface-page: #0a1622; --surface-card: #102333; --surface-sunken: #07111a;
+    --line: #1d3447; --line-strong: #2b4a63;
+    --ink: #dcebf7; --ink-muted: #8aa6bf; --ink-faint: #64809a;
+    --accent: #4fc3e8; --accent-ink: #06161f; --accent-soft: #10303d;
+    --ok: #52c08a; --ok-soft: #102a1e;
+    --caution: #dba93f; --caution-soft: #2b2208;
+    --alert: #ff8b78; --alert-soft: #2e1512;
+    --series-1: #4fc3e8; --series-2: #a98bf0; --series-2-soft: #241a3a;
+    --series-3: #dba93f; --series-4: #ef84ab; --series-ghost: #27404f;
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  body { margin: 0; background: var(--surface-page); color: var(--ink); font-family: var(--font-ui); font-size: 14px; line-height: 21px; -webkit-font-smoothing: antialiased; }
+  .mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+  .label { font-size: 11px; line-height: 14px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-muted); }
+  a { color: var(--accent); }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .banner { background: var(--caution-soft); color: var(--caution); font-size: 12.5px; font-weight: 600; text-align: center; padding: 6px 16px; border-bottom: 1px solid var(--line); }
+
+  .shell { display: flex; align-items: flex-start; }
+  .rail { width: 240px; flex: none; border-right: 1px solid var(--line); background: var(--surface-card); min-height: 100vh; padding: 20px 12px 16px; display: flex; flex-direction: column; gap: 4px; position: sticky; top: 0; }
+  .mark { font-size: 16px; font-weight: 600; letter-spacing: -0.01em; padding: 4px 10px 14px; }
+  .mark span { color: var(--ink-muted); font-weight: 500; }
+  .nav-row { display: flex; align-items: center; gap: 12px; padding: 8px 10px; border-radius: var(--r-md); color: var(--ink-muted); text-decoration: none; min-height: 36px; font-size: 14px; }
+  .nav-row[aria-current="page"] { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+  .nav-row svg { width: 18px; height: 18px; flex: none; }
+  .nav-rule { height: 1px; background: var(--line); margin: 8px 0; }
+  .grow { flex: 1 1 auto; min-height: 16px; }
+  .agent { border: 1px solid var(--line); border-radius: var(--r-md); padding: 10px 12px; display: block; text-decoration: none; }
+  .agent-top { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: var(--ink); }
+  .dot { width: 7px; height: 7px; border-radius: 999px; background: var(--ok); flex: none; }
+  .agent-sub { display: block; font-size: 12px; line-height: 16px; color: var(--ink-muted); margin-top: 2px; }
+
+  .main { flex: 1 1 auto; min-width: 0; padding-left: max(32px, env(safe-area-inset-left, 0px)); padding-right: max(32px, env(safe-area-inset-right, 0px)); padding-block: 36px 64px; max-width: 1320px; }
+  h1 { font-size: 40px; line-height: 44px; font-weight: 600; letter-spacing: -0.02em; margin: 4px 0 24px; text-wrap: balance; }
+
+  .tiles { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 16px; margin-bottom: 24px; }
+  .tile { background: var(--surface-card); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 16px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+  .fig { display: flex; align-items: baseline; gap: 4px; }
+  .fig b { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 30px; line-height: 34px; font-weight: 500; }
+  .fig span { font-family: var(--font-mono); font-size: 14px; font-weight: 500; color: var(--ink-muted); }
+  .cap { font-size: 12.5px; line-height: 18px; color: var(--ink-muted); min-height: 18px; }
+
+  .cols { display: grid; grid-template-columns: minmax(0,1fr) 360px; gap: 16px; align-items: start; }
+  .card { background: var(--surface-card); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 20px; margin-bottom: 16px; }
+  .card.flush { padding: 0; overflow: hidden; }
+  .card h2 { font-size: 19px; line-height: 26px; font-weight: 600; margin: 0 0 4px; }
+  .card .sub { font-size: 12.5px; color: var(--ink-muted); margin-bottom: 16px; }
+  .card-head { padding: 18px 20px; border-bottom: 1px solid var(--line); }
+  .card-head h2, .card-head .sub { margin: 0; }
+
+  .filters { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; }
+  .filters button { font: inherit; font-size: 13px; color: var(--ink-muted); background: var(--surface-card); border: 1px solid var(--line); border-radius: var(--r-sm); padding: 5px 12px; cursor: pointer; }
+  .filters button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); font-weight: 600; }
+
+  .day { padding: 10px 20px; background: var(--surface-sunken); border-bottom: 1px solid var(--line); display: flex; align-items: baseline; gap: 10px; }
+  .day b { font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-muted); }
+  .day span { margin-left: auto; font-family: var(--font-mono); font-size: 12px; color: var(--ink-muted); }
+
+  .ev { display: flex; gap: 14px; padding: 13px 20px; border-bottom: 1px solid var(--line); align-items: flex-start; }
+  .ev:last-child { border-bottom: 0; }
+  .ev-t { width: 46px; flex: none; font-family: var(--font-mono); font-size: 12.5px; color: var(--ink-muted); padding-top: 1px; }
+  .ev-b { min-width: 0; flex: 1; }
+  .ev-n { display: block; font-weight: 600; }
+  .ev-d { display: block; font-size: 12.5px; color: var(--ink-muted); margin-top: 1px; }
+  .ev-r { flex: none; display: flex; flex-direction: column; align-items: flex-end; gap: 5px; }
+
+  .was {
+    display: inline-flex; align-items: center; gap: 8px; margin-top: 7px;
+    font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 13px;
+    background: var(--surface-sunken); border: 1px solid var(--line);
+    border-radius: var(--r-sm); padding: 4px 9px;
+  }
+  /* "was / now" in words rather than a strikethrough: a line through "100 × 5"
+     cuts the multiplication sign and the pair stops reading as a measurement. */
+  .was i { font-family: var(--font-ui); font-style: normal; font-size: 10.5px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-muted); }
+  .was em { font-style: normal; color: var(--ink-muted); }
+  .was b { font-weight: 500; color: var(--ink); }
+  .was b.old { color: var(--ink-muted); }
+
+  .more { display: block; padding: 9px 20px 9px 80px; border-bottom: 1px solid var(--line); font-size: 12.5px; color: var(--ink-muted); }
+  .foot { padding: 14px 20px; background: var(--surface-sunken); font-size: 12.5px; color: var(--ink-muted); }
+
+  .chip { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; line-height: 14px; font-weight: 600; letter-spacing: 0.04em; padding: 4px 8px; border-radius: var(--r-sm); border: 1px solid transparent; white-space: nowrap; }
+  .c-ok { background: var(--ok-soft); color: var(--ok); }
+  .c-said { background: var(--series-2-soft); color: var(--series-2); }
+  .c-neutral { border-color: var(--line); color: var(--ink-muted); }
+  .c-caution { background: var(--caution-soft); color: var(--caution); }
+  .i { width: 6px; height: 6px; border-radius: 999px; background: currentColor; flex: none; }
+  .undo { font-size: 11.5px; color: var(--ink-muted); font-family: var(--font-mono); white-space: nowrap; }
+  /* Not ink-faint: "past 7 days" is content, not a placeholder. The wording
+     carries the distinction, so colour does not have to — and must not, since
+     colour alone never encodes a state in this system. */
+  .undo.gone { color: var(--ink-muted); }
+
+  .cmd { display: flex; align-items: center; gap: 12px; background: var(--surface-sunken); border: 1px solid var(--line); border-radius: var(--r-sm); padding: 8px 12px; margin-top: 8px; min-width: 0; }
+  .cmd code { font-family: var(--font-mono); font-size: 12.5px; color: var(--ink); min-width: 0; white-space: normal; overflow-wrap: anywhere; }
+  .copy { margin-left: auto; flex: none; font: inherit; font-size: 12px; font-weight: 600; color: var(--accent); background: transparent; border: 1px solid var(--line-strong); border-radius: var(--r-sm); padding: 3px 10px; cursor: pointer; }
+  .copy:hover { background: var(--accent-soft); }
+  .why { font-size: 12.5px; line-height: 19px; color: var(--ink-muted); }
+
+  .who { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+  .who:last-child { border-bottom: 0; }
+  .who-n { font-weight: 600; font-size: 13px; }
+  .who-d { display: block; font-size: 12px; color: var(--ink-muted); font-weight: 400; }
+  .who-v { margin-left: auto; font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 13px; color: var(--ink-muted); }
+
+  @media (max-width: 1100px) { .cols { grid-template-columns: minmax(0,1fr); } }
+  @media (max-width: 900px) {
+    .rail { display: none; }
+    .main { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+    .tiles { grid-template-columns: repeat(2, minmax(0,1fr)); }
+    h1 { font-size: 30px; line-height: 34px; }
+    .ev, .day { padding-left: 12px; padding-right: 12px; }
+    .ev { flex-wrap: wrap; }
+    .ev-r { flex-direction: row; align-items: center; width: 100%; padding-left: 60px; }
+  }
+</style>
+
+<div class="banner">Prototype · example training data, not a real account</div>
+
+<div class="shell">
+  <nav class="rail" aria-label="Main">
+    <div class="mark">AI Lift <span>Coach</span></div>
+    <a class="nav-row" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M4 11l8-6 8 6v8a1 1 0 0 1-1 1h-5v-6h-4v6H5a1 1 0 0 1-1-1z"/></svg>Today</a>
+    <a class="nav-row" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M4 9v6M20 9v6M7 6v12M17 6v12M7 12h10"/></svg>Training</a>
+    <a class="nav-row" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 18l5-5 3 3 7-8"/><path d="M15 8h5v5"/></svg>Progress</a>
+    <a class="nav-row" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5.5" r="2.2"/><path d="M12 8v7M8 10h8M9.5 20l2.5-5 2.5 5"/></svg>Body</a>
+    <a class="nav-row" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4v16M5 4v4a2 2 0 0 0 4 0V4"/><path d="M16 4c-1.5 2-1.5 6 0 8v8"/></svg>Food</a>
+    <a class="nav-row" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="7.5"/><circle cx="12" cy="12" r="3.2"/></svg>Goals</a>
+    <div class="nav-rule"></div>
+    <a class="nav-row" aria-current="page" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 3v2.5M12 18.5V21M21 12h-2.5M5.5 12H3M18.4 5.6l-1.8 1.8M7.4 16.6l-1.8 1.8M18.4 18.4l-1.8-1.8M7.4 7.4L5.6 5.6"/></svg>Settings</a>
+    <div class="grow"></div>
+    <a class="agent" href="#">
+      <span class="agent-top"><i class="dot"></i>Claude · Connected</span>
+      <span class="agent-sub">Last wrote 13:12 · a meal</span>
+    </a>
+  </nav>
+
+  <main class="main">
+    <div class="label">Settings · last 30 days</div>
+    <h1>Activity</h1>
+
+    <div class="tiles">
+      <div class="tile"><div class="label">Writes</div><div class="fig"><b>19</b><span>this week</span></div><div class="cap">sets, meals, readings</div></div>
+      <div class="tile"><div class="label">Agents writing</div><div class="fig"><b>2</b><span>of 2 keys</span></div><div class="cap">Claude, ChatGPT</div></div>
+      <div class="tile"><div class="label">Still undoable</div><div class="fig"><b>19</b><span>writes</span></div><div class="cap">7 days from each write</div></div>
+      <div class="tile"><div class="label">Corrections</div><div class="fig"><b>3</b><span>this month</span></div><div class="cap">a fix or a delete</div></div>
+    </div>
+
+    <div class="filters">
+      <button type="button" aria-pressed="true">Everything</button>
+      <button type="button" aria-pressed="false">Training</button>
+      <button type="button" aria-pressed="false">Food</button>
+      <button type="button" aria-pressed="false">Body</button>
+      <button type="button" aria-pressed="false">Settings</button>
+      <button type="button" aria-pressed="false">Corrections</button>
+    </div>
+
+    <div class="cols">
+      <div>
+        <section class="card flush">
+          <div class="day"><b>Today · Fri 20 Nov</b><span>4 writes</span></div>
+
+          <div class="ev">
+            <span class="ev-t">13:12</span>
+            <span class="ev-b">
+              <span class="ev-n">Logged a meal</span>
+              <span class="ev-d">Chicken rice bowl · 650 kcal · from your usuals</span>
+            </span>
+            <span class="ev-r">
+              <span class="chip c-neutral"><i class="i"></i>Claude</span>
+              <span class="undo">undo until 27 Nov</span>
+            </span>
+          </div>
+
+          <div class="ev">
+            <span class="ev-t">10:31</span>
+            <span class="ev-b">
+              <span class="ev-n">Logged a meal from a photo</span>
+              <span class="ev-d">Flat white and a pastry · 430 kcal · estimated</span>
+            </span>
+            <span class="ev-r">
+              <span class="chip c-neutral"><i class="i"></i>Claude</span>
+              <span class="undo">undo until 27 Nov</span>
+            </span>
+          </div>
+
+          <div class="ev">
+            <span class="ev-t">07:41</span>
+            <span class="ev-b">
+              <span class="ev-n">Recorded a weigh-in</span>
+              <span class="ev-d">81.6 kg · scale</span>
+            </span>
+            <span class="ev-r">
+              <span class="chip c-neutral"><i class="i"></i>ChatGPT</span>
+              <span class="undo">undo until 27 Nov</span>
+            </span>
+          </div>
+
+          <div class="ev">
+            <span class="ev-t">07:40</span>
+            <span class="ev-b">
+              <span class="ev-n">Logged a meal</span>
+              <span class="ev-d">Oats, whey, banana · 580 kcal · from your usuals</span>
+            </span>
+            <span class="ev-r">
+              <span class="chip c-neutral"><i class="i"></i>Claude</span>
+              <span class="undo">undo until 27 Nov</span>
+            </span>
+          </div>
+
+          <div class="day"><b>Wed 18 Nov</b><span>9 writes · 1 correction</span></div>
+
+          <div class="ev">
+            <span class="ev-t">12:07</span>
+            <span class="ev-b">
+              <span class="ev-n">Corrected a set</span>
+              <span class="ev-d">Set 2 of Back Squat, in the Leg workout</span>
+              <span class="was"><i>was</i><b class="old">100 × 5</b><em>→</em><i>now</i><b>100 × 4</b></span>
+            </span>
+            <span class="ev-r">
+              <span class="chip c-caution"><i class="i"></i>Correction</span>
+              <span class="chip c-neutral"><i class="i"></i>Claude</span>
+              <span class="undo">undo until 25 Nov</span>
+            </span>
+          </div>
+
+          <div class="ev">
+            <span class="ev-t">12:05</span>
+            <span class="ev-b">
+              <span class="ev-n">Ended the session</span>
+              <span class="ev-d">Leg workout · 31 min · 4 working sets · effort hard, felt good</span>
+            </span>
+            <span class="ev-r">
+              <span class="chip c-said"><i class="i"></i>You said</span>
+              <span class="chip c-neutral"><i class="i"></i>Claude</span>
+              <span class="undo">undo until 25 Nov</span>
+            </span>
+          </div>
+
+          <div class="ev">
+            <span class="ev-t">11:52</span>
+            <span class="ev-b">
+              <span class="ev-n">Logged 1 set</span>
+              <span class="ev-d">Romanian Deadlift · 80 kg × 8</span>
+            </span>
+            <span class="ev-r">
+              <span class="chip c-neutral"><i class="i"></i>Claude</span>
+              <span class="undo">undo until 25 Nov</span>
+            </span>
+          </div>
+
+          <div class="ev">
+            <span class="ev-t">11:34</span>
+            <span class="ev-b">
+              <span class="ev-n">Started a session</span>
+              <span class="ev-d">Leg workout · Legs · Upper/Lower Muscle Builder</span>
+            </span>
+            <span class="ev-r">
+              <span class="chip c-neutral"><i class="i"></i>Claude</span>
+              <span class="undo">undo until 25 Nov</span>
+            </span>
+          </div>
+
+          <span class="more">5 more on Wed 18 Nov — the rest of the Leg workout</span>
+
+          <div class="day"><b>Tue 17 Nov</b><span>6 writes</span></div>
+
+          <div class="ev">
+            <span class="ev-t">18:20</span>
+            <span class="ev-b">
+              <span class="ev-n">Changed a setting</span>
+              <span class="ev-d">Weight unit · kilograms</span>
+              <span class="was"><i>was</i><b class="old">lb</b><em>→</em><i>now</i><b>kg</b></span>
+            </span>
+            <span class="ev-r">
+              <span class="chip c-neutral"><i class="i"></i>Claude</span>
+              <span class="undo">undo until 24 Nov</span>
+            </span>
+          </div>
+
+          <div class="ev">
+            <span class="ev-t">09:12</span>
+            <span class="ev-b">
+              <span class="ev-n">Set a goal</span>
+              <span class="ev-d">Body fat to 15% by 28 February</span>
+            </span>
+            <span class="ev-r">
+              <span class="chip c-neutral"><i class="i"></i>ChatGPT</span>
+              <span class="undo">undo until 24 Nov</span>
+            </span>
+          </div>
+
+          <span class="more">4 more on Tue 17 Nov — meals</span>
+
+          <div class="day"><b>Tue 10 Nov</b><span>7 writes</span></div>
+
+          <div class="ev">
+            <span class="ev-t">19:04</span>
+            <span class="ev-b">
+              <span class="ev-n">Recorded a weigh-in</span>
+              <span class="ev-d">82.3 kg · scale</span>
+            </span>
+            <span class="ev-r">
+              <span class="chip c-neutral"><i class="i"></i>ChatGPT</span>
+              <span class="undo gone">past 7 days</span>
+            </span>
+          </div>
+
+          <div class="ev">
+            <span class="ev-t">18:58</span>
+            <span class="ev-b">
+              <span class="ev-n">Logged 12 sets</span>
+              <span class="ev-d">Upper A · bench press, barbell row, overhead press, curls</span>
+            </span>
+            <span class="ev-r">
+              <span class="chip c-neutral"><i class="i"></i>Claude</span>
+              <span class="undo gone">past 7 days</span>
+            </span>
+          </div>
+
+          <span class="more">5 more on Tue 10 Nov — the rest of Upper A</span>
+
+          <div class="foot">
+            12 of 76 writes in the last 30 days. Days with nothing written are not
+            listed: Thu 19 Nov and Mon 16 Nov are missing because no agent wrote on them.
+          </div>
+        </section>
+      </div>
+
+      <div>
+        <section class="card">
+          <h2>Undo something</h2>
+          <div class="sub">Ask any agent on your account, not only the one that wrote it</div>
+          <div class="cmd"><code>"Undo the weigh-in from this morning"</code><button class="copy" type="button">Copy</button></div>
+          <div class="cmd"><code>"Undo the last thing you logged"</code><button class="copy" type="button">Copy</button></div>
+          <div class="why" style="margin-top:12px">
+            A write can be undone for <b>7 days</b> from when it was made. After that it stays in
+            your history and the row says so, rather than failing when you ask.
+          </div>
+        </section>
+
+        <section class="card">
+          <h2>Who wrote what</h2>
+          <div class="sub">Last 30 days · one key each, so you can revoke just one</div>
+          <div class="who">
+            <span><span class="who-n">Claude</span><span class="who-d">sets, sessions, meals</span></span>
+            <span class="who-v">64</span>
+          </div>
+          <div class="who">
+            <span><span class="who-n">ChatGPT</span><span class="who-d">weigh-ins, goals</span></span>
+            <span class="who-v">12</span>
+          </div>
+          <div class="why" style="margin-top:12px">
+            Nothing on this page was written by the dashboard. If a row surprises you, revoking that
+            agent's key stops it writing again and leaves everything it already wrote intact.
+          </div>
+        </section>
+
+        <section class="card">
+          <h2>What this page is for</h2>
+          <div class="why">
+            One external writer means one audit trail, and an audit trail only counts if you can
+            read it. Every row names the agent, the time, and what changed — a correction shows the
+            value it replaced, so a quiet edit cannot hide.
+          </div>
+        </section>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+  document.querySelectorAll(".filters").forEach(function (g) {
+    g.addEventListener("click", function (e) {
+      var b = e.target.closest("button");
+      if (!b) return;
+      g.querySelectorAll("button").forEach(function (x) { x.setAttribute("aria-pressed", String(x === b)); });
+    });
+  });
+  document.querySelectorAll(".copy").forEach(function (b) {
+    b.addEventListener("click", function () {
+      var el = b.parentElement.querySelector("code");
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(el.textContent).then(function () {
+            b.textContent = "Copied";
+            setTimeout(function () { b.textContent = "Copy"; }, 1500);
+          }, function () {
+            var r = document.createRange(); r.selectNodeContents(el);
+            var s = window.getSelection(); s.removeAllRanges(); s.addRange(r);
+          });
+        }
+      } catch (e) { /* selection fallback */ }
+    });
+  });
+</script>
