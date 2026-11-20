@@ -111,7 +111,14 @@ body map, because it carries data (sets per muscle), and the one decorative-look
 | `tokens.json` | Colour, type, spacing, radius, shadow |
 | `ux-patterns.md` | The ShredPace pattern analysis this system was built from |
 | `navigation.md` | Information architecture and the navigation model |
-| `components/` | Seven components, each with guidelines and a live preview |
+| `components/` | Eleven components, each with guidelines and a live preview |
 
-Components: `StatTile`, `ProvenanceChip`, `SetTable`, `AgentCommand`, `StatusPill`,
-`PlateStrip`, `SideNav`.
+**Data display** — `StatTile`, `SetTable`, `DataTable`, `Chart`
+**Explainability** — `ProvenanceChip`, `StatusPill`, `EmptyState`
+**Training** — `PlateStrip`, `BodyMap`
+**Agent** — `AgentCommand` · **Navigation** — `SideNav`
+
+Three of these exist to keep the product honest rather than to decorate it. `ProvenanceChip` makes
+every figure name its source. `EmptyState` names the threshold a panel is below and what unlocks
+it, instead of apologising. `AgentCommand` is where a button would go in a product that could
+write its own data.

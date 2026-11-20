@@ -1,0 +1,78 @@
+<!-- @dsCard group="Data display" height=300 subtitle="Label head on a well, hairline rows, figures right-aligned in mono, em dash for missing" -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Spline+Sans:wght@400;500;600&family=Spline+Sans+Mono:wght@500&display=swap">
+<style>
+  .wrap { font-family: var(--font-ui, sans-serif); background: var(--surface-page); color: var(--ink); padding: var(--space-4, 16px); }
+  .card { background: var(--surface-card); border: 1px solid var(--line); border-radius: var(--radius-lg, 10px); overflow: hidden; }
+  .head { padding: var(--space-4, 16px) var(--space-5, 24px) var(--space-3, 12px); }
+  .head h3 { font-size: 19px; line-height: 26px; font-weight: 600; margin: 0 0 2px; }
+  .head .sub { font-size: 12.5px; color: var(--ink-muted); }
+  .filters { display: flex; gap: 8px; flex-wrap: wrap; padding: 0 var(--space-5, 24px) var(--space-3, 12px); }
+  .filters button { font: inherit; font-size: 13px; color: var(--ink-muted); background: transparent; border: 1px solid var(--line); border-radius: var(--radius-sm, 3px); padding: 4px 11px; cursor: pointer; }
+  .filters button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); font-weight: 600; }
+  .scroll { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; }
+  th {
+    font-size: 11px; line-height: 14px; font-weight: 600; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--ink-muted); text-align: left;
+    padding: var(--space-2, 8px) var(--space-5, 24px);
+    background: var(--surface-sunken); border-bottom: 1px solid var(--line-strong); white-space: nowrap;
+  }
+  th.r, td.r { text-align: right; }
+  td { padding: var(--space-3, 12px) var(--space-5, 24px); border-bottom: 1px solid var(--line); font-size: 14px; color: var(--ink); }
+  tr:last-child td { border-bottom: 0; }
+  td.r { font-family: var(--font-mono, monospace); font-variant-numeric: tabular-nums; font-weight: 500; white-space: nowrap; }
+  td b { font-weight: 600; }
+  .second { display: block; font-size: 12.5px; color: var(--ink-muted); }
+  .miss { color: var(--ink-muted); }
+</style>
+<div class="wrap">
+  <div class="card">
+    <div class="head">
+      <h3>Exercises</h3>
+      <div class="sub">Your library · 23 lifts</div>
+    </div>
+    <div class="filters">
+      <button type="button" aria-pressed="true">All</button>
+      <button type="button" aria-pressed="false">Legs</button>
+      <button type="button" aria-pressed="false">Push</button>
+      <button type="button" aria-pressed="false">Pull</button>
+    </div>
+    <div class="scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>Exercise</th><th>Muscle</th>
+            <th class="r">Last done</th><th class="r">Best set</th><th class="r">e1RM</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><b>Back Squat</b><span class="second">barbell</span></td>
+            <td>quads</td><td class="r">2 days ago</td><td class="r">100 × 5</td><td class="r">117</td>
+          </tr>
+          <tr>
+            <td><b>Romanian Deadlift</b><span class="second">barbell</span></td>
+            <td>hamstrings</td><td class="r">2 days ago</td><td class="r">80 × 8</td><td class="r">101</td>
+          </tr>
+          <tr>
+            <td><b>Negative Pull-Up</b><span class="second">bodyweight</span></td>
+            <td>back</td><td class="r miss">—</td><td class="r miss">—</td><td class="r miss">—</td>
+          </tr>
+          <tr>
+            <td><b>Leg Press</b><span class="second">machine</span></td>
+            <td>quads</td><td class="r">97 days ago</td><td class="r">160 × 10</td><td class="r">213</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+<script>
+  document.querySelectorAll(".filters").forEach(function (g) {
+    g.addEventListener("click", function (e) {
+      var b = e.target.closest("button");
+      if (!b) return;
+      g.querySelectorAll("button").forEach(function (x) { x.setAttribute("aria-pressed", String(x === b)); });
+    });
+  });
+</script>
