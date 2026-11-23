@@ -83,17 +83,12 @@ the OAuth work; and the first set of a session must stay fast after an idle peri
 AI Lift Coach is built by a team of AI agents following the AI-assisted Development Lifecycle (ADLC), with GitHub as the source
 of truth.
 
-| Role | What it does |
-|---|---|
-| **Owner** (human) | Defines requirements, approves designs, architecture decisions and every production deploy |
-| **Design Agent** | Draws design boards and opens PRs; cannot merge |
-| **Dev Lead** (Claude Opus) | Owns security, proposes the architecture, merges and deploys; never does the independent review |
-| **Builders** (Claude Sonnet) | One per issue, each in its own Git worktree; never merge |
-| **Independent Reviewer** (Claude Opus) | Reviews every code PR |
+Five roles — Owner, Design Agent, Dev Lead, Builders and Independent Reviewer — are defined once, in
+[docs/agents/team.md](docs/agents/team.md), with what each may and may not do. They are not repeated here:
+a second copy drifts from the first.
 
 The rules every contributor and agent follows are in [AGENTS.md](AGENTS.md): never push to `main`, infrastructure as
-code only, and approval before implementation for both designs and architecture. Roles are in
-[docs/agents/team.md](docs/agents/team.md), the workflow and deploy rules in
+code only, and approval before implementation for both designs and architecture. The workflow and deploy rules are in
 [docs/agents/workflow.md](docs/agents/workflow.md), and the proposed PR gates (tests pass, UI matches the approved
 design, independent review) in [docs/agents/quality-gates.md](docs/agents/quality-gates.md).
 
@@ -114,6 +109,8 @@ design, independent review) in [docs/agents/quality-gates.md](docs/agents/qualit
 | Path | What is in it |
 |---|---|
 | [`AGENTS.md`](AGENTS.md) | The always-rules for every agent, and links to the rest |
+| [`REVIEW.md`](REVIEW.md) | How a code PR is reviewed: the three passes, and what counts as Important |
+| [`intent/`](intent/) | The per-change artifact chain: one folder per change holding its intent, spec and plan |
 | [`GLOSSARY.md`](GLOSSARY.md) | The project's vocabulary (Lifter, Agent, Key, Insights, Check-in and so on) |
 | [`issues/prd.md`](issues/prd.md) | The PRD: the text of all 205 user stories, tagged by phase |
 | [`docs/product/`](docs/product/) | [`intent.md`](docs/product/intent.md) — why this project exists, in the Owner's own words, and the document that wins over every other — plus [`vision.md`](docs/product/vision.md), [`mvp-scope.md`](docs/product/mvp-scope.md), [`requirements.md`](docs/product/requirements.md) and the [`decision-log.md`](docs/product/decision-log.md) |

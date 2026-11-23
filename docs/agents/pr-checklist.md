@@ -8,6 +8,9 @@ Copy this into every code PR description and tick each item. Details for the gat
 - [ ] Owner has approved the design (link to the board or approval)
 - [ ] Dependencies are met and every acceptance criterion is satisfied
 - [ ] One issue only, built in its own worktree, on a branch other than main
+- [ ] The branch is `change/NNNN-slug`, matching the change's folder under `intent/`
+- [ ] The change's `spec.md` and `plan.md` are linked in this description
+- [ ] The merged diff still matches `plan.md`, or `plan.md` was updated in the same commit
 - [ ] Any infrastructure change is in code, not applied by hand
 - [ ] Gate 1, tests: output attached
 - [ ] Gate 2, UI: screenshots attached, or "not applicable" with the reason
