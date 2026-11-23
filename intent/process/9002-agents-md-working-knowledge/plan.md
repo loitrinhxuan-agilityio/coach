@@ -16,6 +16,8 @@ files than the spec allowed for, and says so rather than smuggling them in.
 | `.gitignore` | **edit, not in the spec** — `node_modules/`, or `npm install` puts a dependency tree in the next commit. |
 | `docs/design/ailiftcoach/README.md` | **edit, not in the spec** — line 80 documents `node tools/audit-rendered.mjs`, which is wrong twice over. |
 | `docs/product/decision-log.md` | **edit** — D-039, amending D-033's branch convention. |
+| `docs/design/ailiftcoach/tools/package-lock.json` | **new, found during implementation** — `npm install` writes it, and it belongs in git so an install is reproducible and CI can use it later. |
+| `.claude/rules/` | **new directory**, tracked: `.gitignore` excludes only `.claude/worktrees/`. |
 | `intent/process/9002-agents-md-working-knowledge/plan.md` | this file. |
 
 ### What was actually wrong
@@ -85,4 +87,28 @@ to have `playwright-core` beside it.
 | `git ls-files \| grep node_modules` | empty | step 1 |
 | A fresh session opening a design prototype receives the rule | the four traps in context | **not provable before merge** |
 
-Nothing here is implemented. Accepting this plan is what starts the implementation.
+## Departures from this plan, recorded during implementation
+
+Two, both found by checking rather than by reasoning:
+
+1. **`package-lock.json` is a sixth unplanned file.** `npm install` writes it and it belongs in
+   git, so an install is reproducible and the CI of D-029 can use it. Added to the table above.
+2. **The rule's glob was narrowed from one pattern to three.** As specified,
+   `docs/design/ailiftcoach/**/*.{html,md,json}` matched **inside `node_modules`** — opening
+   `playwright-core/lib/vite/traceViewer/index.html` would have loaded the design rule. The glob
+   now names `*.md` at the design root, `prototypes/**/*.html` and `system/**/*.{md,json,html}`:
+   36 files, none of them a dependency. Caught by listing what the glob matched, which is the only
+   way it would have been caught at all.
+
+## Result
+
+| Check | Result |
+|---|---|
+| `check-contrast.mjs` | **exit 0**, `50 pairs checked across 2 themes, 0 failing` |
+| `audit-rendered.mjs docs/design/ailiftcoach/prototypes` | **exit 0**, `34 screen renders audited, 0 text elements below contrast` — it runs now |
+| `npm install --prefix docs/design/ailiftcoach/tools` | playwright-core 1.65.1, 1 package, 814 ms |
+| `wc -l AGENTS.md` | **50**, against a target of 200 |
+| `git ls-files \| grep -c '^CLAUDE.md$'` | **0** |
+| Rule frontmatter | parsed: exactly one key, `paths`, three globs |
+| `git ls-files \| grep node_modules` | **empty** |
+| A fresh session receives the rule | **still unproven.** Needs a new session; a rule added mid-session is not guaranteed to load in it. |

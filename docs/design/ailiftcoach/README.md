@@ -62,10 +62,10 @@ and that gate has not been passed.
 
 Both previously unverified claims are now measured.
 
-**Contrast: 50 pairs, two themes, 0 failing.**
+**Contrast: 50 pairs, two themes, 0 failing.** No dependencies; run it from the repository root.
 
 ```bash
-node tools/check-contrast.mjs
+node docs/design/ailiftcoach/tools/check-contrast.mjs
 ```
 
 It exits non-zero on a failure, so it can gate a palette change. Four exceptions are recorded in
@@ -74,10 +74,17 @@ which WCAG exempts, and three hairline tokens are decorative separators that ide
 and so fall outside 1.4.11. Those rules are deliberately quiet — raising them to 3:1 would read as
 a border and rebuild the boxes this system avoids.
 
-**Both themes, every screen: 34 renders, 0 text elements below contrast.**
+**Both themes, every screen: 34 renders, 0 text elements below contrast.** This one needs
+`playwright-core`, installed once, and it takes the prototypes directory as an argument. Until
+2026-11-23 this README documented it as `node tools/audit-rendered.mjs`, which could not run from
+a checkout at all: nothing declared the dependency and the argument was missing.
 
 ```bash
-node tools/audit-rendered.mjs
+npm install --prefix docs/design/ailiftcoach/tools
+```
+
+```bash
+node docs/design/ailiftcoach/tools/audit-rendered.mjs docs/design/ailiftcoach/prototypes
 ```
 
 `check-contrast.mjs` proves the palette is sound in the abstract; this proves the pages *use* it
