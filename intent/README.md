@@ -12,8 +12,13 @@ made under it.
 
 ```
 intent/phase-1/NNNN-slug/      a change that is part of Phase 1
-intent/candidates/NNNN-slug/   a change that is not in Phase 1 (D-026)
+intent/candidates/NNNN-slug/   a product feature that is not in Phase 1 (D-026)
+intent/process/NNNN-slug/      a change to how this project is built, not to the product
 ```
+
+`process/` exists because the first two buckets both assume a change is a product feature.
+Work on the instructions, the quality gates, CI, hooks or the chain itself is none of those,
+and filing it under `candidates/` would read as a deferred product feature (D-038).
 
 A change folder fills up as the change progresses:
 
@@ -30,8 +35,9 @@ story 14 is `0014-log-by-speaking`. The same number runs through the GitHub issu
 `change/0014-log-by-speaking` and the pull request, so a change can be followed end to end
 with no lookup table.
 
-Work with no story — a refactor, a chore, an incident — takes a number from **9000** upward.
-This folder itself was added by `change/9001-artifact-chain`.
+Work with no story — process work, a refactor, a chore, an incident — takes a number from
+**9000** upward. Process work goes in `process/`, which is where most 9000-range changes
+belong. This folder itself was added by `change/9001-artifact-chain`.
 
 The number is only an identifier. `issues/prd.md` is explicitly not authoritative about scope;
 Phase 1's fifty story numbers are enumerated in D-010 in

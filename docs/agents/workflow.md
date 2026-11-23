@@ -16,9 +16,10 @@ produced, and who approved it.
 intent.md  →  spec.md  →  plan.md  →  the diff and its tests  →  the PR and its findings
 ```
 
-- Artifacts live in `intent/phase-1/NNNN-slug/` or `intent/candidates/NNNN-slug/`. See
-  [`intent/README.md`](../../intent/README.md).
-- `NNNN` is the PRD story number; 9000 upward for work with no story.
+- Artifacts live in `intent/phase-1/`, `intent/candidates/` or `intent/process/`, under
+  `NNNN-slug/`. See [`intent/README.md`](../../intent/README.md).
+- `NNNN` is the PRD story number; 9000 upward for work with no story, which is usually
+  process work.
 - The branch is `change/NNNN-slug`. Never `main`.
 - **An intent is accepted by the Owner merging it,** and that merge starts Stage 2.
 - **A plan is built only from its own accepted `spec.md`** — never directly from
