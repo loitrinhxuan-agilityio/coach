@@ -434,8 +434,8 @@ Found by walking every desktop screen and every API operation against this list;
 
 ### Added after the first grilling (2026-11-18)
 
-198. As an agent, I want a guide, served as the MCP server's instructions and as a Markdown page, that tells me how to behave (ask the check-in first, answer in one line, never work out a barbell total myself, ask at most one question per reply), so that I coach well without being told each time. **[Phase 1]**
-199. As a maintainer, I want scripted conversations ("log a leg workout", "I'm going away", "what's next?") run against a real assistant as acceptance tests, so that a change to the guide or the rules that breaks the gym experience is caught. **[Phase 1]**
+198. As an agent, I want a guide, served as the MCP server's instructions and as a Markdown page, that tells me how to behave (hold a set that looks wrong, answer in one line, never work out a barbell total myself, ask at most one question per reply), so that I coach well without being told each time. **[Phase 1]**
+199. As a maintainer, I want scripted conversations ("log a leg workout", "fix that last set", "what's next?") run against a real assistant as acceptance tests, so that a change to the guide or the rules that breaks the gym experience is caught. **[Phase 1]**
 200. As a lifter, I want my week to run Monday to Sunday in my time zone, so that this week's totals, my streak and the recap agree.
 201. As the team, I want a Sample account with about eight weeks of history, including a stalled lift, a missed day, an away period and a few scans, so that populated screens can be designed, tested and demonstrated. **[Phase 1]**
 

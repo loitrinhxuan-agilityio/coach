@@ -59,7 +59,7 @@ enters a phase only when the Owner pulls it in.
 |---|---|---|
 | I1 | An Agent connects with a **Key** over MCP or REST. There is no OAuth in Phase 1. | D-011, ADR 0001 |
 | I2 | OAuth connectors are the first item of Phase 2, so the Claude phone and desktop apps can connect. The identity provider (Cognito has no dynamic client registration) is a risk to verify early. | D-011, D-015 |
-| I3 | AI Lift Coach ships an **agent guide** (MCP server instructions plus a Markdown page), written in its own words. | D-010, story 198 |
+| I3 | AI Lift Coach ships an **agent guide** (MCP server instructions plus a Markdown page), written in its own words. Part A is written at [`agent-guide.md`](agent-guide.md); its operation reference waits on I5. | D-010, story 198, D-041 |
 | I4 | Scripted conversations run against a real assistant as acceptance tests. | story 199 |
 | I5 | The Dev Lead proposes the Phase 1 API contracts (about 25 operations) and the Owner approves them before implementation. | D-013, D-022 |
 
