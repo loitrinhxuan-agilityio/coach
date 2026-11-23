@@ -113,7 +113,7 @@ design, independent review) in [docs/agents/quality-gates.md](docs/agents/qualit
 | [`intent/`](intent/) | The per-change artifact chain: one folder per change holding its intent, spec and plan |
 | [`GLOSSARY.md`](GLOSSARY.md) | The project's vocabulary (Lifter, Agent, Key, Insights, Check-in and so on) |
 | [`issues/prd.md`](issues/prd.md) | The PRD: the text of all 205 user stories, tagged by phase |
-| [`docs/product/`](docs/product/) | [`intent.md`](docs/product/intent.md) — why this project exists, in the Owner's own words, and the document that wins over every other — plus [`vision.md`](docs/product/vision.md), [`mvp-scope.md`](docs/product/mvp-scope.md), [`requirements.md`](docs/product/requirements.md) and the [`decision-log.md`](docs/product/decision-log.md) |
+| [`docs/product/`](docs/product/) | [`intent.md`](docs/product/intent.md) — why this project exists, in the Owner's own words, and the document that wins over every other — plus [`vision.md`](docs/product/vision.md), [`mvp-scope.md`](docs/product/mvp-scope.md), [`requirements.md`](docs/product/requirements.md), the [`decision-log.md`](docs/product/decision-log.md) and the [`agent-guide.md`](docs/product/agent-guide.md) that tells an Agent how to behave |
 | [`docs/adr/`](docs/adr/) | Accepted architecture decision records |
 | [`docs/agents/`](docs/agents/) | Team roles, workflow, quality gates and the PR checklist |
 | [`docs/design/`](docs/design/) | AI Lift Coach's own design boards, once the Design Agent draws them |

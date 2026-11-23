@@ -107,9 +107,10 @@ tile, separate Before, During and After pages, and the body figure.
 
 These are my recommendations, made while listing the slice, and the Owner has not yet confirmed them individually:
 
-1. **The agent guide and its scripted conversations stay inside Phase 1's features.** Stories 198 and 199 mention
-   "ask the check-in first" and "I'm going away". Check-ins and time away are not in Phase 1, so those examples should
-   be reworded.
+1. ~~**The agent guide and its scripted conversations stay inside Phase 1's features.**~~ **Confirmed 2026-11-23
+   (D-041).** Stories 198 and 199 mentioned "ask the check-in first" and "I'm going away". The check-in is story 44
+   and time away has no Phase 1 story, so both examples were reworded rather than pulling those stories in. Stories
+   44 and 45 stay out of Phase 1.
 2. **Targets are for the exercises the Lifter names when starting a session.** Story 46 says "planned exercise", but
    plans are not in Phase 1.
 3. **Phase 1 uses a default 20 kg bar and standard plates.** Editing gyms and plates comes later. Story 37 needs a
