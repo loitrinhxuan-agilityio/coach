@@ -2,7 +2,12 @@
 # machine and no longer tracked here (D-040, intent/process/9003-untrack-shredpace/).
 # It remains recoverable from any commit up to that change; history was not rewritten.
 # This replaces the narrower evidence/ rule, which this one subsumes.
-docs/product/shredpace/
+#
+# The contents are excluded rather than the directory itself: git cannot re-include a file
+# beneath an excluded DIRECTORY, so the trailing-slash form would make the README below
+# impossible to track.
+docs/product/shredpace/*
+!docs/product/shredpace/README.md
 
 # Git worktrees created by Claude Code sessions. Each is a full checkout; never commit one.
 .claude/worktrees/
