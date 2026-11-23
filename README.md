@@ -8,7 +8,7 @@ the history with plain rules, and shows the result on a calm, read-only dashboar
 > approval, and the architecture has not been approved. See [Where things stand](#where-things-stand).
 
 AI Lift Coach is a personal project, and the Owner's practice ground for directing, evaluating and governing
-AI-assisted software work — see [`intent.md`](intent.md). [ShredPace](https://shredpace.com), an agent-first training
+AI-assisted software work — see [`docs/product/intent.md`](docs/product/intent.md). [ShredPace](https://shredpace.com), an agent-first training
 log, is a research reference for how a feature should behave; AI Lift Coach has its own name, wording, design and
 API, and is **not affiliated with ShredPace**.
 
@@ -83,17 +83,12 @@ the OAuth work; and the first set of a session must stay fast after an idle peri
 AI Lift Coach is built by a team of AI agents following the AI-assisted Development Lifecycle (ADLC), with GitHub as the source
 of truth.
 
-| Role | What it does |
-|---|---|
-| **Owner** (human) | Defines requirements, approves designs, architecture decisions and every production deploy |
-| **Design Agent** | Draws design boards and opens PRs; cannot merge |
-| **Dev Lead** (Claude Opus) | Owns security, proposes the architecture, merges and deploys; never does the independent review |
-| **Builders** (Claude Sonnet) | One per issue, each in its own Git worktree; never merge |
-| **Independent Reviewer** (Claude Opus) | Reviews every code PR |
+Five roles — Owner, Design Agent, Dev Lead, Builders and Independent Reviewer — are defined once, in
+[docs/agents/team.md](docs/agents/team.md), with what each may and may not do. They are not repeated here:
+a second copy drifts from the first.
 
 The rules every contributor and agent follows are in [AGENTS.md](AGENTS.md): never push to `main`, infrastructure as
-code only, and approval before implementation for both designs and architecture. Roles are in
-[docs/agents/team.md](docs/agents/team.md), the workflow and deploy rules in
+code only, and approval before implementation for both designs and architecture. The workflow and deploy rules are in
 [docs/agents/workflow.md](docs/agents/workflow.md), and the proposed PR gates (tests pass, UI matches the approved
 design, independent review) in [docs/agents/quality-gates.md](docs/agents/quality-gates.md).
 
@@ -113,11 +108,12 @@ design, independent review) in [docs/agents/quality-gates.md](docs/agents/qualit
 
 | Path | What is in it |
 |---|---|
-| [`intent.md`](intent.md) | Why this project exists, in the Owner's own words. Wins over everything else |
 | [`AGENTS.md`](AGENTS.md) | The always-rules for every agent, and links to the rest |
+| [`REVIEW.md`](REVIEW.md) | How a code PR is reviewed: the three passes, and what counts as Important |
+| [`intent/`](intent/) | The per-change artifact chain: one folder per change holding its intent, spec and plan |
 | [`GLOSSARY.md`](GLOSSARY.md) | The project's vocabulary (Lifter, Agent, Key, Insights, Check-in and so on) |
 | [`issues/prd.md`](issues/prd.md) | The PRD: the text of all 205 user stories, tagged by phase |
-| [`docs/product/`](docs/product/) | [`vision.md`](docs/product/vision.md), [`mvp-scope.md`](docs/product/mvp-scope.md), [`requirements.md`](docs/product/requirements.md) and the [`decision-log.md`](docs/product/decision-log.md) |
+| [`docs/product/`](docs/product/) | [`intent.md`](docs/product/intent.md) — why this project exists, in the Owner's own words, and the document that wins over every other — plus [`vision.md`](docs/product/vision.md), [`mvp-scope.md`](docs/product/mvp-scope.md), [`requirements.md`](docs/product/requirements.md) and the [`decision-log.md`](docs/product/decision-log.md) |
 | [`docs/adr/`](docs/adr/) | Accepted architecture decision records |
 | [`docs/agents/`](docs/agents/) | Team roles, workflow, quality gates and the PR checklist |
 | [`docs/design/`](docs/design/) | AI Lift Coach's own design boards, once the Design Agent draws them |
@@ -126,15 +122,15 @@ design, independent review) in [docs/agents/quality-gates.md](docs/agents/qualit
 
 ## Where to start reading
 
-1. [intent.md](intent.md): why this project exists and what it is for
+1. [docs/product/intent.md](docs/product/intent.md): why this project exists and what it is for
 2. [docs/product/vision.md](docs/product/vision.md): what AI Lift Coach is and where it is going
 3. [docs/product/mvp-scope.md](docs/product/mvp-scope.md): exactly what Phase 1 contains
 4. [docs/product/decision-log.md](docs/product/decision-log.md): every decision, why it was made, and what is still to confirm
 5. [GLOSSARY.md](GLOSSARY.md): the words used throughout
 6. [issues/prd.md](issues/prd.md): the detailed stories
 
-If two documents disagree, `intent.md` wins, then the decision log, then the requirements and scope documents, then
-the PRD.
+If two documents disagree, `docs/product/intent.md` wins, then the decision log, then the requirements and scope
+documents, then the PRD.
 
 ## The ShredPace reference
 

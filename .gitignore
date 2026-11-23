@@ -2,3 +2,6 @@
 # See docs/product/shredpace/evidence/README.md for what is there and how to re-fetch it.
 docs/product/shredpace/evidence/*
 !docs/product/shredpace/evidence/README.md
+
+# Git worktrees created by Claude Code sessions. Each is a full checkout; never commit one.
+.claude/worktrees/

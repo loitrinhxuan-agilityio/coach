@@ -13,7 +13,7 @@ AI Lift Coach is built by a team of AI agents following the AI-assisted Developm
 
 ## Read before you start
 
-- [Intent](intent.md): why this project exists and what it is for. It wins over every other document here.
+- [Intent](docs/product/intent.md): why this project exists and what it is for. It wins over every other document here.
 - [Team and permissions](docs/agents/team.md): your role and what it may do. Read this first on every task.
 - [Decision boundaries](docs/agents/decision-boundaries.md): what you may decide, and what you must stop and ask about.
 - [Workflow](docs/agents/workflow.md): where issues live, the before-starting and before-completing steps, PR review and quality gates.

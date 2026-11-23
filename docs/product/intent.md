@@ -2,6 +2,11 @@
 
 Author: Owner. Status: draft.
 
+> **This is the product charter:** why AI Lift Coach exists and how the Owner intends to develop
+> it. It wins over every other document in this repository, the decision log included (D-027), and
+> it cites no decision IDs — the log cites it. Individual feature and change intents are separate
+> artifacts and live in [`intent/`](../../intent/).
+
 ## Problem
 
 I want to get good at directing, evaluating and governing AI-assisted software work: turning an idea

@@ -1,7 +1,7 @@
 # The lifecycle
 
 The Owner's own words, lifted from the intent document so that agents read them where they work.
-See [`intent.md`](../../intent.md) for why the project exists.
+See [`intent.md`](../product/intent.md) for why the project exists.
 
 ADLC is the **AI-assisted Development Lifecycle**. AI agents contribute to defined tasks; humans
 retain decision authority. It organises and governs the work: individual tools and skills support
@@ -22,6 +22,24 @@ particular activities, and they do not replace the lifecycle or its approval res
 6. **Development** — implement approved work in small, reviewable increments.
 7. **Verification and delivery** — demonstrate that the result meets requirements, design, security
    and quality expectations.
+
+## How this maps to the six-stage loop
+
+The seven stages above are **phases of this project**, walked once. The artifact chain in
+[`workflow.md`](workflow.md) is **a loop run per change**, in the six stages of Anthropic's
+AI-Native SDLC Playbook. They are not the same thing, and conflating them is how a project
+ends up walking one slow line instead of running the loop.
+
+| Playbook stage | Artifact it commits | This project's phases |
+|---|---|---|
+| 1 Plan | `intent.md` | Discovery and intent |
+| 2 Design | `spec.md` | Research and reverse engineering; Requirements and scope; Design validation |
+| 3 Build | `plan.md`, then the diff | Architecture and preparation; Development |
+| 4 Test | the tests and their output | Development; Verification and delivery |
+| 5 Deploy | the PR and its findings | Verification and delivery |
+| 6 Maintain | a new `intent.md` | (not reached; nothing is deployed) |
+
+Every change runs all six. The project's phases say where the project as a whole has got to.
 
 ## How AI is used
 
