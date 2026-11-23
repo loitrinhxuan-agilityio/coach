@@ -112,6 +112,7 @@ design, independent review) in [docs/agents/quality-gates.md](docs/agents/qualit
 
 | Path | What is in it |
 |---|---|
+| [`intent.md`](intent.md) | Why this project exists, in the Owner's own words. Wins over everything else |
 | [`AGENTS.md`](AGENTS.md) | The always-rules for every agent, and links to the rest |
 | [`GLOSSARY.md`](GLOSSARY.md) | The project's vocabulary (Lifter, Agent, Key, Insights, Check-in and so on) |
 | [`issues/prd.md`](issues/prd.md) | The PRD: the text of all 205 user stories, tagged by phase |
@@ -124,13 +125,15 @@ design, independent review) in [docs/agents/quality-gates.md](docs/agents/qualit
 
 ## Where to start reading
 
-1. [docs/product/vision.md](docs/product/vision.md): what Rung is and where it is going
-2. [docs/product/mvp-scope.md](docs/product/mvp-scope.md): exactly what Phase 1 contains
-3. [docs/product/decision-log.md](docs/product/decision-log.md): every decision, why it was made, and what is still to confirm
-4. [GLOSSARY.md](GLOSSARY.md): the words used throughout
-5. [issues/prd.md](issues/prd.md): the detailed stories
+1. [intent.md](intent.md): why this project exists and what it is for
+2. [docs/product/vision.md](docs/product/vision.md): what AI Lift Coach is and where it is going
+3. [docs/product/mvp-scope.md](docs/product/mvp-scope.md): exactly what Phase 1 contains
+4. [docs/product/decision-log.md](docs/product/decision-log.md): every decision, why it was made, and what is still to confirm
+5. [GLOSSARY.md](GLOSSARY.md): the words used throughout
+6. [issues/prd.md](issues/prd.md): the detailed stories
 
-If two documents disagree, the decision log wins, then the requirements and scope documents, then the PRD.
+If two documents disagree, `intent.md` wins, then the decision log, then the requirements and scope documents, then
+the PRD.
 
 ## The ShredPace reference
 

@@ -14,6 +14,7 @@ validated.
 
 | Document | Role | Wins over |
 |---|---|---|
+| [`intent.md`](../../intent.md) | Why the project exists, in the Owner's own words | Everything below, this log included |
 | **This log** | Every decision, with its reason and status | Everything below |
 | [requirements.md](requirements.md) and [mvp-scope.md](mvp-scope.md) | What is committed: Phase 1 scope, and the constraints the decisions impose | The PRD |
 | [vision.md](vision.md) | Why Rung exists and where it is going | (not a source of requirements) |
