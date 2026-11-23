@@ -1,7 +1,7 @@
 # The lifecycle
 
 The Owner's own words, lifted from the intent document so that agents read them where they work.
-See [`intent.md`](../../intent.md) for why the project exists.
+See [`intent.md`](../product/intent.md) for why the project exists.
 
 ADLC is the **AI-assisted Development Lifecycle**. AI agents contribute to defined tasks; humans
 retain decision authority. It organises and governs the work: individual tools and skills support

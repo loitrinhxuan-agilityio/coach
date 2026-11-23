@@ -20,7 +20,7 @@ checklist to complete (D-026).
 ## Why it exists
 
 **The practice is the primary goal and the product is the vehicle** (D-024). The Owner is using AI Lift Coach as a
-practice ground for directing, evaluating and governing AI-assisted software work; see [`intent.md`](../../intent.md).
+practice ground for directing, evaluating and governing AI-assisted software work; see [`intent.md`](intent.md).
 The product still has to be genuinely useful, or it teaches nothing. The Owner does not mind whether it is ever
 public or private, and neither outcome is a goal.
 
@@ -73,7 +73,7 @@ candidate list above. Nothing is scheduled and nothing runs automatically.
 
 **Phase 1 is done when the Owner can log a real leg session through their assistant over MCP with a Key, see it on
 the desktop dashboard, and get a next-time weight suggestion** (D-004, D-010, D-011). That is the product proof. The
-practice succeeds on the terms set out in [`intent.md`](../../intent.md).
+practice succeeds on the terms set out in [`intent.md`](intent.md).
 
 Standing rule for every phase: every merged pull request passes the three quality gates, and the evidence is the
 GitHub history. There are no user-count or revenue targets.
