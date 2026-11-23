@@ -97,7 +97,7 @@ tile, separate Before, During and After pages, and the body figure.
 |---|---|
 | The Owner approves the quality gates and the PR checklist (`docs/agents/quality-gates.md`, `pr-checklist.md`) | **Open.** Both are still "proposed". |
 | The architecture ADRs are approved (D-022): hosting and data store, sign-in and authorisation, Account isolation, API contracts, deploy process | **Open.** The Dev Lead writes them; the Owner approves. |
-| The first AI Lift Coach design board is approved | **Open.** None exists yet. |
+| The first AI Lift Coach design board is approved | **Open.** Sixteen screens, eleven components and a token system exist in `docs/design/ailiftcoach/`, verified for contrast and phone width; the Owner's approval is outstanding. |
 | The product name is chosen (D-017) | **Done.** AI Lift Coach (D-023, superseding D-018's "Rung"). |
 | `AGENTS.md` carries the architecture-approval rule | **Done.** |
 | `docs/agents/team.md` and `workflow.md` state that every production deploy needs the Owner's approval | **Done.** |
