@@ -1,4 +1,4 @@
-# ShredPace: reference for the Rung (source of truth)
+# ShredPace: reference for the AI Lift Coach (source of truth)
 
 Reverse-engineered inventory of <https://shredpace.com>, captured **2026-11-17** and extended on
 **2026-11-18** with the publisher's full agent guide, changelog and docs pages.
@@ -12,7 +12,7 @@ trains; the website is the dashboard that shows the result.
 The folder is sorted by what a file is for. Read `spec/` to learn what ShredPace does, `observations/` for
 what the live dashboard actually showed, and `review/` for our own judgement of how complete this is.
 
-### `spec/`: what ShredPace does (what we clone)
+### `spec/`: what ShredPace does (our research reference)
 
 | File | What's in it |
 |---|---|

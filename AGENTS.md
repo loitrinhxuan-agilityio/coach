@@ -1,6 +1,6 @@
-# Rung
+# AI Lift Coach
 
-Rung is built by a team of AI agents following the Agentic Development Lifecycle (ADLC), with GitHub as the persistent source of truth.
+AI Lift Coach is built by a team of AI agents following the AI-assisted Development Lifecycle (ADLC), with GitHub as the persistent source of truth.
 
 ## Always
 

@@ -1,23 +1,23 @@
-# Rung
+# AI Lift Coach
 
-An agent-first training log and dashboard: the Lifter's own AI assistant logs what they do and coaches from the history, and the website shows the result. A personal product that clones ShredPace's behaviour with its own identity.
+An agent-first training log and dashboard: the Lifter's own AI assistant logs what they do and coaches from the history, and the website shows the result. A personal product with its own identity, built as the Owner's practice ground for AI-assisted development.
 
 ## Language
 
 ### The product
 
-**Rung**:
-The product's name. It names the product and nothing else: a step on a skill ladder is a step, never a rung.
-_Avoid_: Coach App (the working title until 2026-11-18)
+**AI Lift Coach**:
+The product's name, chosen by the Owner on 2026-11-23. It names the product and nothing else.
+_Avoid_: Coach App (the working title until 2026-11-18), Rung (chosen on 2026-11-18 and replaced on 2026-11-23; see D-018 and D-023)
 
 ### People and access
 
 **Lifter**:
-The person who trains and uses Rung.
+The person who trains and uses AI Lift Coach.
 _Avoid_: User, customer, client
 
 **Account**:
-Everything one Lifter owns in Rung: their data, their Keys and their settings.
+Everything one Lifter owns in AI Lift Coach: their data, their Keys and their settings.
 _Avoid_: Profile, user
 
 **Agent**:
@@ -33,12 +33,12 @@ The project's product owner, who defines requirements and approves designs. Neve
 _Avoid_: Account owner, admin
 
 **Team agents**:
-The AI agents that build Rung (Design Agent, Dev Lead, Builders, Reviewer). They are not part of the product.
+The AI agents that build AI Lift Coach (Design Agent, Dev Lead, Builders, Reviewer). They are not part of the product.
 _Avoid_: Agents (unqualified)
 
 **ADLC**:
-The Agentic Development Lifecycle: the way the Team agents and the Owner build Rung, from issue to design approval, pull request, review and deploy. It is how the product is built, not what it is.
-_Avoid_: Agent Development Lifecycle
+The AI-assisted Development Lifecycle: the way the Team agents and the Owner build AI Lift Coach, from issue to design approval, pull request, review and deploy. AI agents contribute to defined tasks; the Owner retains decision authority.
+_Avoid_: Agentic Development Lifecycle (it implies the agents own the lifecycle), Agent Development Lifecycle
 
 ### Coaching
 
@@ -75,7 +75,7 @@ _Avoid_: Trainer note, tip
 ### Exercises
 
 **Starter exercise**:
-An exercise from Rung's own built-in catalogue. Only its training settings can be edited.
+An exercise from AI Lift Coach's own built-in catalogue. Only its training settings can be edited.
 _Avoid_: Default exercise, standard exercise
 
 **Custom exercise**:
@@ -91,7 +91,7 @@ _Avoid_: Rolling week, seven-day window
 ### The build
 
 **Agent guide**:
-The instructions Rung gives an Agent about how to behave: the MCP server's instructions and a Markdown page.
+The instructions AI Lift Coach gives an Agent about how to behave: the MCP server's instructions and a Markdown page.
 _Avoid_: Docs, prompt
 
 **Sample account**:

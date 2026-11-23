@@ -1,4 +1,4 @@
-# Rung: Phase 1 scope
+# AI Lift Coach: Phase 1 scope
 
 > **Status: draft for the Owner's review.** Written on 2026-11-18 from decisions D-004, D-009, D-010, D-011,
 > D-013 to D-016 and D-022 in [decision-log.md](decision-log.md). Story numbers refer to
@@ -36,7 +36,7 @@ Phase 1 is done when **both** are true (D-004, amended by D-005):
 | 10 | End of session | Two ratings (how hard, how it felt) and a session note | 24, 25 |
 | 11 | Safe retries | A retry after a timeout never logs the same set twice | 28 |
 | | **Exercises and loading** | | |
-| 12 | Catalogue | Rung's own starter list of about 60 exercises, plus custom exercises | 31, 32 |
+| 12 | Catalogue | AI Lift Coach's own starter list of about 60 exercises, plus custom exercises | 31, 32 |
 | 13 | Load types | Each lift knows what its number means (barbell total, dumbbell per hand, assistance, and so on) | 34 |
 | 14 | Bar and plates | Bar weight asked once with its scope. Barbell targets loadable with the plates, never below the bar, plates per side shown. | 36, 37 |
 | | **Suggestions and progression** | | |
@@ -58,7 +58,7 @@ Phase 1 is done when **both** are true (D-004, amended by D-005):
 | 26 | Sample account | An Account named Sam with about eight weeks of invented history (a stalled lift, a missed day, an away period, a few scans), for tests, design boards and demos | 201 |
 
 **Also in the slice, not as stories:**
-- About 25 API operations, in Rung's own shapes (D-013). ShredPace has 109 in total, and its capabilities are the
+- About 25 API operations, in AI Lift Coach's own shapes (D-013). ShredPace has 109 in total, and its capabilities are the
   reference for what each must do.
 - Five of the PRD's 15 rule modules: the progression engine (in part), load calculator, set sanity checker,
   conversation formatter and operation registry.
@@ -97,8 +97,8 @@ tile, separate Before, During and After pages, and the body figure.
 |---|---|
 | The Owner approves the quality gates and the PR checklist (`docs/agents/quality-gates.md`, `pr-checklist.md`) | **Open.** Both are still "proposed". |
 | The architecture ADRs are approved (D-022): hosting and data store, sign-in and authorisation, Account isolation, API contracts, deploy process | **Open.** The Dev Lead writes them; the Owner approves. |
-| The first Rung design board is approved | **Open.** None exists yet. |
-| The product name is chosen (D-017) | **Done.** Rung (D-018). |
+| The first AI Lift Coach design board is approved | **Open.** None exists yet. |
+| The product name is chosen (D-017) | **Done.** AI Lift Coach (D-023, superseding D-018's "Rung"). |
 | `AGENTS.md` carries the architecture-approval rule | **Done.** |
 | `docs/agents/team.md` and `workflow.md` state that every production deploy needs the Owner's approval | **Done.** |
 | Issues are filed on GitHub from the PRD (`/prd-to-issues`, then the Owner or Dev Lead files them) | **Open.** After the items above. |
