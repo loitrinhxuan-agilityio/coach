@@ -24,6 +24,7 @@ GitHub is the source of truth, so builders work from the GitHub issue. Issues dr
 
 - Every code PR requires independent review. Who reviews, and who may not, is in [team.md](team.md).
 - All three PR quality gates must pass ([quality-gates.md](quality-gates.md)).
+- **A PR never touches both `docs/design/ailiftcoach/` and application code.** Design changes go in their own PR from the Design Agent. If you find an approved board is wrong, build to it, file an entry in [`CHANGES-FOR-DESIGN.md`](../design/CHANGES-FOR-DESIGN.md) and carry on — see [design-handoff.md](design-handoff.md).
 
 ## Deploying
 

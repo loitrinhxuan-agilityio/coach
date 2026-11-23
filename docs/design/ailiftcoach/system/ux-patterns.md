@@ -5,8 +5,9 @@ signed-in dashboard at desktop and phone in both themes. What follows is a readi
 product solves the agent-first problem**, and what AI Lift Coach takes, adapts or refuses.
 
 Nothing about its branding is carried over. Its identity is charcoal and orange, condensed italic
-uppercase display type, and 999px pills; ours is a cool neutral, Instrument Sans with monospace
-figures, and a 10px maximum corner. The overlap is structural, not visual.
+uppercase display type, and 999px pills. Ours is Blueprint: navy-biased neutrals, Spline Sans with
+Spline Sans Mono for anything carrying a unit, and a 10px maximum corner. The overlap is
+structural, not visual.
 
 ## Taken
 
@@ -82,7 +83,7 @@ affordance would be a lie about what the product does.
 
 ## Contradictions worth not inheriting
 
-Its own material disagrees with itself in places, and a clone should settle these rather than
+Its own material disagrees with itself in places, and this product should settle these rather than
 reproduce them:
 
 - A stall is **5 sessions** on one page and **4** in the agent guide.

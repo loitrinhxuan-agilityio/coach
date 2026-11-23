@@ -8,7 +8,9 @@ optional right rail at 360px for context that supports the main subject without 
 Two groups, and the split is meaningful rather than cosmetic.
 
 **Destinations** are places where training data lives. A lifter moves between them the way they
-would flip sections of a logbook.
+would flip sections of a logbook. The table below is the full set the design covers; **Phase 1's
+rail carries three of them** — Today, Training and Settings — because the rest belong to features
+that are candidates rather than commitments.
 
 | | What it answers |
 |---|---|
@@ -19,8 +21,9 @@ would flip sections of a logbook.
 | **Food** | Intake against targets |
 | **Goals** | What was committed to, and whether it is on track |
 
-**Settings** is the second group, on its own: plan and billing, units, gym equipment, privacy and
-data export, and the agent keys.
+**Settings** is the second group, on its own: units, gym equipment, privacy and data export, and
+the agent keys. **There is no billing panel** — billing is out of scope and every feature is on for
+every account, so a panel for it would describe a product that does not exist.
 
 Below both, pinned to the foot of the sidebar, sits the **agent status** element. It is not a
 destination. In a product whose only writer is an external agent, *is it connected and when did it
