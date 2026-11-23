@@ -5,3 +5,6 @@ docs/product/shredpace/evidence/*
 
 # Git worktrees created by Claude Code sessions. Each is a full checkout; never commit one.
 .claude/worktrees/
+
+# Node dependencies for the design tools (docs/design/ailiftcoach/tools/).
+node_modules/
