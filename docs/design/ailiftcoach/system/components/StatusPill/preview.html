@@ -1,0 +1,63 @@
+<!-- @dsCard group="Explainability" height=230 subtitle="Six derivable states; normality is neutral, not amber" -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Spline+Sans:wght@400;500;600&family=Spline+Sans+Mono:wght@500&display=swap">
+<style>
+  .wrap {
+    font-family: var(--font-ui, sans-serif);
+    background: var(--surface-page);
+    color: var(--ink);
+    padding: var(--space-4, 16px);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4, 16px);
+  }
+  .row { display: flex; flex-wrap: wrap; gap: var(--space-2, 8px); }
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: var(--radius-sm, 3px);
+    border: 1px solid transparent;
+  }
+  .pill i { width: 6px; height: 6px; border-radius: var(--radius-round, 999px); background: currentColor; }
+  .ok { background: var(--state-ok-soft); color: var(--state-ok); }
+  .neutral { border-color: var(--line); color: var(--ink-muted); }
+  .caution { background: var(--state-caution-soft); color: var(--state-caution); }
+  .alert { background: var(--state-alert-soft); color: var(--state-alert); }
+
+  .card {
+    background: var(--surface-card);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg, 10px);
+    padding: var(--space-4, 16px);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2, 8px);
+  }
+  .goal { display: flex; align-items: center; gap: var(--space-3, 12px); flex-wrap: wrap; }
+  .goal-name { font-size: 14px; font-weight: 600; }
+  .goal-val { font-family: var(--font-mono, monospace); font-variant-numeric: tabular-nums; font-size: 14px; color: var(--ink-muted); margin-left: auto; }
+  .why { font-size: 12.5px; line-height: 18px; color: var(--ink-muted); }
+</style>
+<div class="wrap">
+  <div class="row">
+    <span class="pill ok"><i></i>On track</span>
+    <span class="pill neutral"><i></i>Holding</span>
+    <span class="pill neutral"><i></i>Early days</span>
+    <span class="pill caution"><i></i>Behind</span>
+    <span class="pill caution"><i></i>Stalling</span>
+    <span class="pill alert"><i></i>Broken</span>
+  </div>
+
+  <div class="card">
+    <div class="goal">
+      <span class="goal-name">Body fat to 15%</span>
+      <span class="pill caution"><i></i>Behind</span>
+      <span class="goal-val">18% → 15%</span>
+    </div>
+    <div class="why">Needs 0.9 points a month to make 28 February. Three readings so far.</div>
+  </div>
+</div>

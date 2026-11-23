@@ -1,4 +1,4 @@
-# PRD: Rung
+# PRD: AI Lift Coach
 
 > **Precedence.** This PRD is the single place for the text of every user story. Where it disagrees with
 > `docs/product/decision-log.md`, `docs/product/requirements.md` or `docs/product/mvp-scope.md`, those win: the PRD
@@ -8,7 +8,8 @@
 >
 > **Status: draft for the Owner's review.** Written from the ShredPace research in
 > `docs/product/shredpace/` (features, product rules, signed-in observations). The Owner decided that
-> Rung is **a personal product that clones every ShredPace feature, built in phases** (decisions D-005 and D-006).
+> AI Lift Coach is **a personal product, built in phases, with Phase 1 as the only committed scope** (D-024, D-026).
+> ShredPace is a research reference for how a feature should behave, never a checklist to complete.
 > Each story is tagged **[Phase 1]** or **[Phase 2]**; an untagged story belongs to a later phase that the
 > Owner has not yet ordered. **Nothing here has been approved.**
 
@@ -26,17 +27,18 @@ they are mid-set, and never makes them open an app to enter data.
 
 ## Solution
 
-Rung is a training log and dashboard whose input is **the person's own AI assistant**. The
+AI Lift Coach is a training log and dashboard whose input is **the person's own AI assistant**. The
 assistant logs sets as the person trains, over an API and an MCP server, and coaches from the history.
 The website is where the person sees the result: a calm, mostly read-only dashboard.
 
-The coaching itself is **rule-based, with no AI inside the product**. Rung supplies deterministic
+The coaching itself is **rule-based, with no AI inside the product**. AI Lift Coach supplies deterministic
 rules and complete data: which weight comes next, how to ease someone back after a break, what a goal's
 projected date is, what to eat. The person's assistant supplies the conversation.
 
 It covers lifting and the surrounding life of a lifter: a plan with a focus, goals, habits and tests,
-food, body measurements, aches, time away, and weekly Insights. It clones ShredPace's behaviour and
-domain rules in full, built in phases, with its own name, wording, visual identity and API.
+food, body measurements, aches, time away, and weekly Insights. ShredPace's behaviour and domain rules are the
+evidence each of those is specified from; AI Lift Coach has its own name, wording, visual identity and API. Only
+Phase 1 is committed (D-026).
 
 ## User Stories
 
@@ -449,7 +451,7 @@ The first 201 stories covered sign-up (story 1) and sign-out (story 192) but nev
 ## Implementation Decisions
 
 **Product shape**
-- Rung is an agent-first product: a REST API and an MCP server expose one operation for each
+- AI Lift Coach is an agent-first product: a REST API and an MCP server expose one operation for each
   capability, and a web dashboard presents the result. Every capability the dashboard shows must also be
   reachable by an agent.
 - The dashboard is read-only for training data. Edits go through the agent; the dashboard offers
@@ -465,7 +467,7 @@ goals, plan, Insights) builds on it. The Sample account is built early so popula
 and checked.
 
 **Agent guide.** ShredPace's behaviour in the gym depends on a long guide that tells the assistant how to
-act, and the rule engine alone does not provide that. Rung ships its own, in its own words, as the MCP
+act, and the rule engine alone does not provide that. AI Lift Coach ships its own, in its own words, as the MCP
 server's instructions and as a Markdown page at a fixed address. It is checked by scripted conversations
 run against a real assistant (stories 198 and 199).
 
@@ -549,12 +551,12 @@ is testable without a database, a network or a clock.
 **Interface decisions**
 - Dashboard areas: Today, Training (sessions, progress, exercises), Food, Body, Goals, and a Tools group
   (agents, insights, settings, activity). A phone gets a floating tab bar and an account sheet.
-- Identity is Rung's own: its own name, wording and visual design.
+- Identity is AI Lift Coach's own: its own name, wording and visual design.
 - The Design Agent starts from the 29 redrawn desktop boards in `docs/product/shredpace/prototype/` for
-  layout and structure only, redraws them in Rung's identity with one design that follows the
+  layout and structure only, redraws them in AI Lift Coach's identity with one design that follows the
   device's light or dark mode, and submits them to the Owner for approval one area at a time (Today,
   Session, Plan, Food, Body, Goals, Progress, Settings).
-- The starter exercise catalogue is written for Rung: about 60 common lifts, kept in a JSON seed file
+- The starter exercise catalogue is written for AI Lift Coach: about 60 common lifts, kept in a JSON seed file
   we own.
 
 ## Testing Decisions
@@ -584,8 +586,8 @@ is testable without a database, a network or a clock.
 
 - **Billing and plans.** No Stripe, no free-versus-paid gating, no early-access messaging. Every feature is on for
   every account (D-006).
-- **ShredPace's brand, name, wording, assets and visual design**, and its design canvas. Behaviour is cloned;
-  identity is not (D-006). The API is Rung's own (D-013).
+- **ShredPace's brand, name, wording, assets and visual design**, and its design canvas. Its behaviour is evidence;
+  its identity is not available (D-006). The API is AI Lift Coach's own (D-013).
 - **Features ShredPace does not have:** native mobile apps (a PWA is planned instead, D-019), push notifications,
   email reminders, badges and public streaks, wearable or health-platform sync, a built-in AI coach or any model
   inside the product, social features and sharing a profile, languages other than English, and diagnosis,
@@ -593,7 +595,7 @@ is testable without a database, a network or a clock.
 
 ### Later phases, not out of scope
 
-These are part of the destination (D-006) but are not in Phase 1: one-click OAuth connectors (the first item of
+These are candidates rather than commitments (D-026), and none is in Phase 1: one-click OAuth connectors (the leading candidate after
 Phase 2, D-011), the custom-GPT operation subset, a public documentation site, seven themes, CSV export, an
 installable PWA with phone layouts, pounds and miles, "fix it by hand" (story 150), sign-up and the public landing
 page, Continue with Google, emailed password reset, the Terms and Privacy pages, and the consent wording, which is
@@ -604,10 +606,11 @@ later phases.
 
 ### Assumptions
 
-The tiers "cloned in full", "built in reduced form" and "not in v1" no longer apply: every ShredPace feature is in the
-destination except billing and its brand (D-006). The assumptions that remain:
+The tiers "cloned in full", "built in reduced form" and "not in v1" no longer apply. Phase 1 is the only committed
+scope, and every other feature is a candidate decided once Phase 1 is in daily use (D-026). The assumptions that
+remain:
 
-- **Own identity.** Rung uses its own name, wording, design and API. This is not a restriction on features:
+- **Own identity.** AI Lift Coach uses its own name, wording, design and API. This is not a restriction on features:
   reproducing another product's behaviour is ordinary; reproducing its brand, copy and visual identity is where
   legal risk lies.
 - **Everything is free.** With billing out of scope, no feature is gated.
@@ -639,5 +642,5 @@ and changes quickly, so details here are accurate as of 2026-11-18.
 ### Open questions
 
 Open questions are tracked in `docs/product/requirements.md` (section 9) and the decision log, not here. Settled
-since this PRD was first drafted: the product name (Rung, D-018), who it is for (the Owner, D-005), one account or
+since this PRD was first drafted: the product name (AI Lift Coach, D-023), who it is for (the Owner, D-005), one account or
 many (D-003), the stall rule, the legal text (D-021) and data residency (D-012).

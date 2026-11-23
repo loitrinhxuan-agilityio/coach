@@ -1,4 +1,4 @@
-# Rung: requirements
+# AI Lift Coach: requirements
 
 > **Status: draft for the Owner's review.** Written on 2026-11-18 from [decision-log.md](decision-log.md)
 > (D-001 to D-022). The full text of every user story lives in [`issues/prd.md`](../../issues/prd.md) (205
@@ -17,10 +17,10 @@ The phases and what is in each are defined once: Phase 1 in [mvp-scope.md](mvp-s
 The PRD's 205 stories are 50 in Phase 1, 8 in Phase 2 (plus OAuth, which still needs stories written), and 147
 in later phases. If the Owner accepts assumption 5 in [mvp-scope.md](mvp-scope.md), Phase 1 becomes 51 and later 146.
 
-### The functional areas of the destination
+### The functional areas
 
-Every area below is part of the destination (D-006). The area is cloned from ShredPace's behaviour, in Rung's own
-shapes and wording.
+**Phase 1 is the only committed scope** (D-026). Everything marked later below is a candidate, not a plan, and
+enters a phase only when the Owner pulls it in.
 
 | Area | PRD stories | Phase |
 |---|---|---|
@@ -44,10 +44,10 @@ shapes and wording.
 
 | # | Requirement | Decision |
 |---|---|---|
-| R1 | Rung has no AI inside. Coaching is deterministic rules, and every target comes with its reason. | PRD |
+| R1 | AI Lift Coach has no AI inside. Coaching is deterministic rules, and every target comes with its reason. | PRD |
 | R2 | An Agent can do everything the dashboard shows. The dashboard is read-only for training data. | PRD, D-009 |
 | R3 | Every logged set returns one short line. | PRD story 15 |
-| R4 | Rung has its own name, wording, visual design and **API shapes**. ShredPace's API is a reference for what an operation does, never a contract to copy. | D-006, D-013, D-018 |
+| R4 | AI Lift Coach has its own name, wording, visual design and **API shapes**. ShredPace's API is a reference for what an operation does, never a contract to copy. | D-013, D-023, D-026 |
 | R5 | Weights are stored in kilograms. Phase 1 accepts and shows kilograms and kilometres only. | PRD, D-010 |
 | R6 | A Week runs Monday to Sunday in one time zone per Account. In Phase 1 the script sets the time zone. | PRD story 200, D-009 |
 | R7 | Insights, the recap and the morning check are computed when asked. No scheduler, email or push in v1. | PRD |
@@ -59,7 +59,7 @@ shapes and wording.
 |---|---|---|
 | I1 | An Agent connects with a **Key** over MCP or REST. There is no OAuth in Phase 1. | D-011, ADR 0001 |
 | I2 | OAuth connectors are the first item of Phase 2, so the Claude phone and desktop apps can connect. The identity provider (Cognito has no dynamic client registration) is a risk to verify early. | D-011, D-015 |
-| I3 | Rung ships an **agent guide** (MCP server instructions plus a Markdown page), written in its own words. | D-010, story 198 |
+| I3 | AI Lift Coach ships an **agent guide** (MCP server instructions plus a Markdown page), written in its own words. | D-010, story 198 |
 | I4 | Scripted conversations run against a real assistant as acceptance tests. | story 199 |
 | I5 | The Dev Lead proposes the Phase 1 API contracts (about 25 operations) and the Owner approves them before implementation. | D-013, D-022 |
 
@@ -68,12 +68,12 @@ shapes and wording.
 | # | Requirement | Decision |
 |---|---|---|
 | S1 | Keys are stored only as hashes. A Key cannot manage Keys, export data, delete the Account or give consent. | PRD stories 10, 11 |
-| S2 | The data model is multi-account from the first migration. Accounts (the Owner and Sam) are created by a script. No sign-up in Phase 1. | D-003, ADR 0002 |
+| S2 | The data model is multi-account from the first migration, for one reason: the Sample account has to be a second Account. Accounts (the Owner and Sam) are created by a script. No sign-up in Phase 1. | D-003, D-028, ADR 0002 |
 | S3 | An Account's data is kept apart from every other Account's. **The planned database has no row-level security**, so isolation is enforced in application code, every query is scoped, and the Independent Reviewer checks it. The ADR must say how an unscoped query is made impossible. | ADR 0002, D-015 notes |
 | S4 | A retry never records the same set twice (idempotent creates). | story 28 |
 | S5 | Sign in with email and password. First sign-in replaces a temporary password. An expired session says "Please sign in again". Passwords can be changed. | D-009, stories 202–205 |
 | S6 | The identity provider and how a person and an Agent's Key are each authorised are architecture decisions, not made here. | D-022 |
-| S7 | No health data is stored in Phase 1, so there is no consent gate in Phase 1. The consent wording is written when the first health-data feature enters a phase. | D-021 |
+| S7 | No health data is stored in Phase 1, so there is no consent gate in Phase 1. The consent wording is written if and when a health-data feature enters a phase; it is no longer a justification for the multi-account schema. | D-021, D-028 |
 | S8 | There is no data-residency requirement. Revisit if anyone other than the Owner holds an Account on production. | D-012 |
 | S9 | Terms and Privacy pages wait until anyone other than the Owner holds an Account. | D-021 |
 
@@ -96,7 +96,7 @@ shapes and wording.
 | Q1 | Never push to `main`. Designs and architecture need the Owner's approval before implementation. | `AGENTS.md`, D-022 |
 | Q2 | Every code PR passes three gates (tests pass, UI matches the approved design, independent review). **The gates are still "proposed".** | `docs/agents/quality-gates.md` |
 | Q3 | Pure rule modules are tested with table-driven cases, operations with contract tests, and conversations with the scripted scenarios. UI is checked in empty and populated states, which is why the Sample account is in Phase 1. | PRD Testing Decisions, D-010 |
-| Q4 | The Design Agent restyles the 29 redrawn desktop ShredPace boards in Rung's identity, with one design that follows the device's light or dark mode, and submits them for approval one area at a time. | PRD, I-12 |
+| Q4 | The Design Agent restyles the 29 redrawn desktop ShredPace boards in AI Lift Coach's identity, with one design that follows the device's light or dark mode, and submits them for approval one area at a time. | PRD, I-12 |
 | Q5 | Review outcomes are recorded honestly. | D-004 |
 
 ## 7. Out of scope
@@ -108,7 +108,7 @@ Phase 1.
 
 ## 8. To consider later
 
-Anything the Owner finds by exploring ShredPace again goes here and is scheduled late (D-007, D-020). It starts with
+Anything the Owner finds by exploring ShredPace again goes here as a candidate, not as scope (D-020, D-026). It starts with
 the ten items not yet seen, listed with exact instructions in
 [`shredpace/review/handoff.md`](shredpace/review/handoff.md): the trend and second-week states, Coach insights with
 data, the benchmark page, time away, missed day and comeback states, a brand-new account's first Today, phone

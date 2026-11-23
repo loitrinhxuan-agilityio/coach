@@ -1,0 +1,90 @@
+<!-- @dsCard group="Data display" height=150 subtitle="Label, figure, unit, and a caption that qualifies the figure" -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Spline+Sans:wght@400;500;600&family=Spline+Sans+Mono:wght@500&display=swap">
+<style>
+  .wrap {
+    font-family: var(--font-ui, sans-serif);
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: var(--space-4, 16px);
+    padding: var(--space-4, 16px);
+    background: var(--surface-page);
+    color: var(--ink);
+  }
+  .tile {
+    background: var(--surface-card);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg, 10px);
+    padding: var(--space-4, 16px);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2, 8px);
+    min-width: 0;
+  }
+  .tile-label {
+    font-size: 11px;
+    line-height: 14px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+  }
+  .tile-figure {
+    font-family: var(--font-mono, monospace);
+    font-variant-numeric: tabular-nums;
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-1, 4px);
+  }
+  .tile-figure b {
+    font-size: 34px;
+    line-height: 36px;
+    font-weight: 500;
+    color: var(--ink);
+  }
+  .tile-figure span {
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--ink-muted);
+  }
+  .tile-caption {
+    font-size: 12.5px;
+    line-height: 18px;
+    color: var(--ink-muted);
+    min-height: 18px;
+  }
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1, 4px);
+    font-size: 11px;
+    line-height: 14px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    padding: 3px var(--space-2, 8px);
+    border-radius: var(--radius-sm, 3px);
+    background: var(--state-caution-soft);
+    color: var(--state-caution);
+  }
+</style>
+<div class="wrap">
+  <div class="tile">
+    <div class="tile-label">Time</div>
+    <div class="tile-figure"><b>31</b><span>min</span></div>
+    <div class="tile-caption">measured</div>
+  </div>
+  <div class="tile">
+    <div class="tile-label">Working sets</div>
+    <div class="tile-figure"><b>4</b><span>sets</span></div>
+    <div class="tile-caption"></div>
+  </div>
+  <div class="tile">
+    <div class="tile-label">Volume</div>
+    <div class="tile-figure"><b>2.1</b><span>k kg</span></div>
+    <div class="tile-caption">across 2 lifts</div>
+  </div>
+  <div class="tile">
+    <div class="tile-label">Calories</div>
+    <div class="tile-figure"><b>255</b><span>kcal</span></div>
+    <div class="tile-caption"><span class="chip">Estimated</span></div>
+  </div>
+</div>

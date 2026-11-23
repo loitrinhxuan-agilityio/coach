@@ -1,0 +1,47 @@
+<!-- @dsCard group="Data display" height=290 subtitle="Two series on one scale, context ghosted and dashed, endpoints labelled" -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Spline+Sans:wght@400;500;600&family=Spline+Sans+Mono:wght@500&display=swap">
+<style>
+  .wrap { font-family: var(--font-ui, sans-serif); background: var(--surface-page); color: var(--ink); padding: var(--space-4, 16px); }
+  .card { background: var(--surface-card); border: 1px solid var(--line); border-radius: var(--radius-lg, 10px); padding: var(--space-5, 24px); }
+  h3 { font-size: 19px; line-height: 26px; font-weight: 600; margin: 0 0 2px; }
+  .sub { font-size: 12.5px; color: var(--ink-muted); margin-bottom: 14px; }
+  svg { display: block; width: 100%; height: auto; max-width: 100%; }
+  .ax { font-family: var(--font-mono, monospace); font-size: 10px; fill: var(--ink-muted); }
+  .gl { stroke: var(--line); stroke-width: 1; }
+  .s1 { stroke: var(--series-1); stroke-width: 2; fill: none; stroke-linejoin: round; stroke-linecap: round; }
+  .s2 { stroke: var(--series-2); stroke-width: 2; fill: none; stroke-linejoin: round; stroke-linecap: round; }
+  .ghost { stroke: var(--series-ghost); stroke-width: 2; fill: none; stroke-dasharray: 5 4; stroke-linecap: round; }
+  .legend { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 12px; font-size: 12.5px; color: var(--ink-muted); }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .sw { width: 10px; height: 10px; border-radius: 2px; flex: none; }
+  .sw.dash { height: 0; border-top: 2px dashed var(--series-ghost); border-radius: 0; width: 14px; }
+</style>
+<div class="wrap">
+  <div class="card">
+    <h3>Estimated 1RM</h3>
+    <div class="sub">Top set of each session, Epley, kg</div>
+    <svg viewBox="0 0 640 200" role="img" aria-label="Back Squat rose from 96 to 117 kg over twelve weeks; Bench Press from 72 to 83; the plan projected a steadier climb">
+      <line class="gl" x1="48" y1="150" x2="620" y2="150"/>
+      <line class="gl" x1="48" y1="86" x2="620" y2="86"/>
+      <line class="gl" x1="48" y1="31.6" x2="620" y2="31.6"/>
+      <text class="ax" x="40" y="153" text-anchor="end">80</text>
+      <text class="ax" x="40" y="89" text-anchor="end">100</text>
+      <text class="ax" x="40" y="34.6" text-anchor="end">117</text>
+
+      <polyline class="ghost" points="48,98.8 100,93 152,87.2 204,81.4 256,75.6 308,69.8 360,64 412,58.2 464,52.4 516,46.6 568,40.8 620,46"/>
+      <polyline class="s1" points="48,98.8 100,92.4 152,82.8 204,82.8 256,73.2 308,66.8 360,66.8 412,57.2 464,50.8 516,41.2 568,31.6 620,31.6"/>
+      <polyline class="s2" points="48,175.6 100,172.4 152,166 204,166 256,159.6 308,156.4 360,156.4 412,150 464,150 516,143.6 568,140.4 620,140.4"/>
+      <circle cx="620" cy="31.6" r="4" fill="var(--series-1)"/>
+      <circle cx="620" cy="140.4" r="4" fill="var(--series-2)"/>
+
+      <text class="ax" x="48" y="190" text-anchor="start">wk 1</text>
+      <text class="ax" x="334" y="190" text-anchor="middle">wk 6</text>
+      <text class="ax" x="620" y="190" text-anchor="end">wk 12</text>
+    </svg>
+    <div class="legend">
+      <span><i class="sw" style="background:var(--series-1)"></i>Back Squat · 96 → 117 kg</span>
+      <span><i class="sw" style="background:var(--series-2)"></i>Bench Press · 72 → 83 kg</span>
+      <span><i class="sw dash"></i>What the plan projected</span>
+    </div>
+  </div>
+</div>

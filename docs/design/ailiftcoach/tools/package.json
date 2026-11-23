@@ -1,0 +1,9 @@
+{
+  "name": "ailiftcoach-design-tools",
+  "private": true,
+  "type": "module",
+  "description": "Contrast checks for the AI Lift Coach design system. See ../README.md for what each script proves.",
+  "dependencies": {
+    "playwright-core": "^1.65.1"
+  }
+}

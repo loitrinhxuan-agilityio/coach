@@ -15,6 +15,7 @@ Every screen the change affects is checked against its approved board in [docs/d
 ## 3. Independent review
 
 The Independent Reviewer approves the PR. Neither the Dev Lead nor the PR's own builder can be that reviewer.
+The passes the review runs, and what counts as Important rather than a nit, are in [`REVIEW.md`](../../REVIEW.md).
 
 ## Design PRs
 

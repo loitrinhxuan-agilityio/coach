@@ -1,32 +1,35 @@
-# Rung: vision
+# AI Lift Coach: vision
 
 > **Status: draft for the Owner's review.** Written on 2026-11-18 from decisions D-001 to D-022 in
 > [decision-log.md](decision-log.md). Nothing here is agreed until the Owner approves it. Terms are defined in
 > [GLOSSARY.md](../../GLOSSARY.md).
 
-## What Rung is
+## What AI Lift Coach is
 
-Rung is an agent-first training log and dashboard. A Lifter's own AI assistant (their **Agent**) logs each set as
-they train and coaches from the history, using rules that Rung supplies. The website is a calm, read-only
+AI Lift Coach is an agent-first training log and dashboard. A Lifter's own AI assistant (their **Agent**) logs each set as
+they train and coaches from the history, using rules that AI Lift Coach supplies. The website is a calm, read-only
 dashboard that shows the result.
 
-There is no AI inside Rung. The coaching is a set of deterministic rules (which weight next, how to ease back after
-a break, what a goal's projected date is). The Agent supplies the conversation; Rung supplies the rules and the data.
+There is no AI inside AI Lift Coach. The coaching is a set of deterministic rules (which weight next, how to ease back after
+a break, what a goal's projected date is). The Agent supplies the conversation; AI Lift Coach supplies the rules and the data.
 
-Rung is a personal product that clones the behaviour of [ShredPace](shredpace/README.md) with its own name, wording,
-design and API.
+AI Lift Coach is a personal product with its own name, wording, design and API.
+[ShredPace](shredpace/README.md) is a research reference for how a feature should behave when it is built, never a
+checklist to complete (D-026).
 
 ## Why it exists
 
-Rung is for the Owner's own use, for training and for exploration (D-005). The Owner does not mind whether it is
-ever public or private, and neither outcome is a goal.
+**The practice is the primary goal and the product is the vehicle** (D-024). The Owner is using AI Lift Coach as a
+practice ground for directing, evaluating and governing AI-assisted software work; see [`intent.md`](intent.md).
+The product still has to be genuinely useful, or it teaches nothing. The Owner does not mind whether it is ever
+public or private, and neither outcome is a goal.
 
 The problem it solves, from the PRD: an assistant forgets between chats, generic workout apps want manual entry
 that nobody wants to do with chalk on their hands, and apps that do track well ignore the assistant the person
-already talks to. Rung gives that assistant a place to put what happens in the gym and a rule engine to coach from it.
+already talks to. AI Lift Coach gives that assistant a place to put what happens in the gym and a rule engine to coach from it.
 
-Rung is built by the Team agents and the Owner following the Agentic Development Lifecycle (ADLC). ADLC is how it is
-built, not what it is, and proving it is not a goal in itself (D-005).
+AI Lift Coach is built by the Team agents and the Owner following the AI-assisted Development Lifecycle (ADLC).
+Getting good at that lifecycle is why the project exists (D-024); the product is how it is proved.
 
 ## Who it is for
 
@@ -41,35 +44,36 @@ question of data residency (D-012).
    data and offers a short sentence to copy wherever a Lifter would otherwise edit.
 2. **Rules, not a model.** Coaching is deterministic and explainable: every target comes with its reason.
 3. **One short line in the gym.** Every logged set returns one line saying what was logged and what is next.
-4. **Clone the behaviour, own the identity.** ShredPace is the reference for *what* each feature must do. Rung's
-   name, wording, visual design and API shapes are its own (D-006, D-013).
-5. **Phased.** Every ShredPace feature is the destination. Phase 1 is the first slice that the Owner can use for
-   real training.
+4. **Research reference, own identity.** ShredPace is evidence for how a feature should behave when it is built.
+   AI Lift Coach's name, wording, visual design and API shapes are its own (D-013, D-026).
+5. **Phase 1 is the only commitment.** It is the slice the Owner can use for real training. Every other feature is
+   a candidate, decided once Phase 1 is in daily use (D-026).
 6. **Nothing reaches production unseen.** The Owner approves designs, architecture decisions and every production
    deploy (D-016, D-022).
 
-## The destination: every ShredPace feature
+## Candidates beyond Phase 1
 
-Everything ShredPace has, except billing and its brand (D-006): sessions and sets, exercises and load types, coaching
-before, during and after, plans, programs and intake, time away and comebacks, goals, habits, benchmarks and skill
-ladders, food, body readings and aches, Insights, endurance, activity and undo, consent, one-click OAuth connectors,
-the Custom-GPT subset, a docs site, seven themes, an installable web app (PWA) and CSV export.
+**Nothing here is committed** (D-026). These are the features ShredPace has that AI Lift Coach might want, and each
+enters a phase only when the Owner pulls it in: sessions and sets beyond the core loop, exercises and load types,
+coaching before, during and after, plans, programs and intake, time away and comebacks, goals, habits, benchmarks and
+skill ladders, food, body readings and aches, Insights, endurance, activity and undo, consent, one-click OAuth
+connectors, the Custom-GPT subset, a docs site, seven themes, an installable web app (PWA) and CSV export.
 
 **Not building:** billing and Free/Pro gating, ShredPace's brand and wording, and everything ShredPace does not have
 (native apps, push or email reminders, wearable sync, AI inside the coach, social features, other languages,
 medical advice).
 
-## How we stay honest about "all features"
+## How the research is used
 
-The 2026-11-18 research snapshot is the committed baseline, and it is a floor, not a ceiling (D-007). The Owner is
-not sure the exploration found every feature, so the Owner will keep exploring and add what turns up (D-020).
-Anything new goes on a "to consider" list, scheduled late, and enters a phase only when the Owner pulls it in.
-Nothing is scheduled or runs automatically.
+The 2026-11-18 research snapshot is the record of what ShredPace does. It is not a scope commitment (D-026). The
+Owner is not sure the exploration found every feature and will keep exploring (D-020); anything new joins the
+candidate list above. Nothing is scheduled and nothing runs automatically.
 
 ## What success looks like
 
 **Phase 1 is done when the Owner can log a real leg session through their assistant over MCP with a Key, see it on
-the desktop dashboard, and get a next-time weight suggestion** (D-004, D-010, D-011).
+the desktop dashboard, and get a next-time weight suggestion** (D-004, D-010, D-011). That is the product proof. The
+practice succeeds on the terms set out in [`intent.md`](intent.md).
 
 Standing rule for every phase: every merged pull request passes the three quality gates, and the evidence is the
 GitHub history. There are no user-count or revenue targets.
@@ -89,7 +93,7 @@ GitHub history. There are no user-count or revenue targets.
 |---|---|
 | **Phase 1** | 50 stories: the core loop, exercises and loading, suggestions and progression, sign-in, the agent guide, the Sample account and seven desktop pages. See [mvp-scope.md](mvp-scope.md). |
 | **Phase 2** | In order: OAuth connectors, undo, the Keys page and revocation, attribution, rate limits (D-011) |
-| **Later** | Everything else, in phases the Owner orders at each planning step: plan, intake and programs; check-ins and readiness; time away; goals, habits and skills; food; body and aches; Insights; endurance; the Progress page; phone layouts as a PWA; themes; docs site; CSV export; sign-up and the public pages |
+| **Candidates** | Not committed (D-026). In no order: plan, intake and programs; check-ins and readiness; time away; goals, habits and skills; food; body and aches; Insights; endurance; the Progress page; phone layouts as a PWA; themes; docs site; CSV export; sign-up and the public pages |
 
 ## Still open
 
