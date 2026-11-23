@@ -111,4 +111,4 @@ Two, both found by checking rather than by reasoning:
 | `git ls-files \| grep -c '^CLAUDE.md$'` | **0** |
 | Rule frontmatter | parsed: exactly one key, `paths`, three globs |
 | `git ls-files \| grep node_modules` | **empty** |
-| A fresh session receives the rule | **still unproven.** Needs a new session; a rule added mid-session is not guaranteed to load in it. |
+| A session opening a design file receives the rule | **verified.** Reading `system/components/StatTile/README.md` loaded `.claude/rules/design-system.md` in full, in the same session the rule was written in — so it does not even need a fresh session. The glob, the frontmatter and the on-demand trigger all work as documented. |
