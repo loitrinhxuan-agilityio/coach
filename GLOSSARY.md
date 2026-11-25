@@ -32,6 +32,10 @@ _Avoid_: Token, API key
 The project's product owner, who defines requirements and approves designs. Never the holder of an Account.
 _Avoid_: Account owner, admin
 
+**Lifter-only operation**:
+An operation only a signed-in Lifter may perform, never an Agent holding a Key, however valid that Key is for the Account. Creating and revoking Keys, exporting an Account and deleting it are the examples.
+_Avoid_: Owner-only (the Owner is the project's product owner, not a Lifter), admin-only, human-only
+
 **Team agents**:
 The AI agents that build AI Lift Coach (Design Agent, Dev Lead, Builders, Reviewer). They are not part of the product.
 _Avoid_: Agents (unqualified)
