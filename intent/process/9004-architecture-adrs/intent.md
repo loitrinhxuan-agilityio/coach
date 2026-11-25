@@ -62,7 +62,12 @@ approves, before any dependent issue starts.
 - **Change 0198, already merged.** Its Agent guide names no operation by rule (R11, enforced by a
   grep), so guide-to-API drift is already solved for Phase 1 by avoidance. ADR 0004 must not claim
   to solve a problem that is solved, and must not ask 0198 to change: it argues only for the surfaces
-  that *must* name operations — the guide's unwritten Part B, and the docs site (D-006).
+  that *must* name operations — chiefly the guide's unwritten Part B, which 0198 committed and left
+  half-written.
+- **D-026 amends D-006.** "Phase 1 is the only committed scope. Every other feature is a candidate."
+  The docs site, the per-operation reference and the Custom-GPT subset are therefore candidates, and
+  cannot be a reason for anything. ADR 0004's first draft cited D-006's "later phases" list as though
+  it were committed; the independent review of this change caught it and the ADR was corrected.
 
 ## Open questions
 

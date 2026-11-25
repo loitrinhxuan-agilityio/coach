@@ -7,18 +7,24 @@ status: proposed
 AI Lift Coach has its own API in its own shapes (D-013), about 25 operations in Phase 1. Each one is
 defined once in an internal **operation registry** — path, method, principals (ADR 0003), input and
 output schema, errors, idempotency and the prose an Agent needs — and every external surface is
-generated from it: the HTTP routes, the MCP tool list, the OpenAPI document, the Agent guide, and
-later the docs site and the 30-operation Custom-GPT subset (D-006). No surface is maintained by hand.
+generated from it: the HTTP routes, the MCP tool list, the OpenAPI document and the Agent guide. No
+surface is maintained by hand.
+
+The docs site, the per-operation reference and the 30-operation Custom-GPT subset are **candidates,
+not commitments.** D-026 amends D-006: "Phase 1 is the only committed scope. Every other feature is a
+candidate, decided when Phase 1 is in daily use." So they are not a reason for this decision. They
+appear below only as work the registry would make cheap *if* the Owner ever pulls them in.
 
 ## Why
 
-- **The surfaces that name operations are the ones that drift, and they are coming.** The Agent guide
+- **Avoidance is what keeps the Agent guide honest, and it does not reach every surface.** The guide
   as merged by change 0198 names no operation at all: requirement R11 forbids it, a grep enforces it,
   and the plan calls "call `get_next_set`" a fabricated contract. So the guide has no drift problem
-  today, and this ADR does not claim otherwise — Phase 1 solved it by avoidance. What cannot be solved
-  that way is everything that must name operations: the guide's own Part B, which 0198 ships
-  explicitly marked unwritten, and the docs site with its per-operation reference (D-006). Generation
-  is what lets those name operations safely instead of being hand-kept.
+  today, and this ADR does not claim otherwise — Phase 1 solved it by avoidance, and that should
+  stand. What avoidance cannot cover is a surface whose whole purpose is to name operations: the
+  guide's own Part B, which 0198 ships explicitly marked unwritten. That one is inside Phase 1's
+  boundary, because 0198 already committed the guide and left Part B as its unfinished half. The docs
+  site is **not** such a reason — D-026 makes it a candidate.
 - **Two Phase 1 surfaces already have to agree.** The MCP tool list and the HTTP routes expose the
   same ~25 operations to the same Key (ADR 0001), and nothing but discipline keeps them in step.
   That drift is live in Phase 1, is invisible in tests, and shows up only as an Agent calling
@@ -30,12 +36,15 @@ later the docs site and the 30-operation Custom-GPT subset (D-006). No surface i
   from the guide to the operations.
 - **The PRD already calls for this.** Module 14 is an "operation registry" (D-013). This ADR commits
   to it being the *source* of the surfaces rather than a catalogue beside them.
-- **One approved contract instead of five drifting ones.** D-013 requires the Owner to approve the
+- **One approved contract instead of four drifting ones.** D-013 requires the Owner to approve the
   Phase 1 contracts before implementation. A registry makes that one reviewable artifact; hand-written
   REST, MCP, OpenAPI and guide make it four, approved once and drifting after.
-- **The later surfaces are projections, and they are already committed.** D-006 puts the docs site,
-  the per-operation reference and the Custom-GPT subset in later phases. Each is a filter over the
-  same definitions. Hand-writing them multiplies the Phase 1 work by the number of surfaces.
+- **The candidate surfaces are cheap under a registry and expensive without one.** The docs site, the
+  per-operation reference and the Custom-GPT subset are candidates under D-026, not Phase 1 work, so
+  they carry none of this decision's weight. The point is only that each is a filter over the same
+  definitions: if the Owner pulls one in, a registry makes it a projection rather than a fourth
+  document to keep true. That is a reason to prefer the registry *given* the case above, never a
+  reason on its own.
 - **It is where validation, errors and idempotency belong.** Item 4 of
   `development-preparation.md` asks for contracts "with validation, errors and idempotency".
   Declared once per operation, every operation gets them; declared per handler, the one that forgets
@@ -51,8 +60,8 @@ later the docs site and the 30-operation Custom-GPT subset (D-006). No surface i
   back to being hand-written. It is an output here, not the source.
 - **Keep every prose surface free of operation names, as change 0198 already does.** This is the
   cheapest answer and it is the one in force. It holds for the guide's Part A and should stay. It
-  cannot extend to Part B or the docs site, because a per-operation reference *is* a list of operation
-  names, so it defers the problem rather than solving it. Nothing here asks 0198 to change.
+  cannot extend to Part B, because a per-operation reference *is* a list of operation names, so for
+  that half it defers the problem rather than solving it. Nothing here asks 0198 to change.
 - **One registry, every surface generated (chosen).** Costs a generator, and puts an unusual piece of
   machinery in a small codebase.
 
@@ -66,7 +75,8 @@ later the docs site and the 30-operation Custom-GPT subset (D-006). No surface i
   changes Phase 1 scope.
 - A capability missing from the registry is missing everywhere, which is the point, and also means the
   registry is a single point of failure for the build.
-- The 30-operation Custom-GPT subset becomes a filter expression, not a second document.
+- If the Custom-GPT subset is ever pulled in from the candidate list, it is a filter expression rather
+  than a second document. Nothing here schedules it.
 
 ## Evidence
 
@@ -89,8 +99,9 @@ Two notes on what this is and is not. The `?for=gpt` projection, served from one
 — it is what makes "one source, several surfaces" more than a guess. That there is an internal
 registry behind it is **inference**: no such thing was observed, and a hand-maintained pair of
 documents would look the same from outside. And the observation that its GPT subset is 30 operations
-matches D-006's "Custom-GPT subset (30 operations)" exactly, which confirms the earlier research
-rather than adding anything.
+matches the "Custom-GPT subset (30 operations)" D-006 recorded, exactly, which confirms the earlier
+research rather than adding anything — and confirms a number, not a plan: D-026 amended that list to
+candidates.
 
 Under D-026 none of this justifies the decision; the reasons above are the project's own, and D-013
 already bars copying ShredPace's shapes. Its 109 operations are not a target: Phase 1 has about 25.
