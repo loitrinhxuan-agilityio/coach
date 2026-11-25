@@ -6,9 +6,9 @@ status: proposed
 
 AI Lift Coach has its own API in its own shapes (D-013), about 25 operations in Phase 1. Each one is
 defined once in an internal **operation registry** — path, method, principals (ADR 0003), input and
-output schema, errors, idempotency and the prose an Agent needs — and every external surface is
-generated from it: the HTTP routes, the MCP tool list, the OpenAPI document and the Agent guide. No
-surface is maintained by hand.
+output schema, errors, idempotency and the prose an Agent needs — and every surface that names
+operations is generated from it: the HTTP routes, the MCP tool list, the OpenAPI document and the
+Agent guide's Part B. The guide's Part A stays hand-written and names no operation (change 0198).
 
 The docs site, the per-operation reference and the 30-operation Custom-GPT subset are **candidates,
 not commitments.** D-026 amends D-006: "Phase 1 is the only committed scope. Every other feature is a
@@ -71,7 +71,7 @@ appear below only as work the registry would make cheap *if* the Owner ever pull
   surface that no longer matches it fails rather than drifting.
 - **Open, and the Owner's to settle: the generator is not in Phase 1's 50 stories** (D-010). Either it
   is added to Phase 1, or Phase 1 hand-writes the HTTP routes and the MCP tool list and the registry
-  arrives before the second surface. This ADR cannot be approved without that answer, because it
+  arrives before the third surface. This ADR cannot be approved without that answer, because it
   changes Phase 1 scope.
 - A capability missing from the registry is missing everywhere, which is the point, and also means the
   registry is a single point of failure for the build.

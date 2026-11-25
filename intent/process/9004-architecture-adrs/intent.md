@@ -27,7 +27,10 @@ Three ADRs exist as proposals, and three of the five blocking items have a docum
   Lifter-only (item 2).
 - **0004** — operations are defined once in a registry and every agent-facing surface is generated
   from it (item 4, in part).
-- **0005** — static dashboard on CloudFront, API on Lambda, Aurora DSQL behind it (item 1).
+- **0005** — static dashboard on CloudFront, API on Lambda, Aurora DSQL behind it (item 1). The
+  independent review added one requirement the first draft missed entirely: `/api` must use
+  `CachingDisabled`, because a cached `GET` whose cache key omits the credential would serve one
+  Account's data to another inside the CDN, before any application scoping runs.
 
 Each is justified from this project's own recorded decisions. ShredPace appears in each only as an
 evidence section, cited as corroboration that a shape is viable, never as a reason. Observation and

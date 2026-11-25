@@ -59,6 +59,15 @@ trade-off inside it that deserves the Owner's attention.
   of this class: its CDN drops `Authorization` on GET requests, which is why it directs plain HTTP
   callers to a custom header instead. ADR 0001 sends a Key as a header, so the header name must be
   checked against CloudFront's behaviour before it is published.
+- **`/api` must not be cached, and that is an account-isolation requirement rather than a performance
+  one.** A new CloudFront behaviour defaults to a caching policy (`CachingOptimized`). If `/api` gets
+  one and the credential — the Key header, or the Cognito session — is not part of the cache key, then
+  a `GET` such as `/api/today` cached for one Account can be served to another. That crosses the
+  account boundary **inside the CDN, before any application code runs**, so the scoping ADR 0002
+  relies on never executes, and with no row-level security in Aurora DSQL nothing further down catches
+  it either. The decision: `/api` uses `CachingDisabled`, and credentials reach the origin through an
+  origin-request policy, never through the cache key. This belongs beside the header-forwarding check
+  above so the isolation ADR can require it and the Independent Reviewer can verify it.
 - Cognito's admin-created users start with a temporary password, which is what D-009's first-sign-in
   story is built around, and it suits Accounts created by script (D-003).
 
