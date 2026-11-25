@@ -1,0 +1,56 @@
+# Gate 1 and Gate 2's mechanical half: the two design checks AGENTS.md documents.
+# Both exit non-zero on a failure, so either can block a pull request.
+# They run on every pull request, with no paths filter, so the check always
+# reports and can be made a required check without a skipped-but-required trap.
+name: Design checks
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  palette-contrast:
+    name: Palette contrast
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      # No dependencies. Healthy output: "50 pairs checked across 2 themes, 0 failing".
+      - name: Check the palette
+        run: node docs/design/ailiftcoach/tools/check-contrast.mjs
+
+  rendered-contrast:
+    name: Rendered contrast
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install the audit's dependencies
+        run: npm install --prefix docs/design/ailiftcoach/tools
+      # audit-rendered.mjs reads CHROME_BIN and falls back to a macOS path, so the
+      # runner's preinstalled Chrome is named here rather than downloading a browser.
+      - name: Confirm Chrome is present
+        run: |
+          test -x "$CHROME_BIN" || { echo "::error::CHROME_BIN not executable: $CHROME_BIN"; exit 1; }
+          "$CHROME_BIN" --version
+        env:
+          CHROME_BIN: /usr/bin/google-chrome
+      # Healthy output: "34 screen renders audited, 0 text elements below contrast".
+      - name: Audit the rendered screens
+        run: node docs/design/ailiftcoach/tools/audit-rendered.mjs docs/design/ailiftcoach/prototypes
+        env:
+          CHROME_BIN: /usr/bin/google-chrome
