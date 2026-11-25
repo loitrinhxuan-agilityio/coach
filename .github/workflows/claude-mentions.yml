@@ -8,9 +8,12 @@
 # IT CAN WRITE TO THE REPOSITORY. `contents: write` is what lets Claude push a fix to a
 # branch when asked, and it is a real escalation over the reviewer, which cannot modify
 # code at all. Two things bound it:
-#   - GitHub only allows a user with write access to trigger a run, and the action also
-#     rejects a bot actor unless it is named in `allowed_bots`. So the reviewer's own
-#     claude[bot] comments cannot trigger this workflow, and the two cannot loop.
+#   - Any GitHub user's comment starts a run, because this repository is public. GitHub
+#     itself does not gate that. The gate is claude-code-action, which refuses an actor
+#     without write access and rejects a bot actor unless it is named in `allowed_bots`.
+#     So the reviewer's own claude[bot] comments cannot trigger this workflow and the two
+#     cannot loop — but the check is the action's, not the platform's, which is the whole
+#     of the defence on a public repository.
 #   - It must never be asked to merge. docs/agents/team.md reserves merging for the Dev
 #     Lead, and workflow.md requires the Owner's approval for every deploy. Nothing here
 #     enforces that; it is a rule for whoever writes the comment.
@@ -33,18 +36,22 @@ permissions:
   id-token: write
   actions: read
 
-# One run per thread. A second mention while the first is still working queues behind it
-# rather than racing it on the same branch.
-concurrency:
-  group: claude-mentions-${{ github.event.issue.number || github.event.pull_request.number }}
-  cancel-in-progress: false
-
 jobs:
   claude:
     name: Claude (mentioned)
     # Keeps a runner from starting on every comment in the repository. The action checks
     # the trigger phrase itself as well.
     if: contains(github.event.comment.body, '@claude')
+    # Deliberately job-level, not workflow-level. Workflow-level concurrency is applied
+    # when the run is queued, which happens BEFORE the `if` above is evaluated, so every
+    # comment on the thread would enter the group — and since a group holds one pending
+    # run, an unrelated comment could cancel a queued mention whose own job then never
+    # runs. A job skipped by its `if` never enters a job-level group, so only real
+    # mentions compete. One pending slot still means a third mention replaces a queued
+    # second one.
+    concurrency:
+      group: claude-mentions-${{ github.event.issue.number || github.event.pull_request.number }}
+      cancel-in-progress: false
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:

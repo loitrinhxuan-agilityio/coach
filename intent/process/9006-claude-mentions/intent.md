@@ -40,9 +40,11 @@ the same review, so the next pull request is checked against it.
 
 ## Affected users and systems
 
-Anyone with write access to the repository, which today is the Owner alone, can trigger a run by
-writing `@claude`. The Owner's Claude subscription pays for it, and GitHub Actions minutes are
-consumed per mention rather than per pull request.
+**This repository is public,** so any GitHub user's comment starts a run — GitHub does not gate that.
+The gate is `claude-code-action` itself, which refuses an actor without write access, and write access
+today is the Owner alone. The distinction matters because it means the protection is one application
+check rather than a platform boundary. The Owner's Claude subscription pays for every run that gets
+past it, and GitHub Actions minutes are consumed per mention rather than per pull request.
 
 **This workflow can write to the repository.** `contents: write` is what lets Claude push a fix to a
 branch when asked, and it is a real escalation over the reviewer, which holds read-only permissions
@@ -61,7 +63,10 @@ and cannot modify code at all.
 - **Same credential as 9005.** `CLAUDE_CODE_OAUTH_TOKEN`, so runs bill to the subscription rather
   than the API and stay outside D-014's ceiling. Missing secret warns and skips, as in 9005.
 - **One run per thread.** A `concurrency` group keyed on the issue or pull request number queues a
-  second mention behind the first rather than racing it on the same branch.
+  second mention behind the first rather than racing it on the same branch. It is declared on the
+  **job**, not the workflow: workflow-level concurrency is applied at queue time, before the `@claude`
+  condition is evaluated, so an unrelated comment would enter the group and could cancel a queued
+  mention. See open question 3 for what it still does not prevent.
 
 ## Open questions
 
@@ -73,5 +78,8 @@ and cannot modify code at all.
    or title of a newly opened issue. That event is deliberately not wired up, because an issue in
    this project is meant to go through the artifact chain (intent, spec, plan), and a mention that
    turns an issue straight into a pull request would bypass it.
-3. **Nothing rate-limits mentions.** A long thread could start many runs. The `concurrency` group
-   serialises them per thread but does not cap them.
+3. **Only the latest pending mention is kept.** A GitHub concurrency group holds one pending run, so
+   a third mention on a thread replaces a queued second one, which is then never answered and nothing
+   reports it. Making the group job-level stops *unrelated* comments from doing this, but not a rapid
+   third mention. Nothing rate-limits mentions either: the group serialises runs per thread but does
+   not cap how many a long thread can start.
