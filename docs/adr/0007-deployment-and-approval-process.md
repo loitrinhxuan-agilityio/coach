@@ -475,8 +475,9 @@ Three ways out, all of which the Owner has to choose between:
   which is the step they were trying to avoid.
 - **Bootstrap, then narrow.** Bootstrap with the default policies, then re-run with
   `--cloudformation-execution-policies` pointing at a least-privilege policy that denies
-  `dsql:DeleteCluster` on a cluster tagged `protected`, so the permanent state of the account is
-  narrower than the state it was created from.
+  `dsql:DeleteCluster` on a cluster tagged `protected`, **and `dsql:UntagResource` on the same
+  cluster** — without the second, the role can drop the tag and the first deny stops applying — so the
+  permanent state of the account is narrower than the state it was created from.
 
 **Narrowing is not optional, because of what the default bootstrap leaves behind.** Section 1 sets
 out the `DeploymentActionRole` hole in full: the role trusts the account root and holds
