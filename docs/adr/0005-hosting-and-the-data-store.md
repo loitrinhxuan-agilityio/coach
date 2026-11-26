@@ -20,8 +20,9 @@ constraint and the Lambda-over-ECS argument D-015 rested on is won by a margin w
 being a trade-off. Idle latency is the opposite: **AWS publishes no figure for it**, and the delay
 lands on the first set of a session, which is precisely D-004's product proof. So the live question in
 this document was whether to spend a few cents a month defeating scale-to-zero — the property the
-stack was chosen for. **The Owner settled it on 2026-11-26 (D-044): keep the cluster warm.** What that
-leaves is the approval itself, and the obligations the choice carries, set out under *Idle latency*.
+stack was chosen for. **The Owner settled it on 2026-11-26 (D-044): keep the cluster warm,** and
+approved this record the same day (D-045). The obligations the choice carries are set out under
+*Idle latency*.
 
 **Accepted by the Owner on 2026-11-26** (D-045). Approving this record accepts five things together,
 and they are listed because not all of them are obvious from the headline:
@@ -116,9 +117,10 @@ Three things in that table matter more than its total.
 **What D-014 warned about is absent, and one reason is structural.** D-014 names load balancers, NAT
 gateways and always-on database clusters as single components that can exceed $10 by themselves. None
 appears here: CloudFront and API Gateway stand in for the load balancer, DSQL has no instance to leave
-running, and **there is no NAT gateway because the Lambda is not in a VPC.** Aurora DSQL is reached
-over its public endpoint with a SigV4 token, so the function needs no private networking to talk to
-its own database. A NAT gateway by itself would cost several times this entire bill.
+running, and **there is no NAT gateway or interface VPC endpoint, because the Lambda is not in a
+VPC.** Aurora DSQL is reached over its public endpoint with a SigV4 token, so the function needs no
+private networking to talk to its own database. Either alternative is an always-on hourly charge, and
+a NAT gateway by itself would cost several times this entire bill.
 
 ## Idle latency
 
@@ -129,9 +131,13 @@ worse than the decision log's earlier note that idle latency "is not documented 
 **Three delays stack on the first request of a session, not one.**
 
 1. **The Lambda cold start.** The best understood and the cheapest to reduce: arm64, a small bundle,
-   and no VPC. The last matters most, because a function placed in a VPC to reach its database pays
-   ENI setup on every cold start *and* needs a NAT gateway. DSQL's public endpoint removes both.
-   D-015 already lists cold starts as an accepted trade-off.
+   and no VPC. The last matters because a function placed in a VPC to reach its database needs paid,
+   always-on private networking to get there — a NAT gateway or an interface VPC endpoint — and DSQL's
+   public endpoint removes the need for either. *(An earlier draft also claimed VPC attachment adds ENI
+   setup to every cold start. That has been false since AWS moved VPC-attached Lambda to Hyperplane
+   ENIs in 2019: the ENI is created when the function or its VPC configuration changes, not per cold
+   start. The cost argument stands on its own; the latency half of it did not.)* D-015 already lists
+   cold starts as an accepted trade-off.
 2. **The DSQL cluster state, which is two transitions rather than one.** A cluster runs
    `Active -> Idle -> Inactive`. The user guide says a cluster "becomes idle when it's idle long
    enough for Aurora DSQL to scale down running resources", that an idle one becomes `Inactive` "when
@@ -289,5 +295,5 @@ Under D-026 none of this justifies the stack; D-015 does. The **cost and latency
 stood between this document and approval are answered above: cost at about $1.67 a month against a $10
 ceiling, and latency as a measurement obligation plus a remedy priced in advance, because no
 published figure exists, and the Owner settled the one choice it offered (D-044: keep the cluster
-warm). What is left is the approval itself.
+warm) and approved the result the same day (D-045).
 The isolation question that stood here originally was removed by ADR 0006, not answered.

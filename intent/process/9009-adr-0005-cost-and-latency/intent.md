@@ -30,8 +30,13 @@ D-022 sets. Pricing the stack and reading the Aurora DSQL lifecycle produced the
   what acceptance does *not* do: the generator is not among D-010's 50 stories, so under D-026 it is
   not committed Phase 1 work, and the schedule question the index listed as 0004's known gap is still
   open. An approval must not quietly widen Phase 1.
-- **ADR 0005 gains a cost table and an idle-latency decision**, and **stays `proposed`** — supplying
-  the conditions is the Dev Lead's job, approving the result is the Owner's.
+- **ADR 0005 gains a cost table and an idle-latency decision.** Supplying the conditions is the Dev
+  Lead's job; approving the result is the Owner's. **Amended during the change, 2026-11-26:** this
+  plan said 0005 would stay `proposed`, and it does not — the Owner settled the latency choice (D-044)
+  and then **accepted ADR 0005** (D-045) while the change was open, so the flip to `accepted` and D-045
+  are in this diff. The Independent Reviewer raised the divergence as a Compliance finding, which is
+  the right call: a diff that goes beyond its plan has to say so in the plan rather than only in the
+  log.
 - **D-043** records the approvals and the fact that 0005's conditions are now supplied.
 - The decision log's architecture notes are corrected where pricing contradicted them, and **I-17** is
   marked reversed: it still asserted the multi-account data model that ADR 0006 superseded.
@@ -70,8 +75,10 @@ logged, because the ping fixes the database delay and not the Lambda cold start.
 
 ## Constraints
 
-- **D-022 and `decision-boundaries.md`.** Approval is the Owner's. This change records an approval
-  already given and supplies evidence for one not yet given; it approves nothing itself.
+- **D-022 and `decision-boundaries.md`.** Approval is the Owner's, and this change only ever
+  *records* approvals the Owner gave — it never grants one. It began by recording the ADR 0003 and 0004
+  approvals and supplying evidence for ADR 0005; the Owner then approved 0005 too (D-045), so that is
+  recorded here as well. The Dev Lead supplied the evidence and the Owner supplied every `accepted`.
 - **D-014.** The cost figure must be verified and said to be verified. Every rate here carries its
   source, and the ones AWS does not publish per-region — or at all, like the `.com` registration — are
   marked rather than filled in with a plausible number.
