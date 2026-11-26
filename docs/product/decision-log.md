@@ -203,12 +203,14 @@ approval of the specific infrastructure change (D-016), with a new "Deploying" s
   deliberately **replaced with a measurement obligation** rather than answering, because AWS publishes no figure for
   the DSQL idle transitions. Still genuinely undecided there: how often production deploys happen, the language and
   framework, and whether a separate staging environment exists. It is a scope document, so the Owner's to edit.
-- **A CI defect for the Owner to settle:** `.github/workflows/independent-review.yml` exits 0 whether it posts
-  findings or none, so a green `Independent review` check does not mean a clean review — the verdict is in the pull
-  request's inline comments. Found by using the gate on PR #13, where the check reported passing three times while
-  the reviewer held five, then one, then two findings. This matters for `development-preparation.md` item 6, whose
-  outstanding step is making the checks *required*: a required check that always passes is a gate in name only. The
-  Dev Lead proposes making the workflow exit non-zero when it posts a finding; the Owner decides.
+- ~~**A CI defect for the Owner to settle:** `independent-review.yml` exits 0 whether it posts findings or
+  none.~~ **Fixed in change 9010, merged 2026-11-26.** A green `Independent review` check used to mean nothing —
+  found by using the gate on PR #13, where it reported passing three times while the reviewer held five, then one,
+  then two findings. The workflow now reads the findings back, scoped to the head commit, and fails on any not
+  tagged a nit; untagged findings block. The same change fixed its system prompt, which still told the reviewer to
+  hunt unscoped queries after ADR 0006 made that not a finding class — the prompt said "Follow REVIEW.md" and then
+  contradicted it. **Still open, and the Owner's:** making the checks *required* on `main`, and watching one pull
+  request with a real finding go red first, since only the pass path has run live.
 - Wording: E-02 and D-019 say "phase 2" for phone layouts. That predates the numbered phases (D-011 made Phase 2
   start with OAuth). Read it as "a later phase, after desktop"; the vision, requirements and PRD say "later phase".
 - OAuth connectors need user stories written; the PRD has none.
