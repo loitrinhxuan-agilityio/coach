@@ -13,6 +13,13 @@
 #
 # Until that secret exists this workflow warns and skips: it does not fail every
 # pull request, and it does not pretend the gate ran. See the 9005 intent.
+#
+# THIS CHECK BLOCKS. Until change 9010 the action's own exit code was the whole
+# check, and it exits 0 whether it posts twenty findings or none — so a green
+# "Independent review" never meant a clean review, and making the check *required*
+# on `main` would have produced a gate that always passes. On PR #13 it reported
+# success three times while holding five, then one, then two findings. The last
+# step below reads the findings back and fails on any that is not a nit.
 name: Independent review
 
 on:
@@ -57,7 +64,100 @@ jobs:
           # own frontmatter does: the action starts that MCP server only when
           # claude_args names it. --append-system-prompt carries this repository's
           # own review standard, so the gate matches REVIEW.md instead of a generic review.
+          #
+          # The Security paragraph is kept in step with REVIEW.md on purpose. Before
+          # change 9010 it still said account isolation falls to application code and
+          # an unscoped query is the most valuable finding here — which ADR 0006 and
+          # D-042 reversed, and which REVIEW.md now forbids hunting for. The prompt
+          # said "Follow REVIEW.md" and then contradicted it.
+          #
+          # The severity tag is what the blocking step below keys on. If this wording
+          # changes, change that step with it.
           claude_args: |
             --model claude-opus-5-5
             --allowedTools "mcp__github_inline_comment__create_inline_comment"
-            --append-system-prompt "Follow REVIEW.md in this repository. Run three passes and tag every finding with its pass: Bugs, Security and Compliance. Security is the highest-value pass here: the planned database has no row-level security, so account isolation falls to application code and an unscoped query is the most valuable finding in this repository. Reserve Important for findings that would break behaviour, leak data, cross an account boundary, or breach a rule in AGENTS.md; style and naming are nits. Report at most five nits and summarize the rest as a count. Do not report anything CI already enforces, and do not report docs/product/shredpace/. A review that finds nothing is a valid outcome."
+            --append-system-prompt "Follow REVIEW.md in this repository. Run three passes: Bugs, Security and Compliance. Security here means credentials or personal data reaching a log, an error body or a committed fixture; a Key reaching a Lifter-only operation (ADR 0003); and anything that would let an unauthenticated request read the Lifter's data, including a CDN that caches an authenticated response (ADR 0005). This repository is public, so a secret or a personal detail in a commit is the highest-value finding here. Phase 1 is single-account (ADR 0006), so cross-account isolation is NOT a finding class: do not hunt for unscoped queries, and treat a missing deleted_at filter as a correctness bug rather than a breach. Reserve important for findings that would break behaviour, leak data, or breach a rule in AGENTS.md; style and naming are nits. Begin every finding's comment with a bracketed tag giving the pass and the severity, exactly in the form [Bugs, important] or [Compliance, nit]. CI reads that tag: a finding whose tag does not say nit fails this check and blocks the merge, and a finding with no recognisable tag is treated as blocking, so classify honestly. Report at most five nits and summarize the rest as a count. Do not report anything CI already enforces, and do not report docs/product/shredpace/. A review that finds nothing is a valid outcome."
+
+      # The action posts findings as inline review comments and still exits 0, so its
+      # exit code cannot be the gate. Read the comments back instead, scoped to this
+      # head commit so earlier passes on earlier commits do not fail a fixed PR.
+      - name: Block the merge if the review posted findings
+        if: env.REVIEW_TOKEN != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+
+          # The comments are written during the step above; give the API a moment to
+          # agree that they exist before concluding the review was clean. A failure
+          # of the call below fails this step on purpose: if the findings cannot be
+          # read, the gate must not report a pass.
+          sleep 10
+
+          # Severity comes from the bracketed tag the system prompt mandates, and
+          # from nothing else. An earlier draft searched the opening words for the
+          # word "nit", which downgraded a real bug whose text said "not a nit" —
+          # a false negative, the one direction that matters. Anything untagged is
+          # treated as blocking rather than waved through.
+          #
+          # One line per finding on this exact commit, so earlier passes on earlier
+          # commits cannot fail a pull request that has since been fixed.
+          # --paginate with --jq emits a line at a time, correct at any page count.
+          findings=$(gh api --paginate "repos/$REPO/pulls/$PR_NUMBER/comments" \
+            --jq '.[]
+                  | select(.user.login == "claude[bot]")
+                  | select(.original_commit_id == env.HEAD_SHA)
+                  | ((.body // "") | gsub("[\r\n\t]"; " ")) as $b
+                  | ($b | sub("^\\s*\\*+\\s*"; "")) as $t
+                  | (if   ($t | test("^\\[[^\\]]*nits?\\b[^\\]]*\\]"; "i")) then "nit"
+                     elif ($t | test("^nits?\\b"; "i"))                     then "nit"
+                     elif ($t | test("^\\["))                               then "blocking"
+                     else                                                        "untagged"
+                     end) as $sev
+                  | [ $sev, (.path // "?"),
+                      ((.original_line // .line // 0) | tostring),
+                      ($b | .[0:160]) ]
+                  | @tsv')
+
+          total=0
+          nits=0
+          blocking=0
+          untagged=0
+
+          while IFS=$'\t' read -r sev path line body; do
+            [ -z "${sev:-}" ] && continue
+            total=$((total + 1))
+            case "$sev" in
+              nit)
+                nits=$((nits + 1))
+                echo "::notice file=$path,line=$line::Gate 3 nit: $body"
+                ;;
+              untagged)
+                untagged=$((untagged + 1))
+                blocking=$((blocking + 1))
+                echo "::error file=$path,line=$line::Gate 3 finding, untagged so treated as blocking: $body"
+                ;;
+              *)
+                blocking=$((blocking + 1))
+                echo "::error file=$path,line=$line::Gate 3 finding: $body"
+                ;;
+            esac
+          done <<< "$findings"
+
+          echo "Independent Reviewer on $HEAD_SHA: $total finding(s) — $blocking blocking (of which $untagged untagged), $nits nit(s)."
+
+          if [ "$blocking" -gt 0 ]; then
+            echo "::error::Gate 3 failed: $blocking finding(s) above a nit on this commit. Address them and push; the review runs again and this check clears when the reviewer returns nothing on the new commit. Nits do not block."
+            exit 1
+          fi
+
+          if [ "$nits" -gt 0 ]; then
+            echo "::warning::Gate 3 passed with $nits nit(s). Nits do not block a merge, but they are findings and someone should read them."
+          fi
+
+          if [ "$total" -eq 0 ]; then
+            echo "Gate 3 clean: the Independent Reviewer posted nothing on this commit."
+          fi
