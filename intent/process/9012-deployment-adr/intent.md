@@ -24,9 +24,10 @@ deploys and the Owner does not use the console. Two of those pull against each o
 deploys needs credentials, and the one place a credential could sit is ruled out.
 
 **D-016 deliberately left the cadence open** — "How often deploys happen (per merge or batched per
-release) is not decided" — and `mvp-scope.md` still lists two more open items this document touches:
-whether a separate staging environment exists, and how each approval is recorded. Those are the
-Owner's, not the Dev Lead's, so this ADR puts them rather than answers them.
+release) is not decided". Two more open items this document touches are already on record, in two
+different places: `mvp-scope.md`'s "Not decided here" list carries whether a separate staging
+environment exists, and the decision log's open questions (section D) carry how each approval is
+recorded. Those are the Owner's, not the Dev Lead's, so this ADR puts them rather than answers them.
 
 It matters now rather than later because of ordering. D-022 requires the Owner to approve an ADR
 *before any issue that depends on it starts*, and the first Phase 1 issue that produces running code
@@ -106,6 +107,10 @@ These are carried into the ADR as the Owner's to settle, not answered here.
 4. **Whether a deploy that the destructive-change gate refuses can be overridden, and by whom.** A
    gate with no override is a gate that will one day block a legitimate change; a gate with an easy
    override is the skim-approval it was built to prevent.
-5. **Whether schema migrations are inside this gate.** `cdk diff` cannot show them, and on Aurora
+5. **Which GitHub identity the Dev Lead merges and deploys under.** Not cosmetic: with the Owner as
+   the only required reviewer, a shared identity makes GitHub's Prevent self-review deadlock every
+   deploy, and a separate one makes the setting redundant. It needs an account created, so it is the
+   Owner's.
+6. **Whether schema migrations are inside this gate.** `cdk diff` cannot show them, and on Aurora
    DSQL they are the irreversible part. If they are outside the gate, D-016's "stateful changes too"
    is satisfied in letter and not in substance.

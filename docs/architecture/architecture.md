@@ -36,7 +36,7 @@ in Phase 1 remains the Owner's to settle. That question is recorded in 0004 itse
 
 **Writing one approves nothing** (D-022: the Independent Reviewer reviews and the Owner approves,
 before any dependent issue starts), and that is how each ADR in the table above reached it. ADR 0007
-leaves five questions open for the Owner, including the deploy cadence D-016 deliberately did not
+leaves six questions open for the Owner, including the deploy cadence D-016 deliberately did not
 settle and whether a staging environment exists.
 
 ## Not yet written

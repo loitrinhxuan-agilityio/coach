@@ -10,11 +10,12 @@ describes how a change in this repository becomes a change in AWS, and how D-016
 Owner approves *that specific change, shown as the infrastructure diff, never a blanket approval* —
 is enforced by something other than good intentions.
 
-**It decides seven things and deliberately leaves five to the Owner.** The five are listed under
+**It decides seven things and deliberately leaves six to the Owner.** The six are listed under
 *What the Owner still has to decide*. **Two of them are already on record as open** — the deploy
 cadence (D-016, "not decided") and whether a staging environment exists (`mvp-scope.md`'s "Not decided
-here" list). **The other three are raised for the first time by this document**, including who runs
-`cdk bootstrap`, which nothing in the decision log or the scope documents had thought to ask.
+here" list). **The other four are raised for the first time by this document**, including who runs
+`cdk bootstrap` and which GitHub identity the Dev Lead acts under, neither of which anything in the
+decision log or the scope documents had thought to ask.
 Writing this document approves nothing (D-022).
 
 **One finding reorders the whole problem, so it is stated first.** D-016 exists partly because "an
@@ -223,11 +224,32 @@ it gives, in GitHub's words (read 2026-11-26):
 - "Enter up to 6 people or teams. Only one of the required reviewers needs to approve the job for it
   to proceed."
 - "Optionally, to prevent users from approving workflows runs that they triggered, select **Prevent
-  self-review**." This must be on. Without it the Dev Lead's own merge could approve its own deploy,
-  which is D-016 deleted.
+  self-review**." On, but it is a backstop rather than the control, and it is sharp in both directions
+  — see *Which identity merges* below.
 - Deployment branches restricted to `main`.
 - "Allow administrators to bypass configured protection rules" must be **deselected**.
 - "To reject the job, click **Reject**. If a job is rejected, the workflow will fail."
+
+**Which identity merges, because the gate deadlocks or does nothing depending on the answer.**
+Prevent self-review blocks *whoever triggered the run*, and on a `push` to `main` that is whoever
+merged. With the Owner as the only required reviewer, the two cases are both bad:
+
+- **If the Dev Lead merges under the Owner's account**, every merge makes the Owner the triggering
+  actor, Prevent self-review stops the Owner approving, nobody else can, and **every deploy waits
+  until it expires.** This is not hypothetical here: the pull requests on this repository are authored
+  by the Owner's login and driven by an agent, which is exactly that arrangement.
+- **If the Dev Lead merges under its own identity**, the setting adds nothing, because that identity
+  was never a reviewer and so could never have approved.
+
+**So the control is the identity split, not the setting.** The Dev Lead needs its own GitHub identity
+— a bot account or a GitHub App — distinct from the Owner's, which `team.md` already implies by making
+them different roles with different powers. With that in place, Prevent self-review earns its keep in
+exactly one case: a run the **Owner** triggers by merging or dispatching by hand, which they then
+cannot approve. That is the right outcome under D-016 — the person approving a deploy should not be
+the person who initiated it — but it means such a run has to be re-triggered by the Dev Lead's
+identity rather than approved, and anyone who does not know that will read it as the gate being
+broken. Which identity the Dev Lead acts under is the Owner's to set up, so it is listed with the
+other open questions.
 
 **What it does not give, and each of these is a real limit, not a caveat.**
 
@@ -280,8 +302,8 @@ it applied just as well to the design's own post-merge half.
 The plan job still uploads `cdk.out` as the run's artifact — the CDK CLI accepts "the command for
 running your app or cloud assembly directory" for `--app` — but it is now evidence of what was
 synthesized rather than the thing that gets deployed. The diff comment records the **commit SHA** and
-the change-set ARN, which is the record `mvp-scope.md` asks for when it lists "how each approval is
-recorded" as undecided.
+the change-set ARN, which is the record the decision log's open questions ask for when they list "how
+each approval is recorded" as undecided (section D; `mvp-scope.md`'s own list does not mention it).
 
 **What this costs, stated rather than discovered.** The deploy step is an AWS API call, not a CDK
 command, so the CDK CLI never runs with mutating credentials — a gain — but asset publishing has to
@@ -343,7 +365,13 @@ The gate has three layers, in increasing order of how little they trust a human.
 approval, the plan job inspects it with `describe-change-set` and fails if it finds any of three
 things:
 
-- a resource whose `Replacement` is `True`;
+- a resource whose `Replacement` is `True` **or `Conditional`**. CloudFormation's own API reference
+  gives the valid values as `True | False | Conditional`, and `Conditional` is what you get when
+  `RequiresRecreation` is `Always` but the `Evaluation` is `Dynamic` — that is, CloudFormation cannot
+  tell until it executes. A gate that waved `Conditional` through would be offering the Owner a button
+  on a change that *might* replace the resource, and layer 2 would not catch it for the Cognito user
+  pool, which has no deletion protection, no `RETAIN` and no execution-role deny. Under ADR 0006 that
+  pool is the only record of who the Lifter is. An unresolvable answer is treated as the bad one;
 - the **removal** of a resource on a short protected list — the DSQL cluster, the Cognito user pool,
   the S3 site bucket, and D-044's scheduler and keep-warm Lambda;
 - **any change to a protected resource's own protections**: `DeletionProtectionEnabled`, the
@@ -588,7 +616,7 @@ same review, alongside the `Authorization`-header check ADR 0005 already flags.
 | IAM OIDC provider and roles | **$0.00** | IAM is not charged |
 | CDK bootstrap: S3 asset bucket, ECR repository | **rounds below a cent** | A few MB of assets. The ECR repository is created and unused, since the Lambda is a zip rather than a container |
 | A staging environment, if the Owner wants one | **$0.00 to ~$0.50** | Section 5 |
-| | **~$0.00** | against about $10 (D-014), on top of ADR 0005's ~$1.67 |
+| | **~$0.00, or up to ~$0.50 with staging** | against about $10 (D-014), on top of ADR 0005's ~$1.67 |
 
 Read 2026-11-26. The process is free; what it costs is the Owner's attention, once per deploy, which
 is what D-016 bought on purpose.
@@ -635,7 +663,12 @@ is what D-016 bought on purpose.
    override will one day block a legitimate change; a gate with a convenient override is the
    skim-approval it was built to prevent. One middle course: an override exists, requires a commit to
    the protected list in a reviewed pull request, and therefore leaves a record.
-5. **Whether schema migrations go through this gate.** If they do, the migration has to be expressed
+5. **Which GitHub identity the Dev Lead merges and deploys under.** A bot account or a GitHub App,
+   distinct from the Owner's. Section 2 shows why it is not cosmetic: with the Owner as the only
+   required reviewer, an identity shared with the Owner makes Prevent self-review deadlock every
+   deploy, and an identity that is not a reviewer makes the setting redundant. It needs an account
+   created, which is the Owner's to do.
+6. **Whether schema migrations go through this gate.** If they do, the migration has to be expressed
    as something reviewable and the plan job has to render it beside the infrastructure diff. If they
    do not, D-016's "stateful changes alike" does not reach the only operations on this stack that
    cannot be undone. This is the question with the most consequence and the least AWS documentation.
