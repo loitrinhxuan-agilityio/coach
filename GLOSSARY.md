@@ -17,7 +17,7 @@ The person who trains and uses AI Lift Coach.
 _Avoid_: User, customer, client
 
 **Account**:
-Everything one Lifter owns in AI Lift Coach: their data, their Keys and their settings.
+Everything one Lifter owns in AI Lift Coach: their data, their Keys and their settings. In Phase 1 there is exactly one, and it has no table of its own — it is a concept, not a row (ADR 0006).
 _Avoid_: Profile, user
 
 **Agent**:
@@ -98,6 +98,6 @@ _Avoid_: Rolling week, seven-day window
 The instructions AI Lift Coach gives an Agent about how to behave: the MCP server's instructions and a Markdown page.
 _Avoid_: Docs, prompt
 
-**Sample account**:
-A built-in Account, named Sam, with about eight weeks of invented history, used by tests, design boards and demos.
-_Avoid_: Demo data, fixtures, dummy account
+**Sample account** *(retired 2026-11-26, D-042)*:
+Was a built-in Account named Sam with about eight weeks of invented history. Removed: Phase 1 is single-account (ADR 0006), the design boards never needed it because the prototypes are self-contained HTML, and populated screens now come from fixtures seeded inside the visual-test run rather than from a second Account. The entry is kept because `README.md`, `mvp-scope.md` and `issues/prd.md` still refer to it; those are listed as pending edits in the decision log.
+_Avoid_: Sam, demo data, dummy account

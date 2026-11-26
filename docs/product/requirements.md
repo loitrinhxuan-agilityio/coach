@@ -68,8 +68,8 @@ enters a phase only when the Owner pulls it in.
 | # | Requirement | Decision |
 |---|---|---|
 | S1 | Keys are stored only as hashes. A Key cannot manage Keys, export data, delete the Account or give consent. | PRD stories 10, 11 |
-| S2 | The data model is multi-account from the first migration, for one reason: the Sample account has to be a second Account. Accounts (the Owner and Sam) are created by a script. No sign-up in Phase 1. | D-003, D-028, ADR 0002 |
-| S3 | An Account's data is kept apart from every other Account's. **The planned database has no row-level security**, so isolation is enforced in application code, every query is scoped, and the Independent Reviewer checks it. The ADR must say how an unscoped query is made impossible. | ADR 0002, D-015 notes |
+| S2 | **The data model is single-account.** There is no `account` table and no `account_id` column: one Lifter, one Cognito user, one `settings` row holding the permitted `cognito_sub`, the time zone and the display unit. Tenancy is deferred behind surrogate UUID primary keys, which keep the retrofit additive. The Lifter is created by a script; there is no sign-up, and sign-up cannot be opened without that migration first. | D-042, ADR 0006 |
+| S3 | ~~An Account's data is kept apart from every other Account's.~~ **Withdrawn (D-042, ADR 0006).** Phase 1 is single-account, so there is no second Account for data to leak to and no cross-account scoping to enforce. The row is kept rather than deleted because other documents cite S3 by number. If tenancy ever returns, this requirement returns with it, and the isolation ADR has to be written before it does. | D-042, ADR 0006 |
 | S4 | A retry never records the same set twice (idempotent creates). | story 28 |
 | S5 | Sign in with email and password. First sign-in replaces a temporary password. An expired session says "Please sign in again". Passwords can be changed. | D-009, stories 202–205 |
 | S6 | The identity provider and how a person and an Agent's Key are each authorised are architecture decisions, not made here. | D-022 |

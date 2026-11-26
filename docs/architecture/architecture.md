@@ -2,7 +2,8 @@
 
 **This file is an index, not a source of truth.** Architecture is decided through ADRs and
 approved by the Owner before any dependent implementation starts (D-022, `AGENTS.md`), so
-[`docs/adr/`](../adr/) is authoritative and this page only lists what has been accepted.
+[`docs/adr/`](../adr/) is authoritative and this page only lists each ADR and its status —
+accepted, superseded, proposed, or not yet written.
 
 Nothing architectural should be written here. If a decision is worth recording, it is worth
 an ADR.
@@ -12,7 +13,13 @@ an ADR.
 | ADR | Decision |
 |---|---|
 | [0001](../adr/0001-key-based-agent-access-first.md) | Agents connect with a Key first; OAuth comes after v1 |
-| [0002](../adr/0002-multi-account-from-day-one.md) | The data model is multi-account from the first migration |
+| [0006](../adr/0006-phase-1-is-single-account.md) | Phase 1 is single-account; tenancy is deferred behind surrogate UUID primary keys |
+
+## Superseded
+
+| ADR | Decision | Superseded by |
+|---|---|---|
+| [0002](../adr/0002-multi-account-from-day-one.md) | The data model is multi-account from the first migration | [0006](../adr/0006-phase-1-is-single-account.md), accepted 2026-11-26 (D-042) |
 
 ## Proposed, awaiting review and the Owner's approval
 
@@ -27,14 +34,13 @@ Reviewer reviews and the Owner approves, before any dependent issue starts).
 
 ## Not yet written
 
-Of the five ADRs that block the start of application development
-([`../agents/development-preparation.md`](../agents/development-preparation.md), item 1), two are
-still missing and one is only partly covered:
+Item 1 of [`../agents/development-preparation.md`](../agents/development-preparation.md) named five
+ADRs. **ADR 0006 removes one of them**, so four remain, of which one is missing outright and one is
+only partly covered:
 
-- **How one Account's data is kept from another's without row-level security.** Nothing exists. ADR
-  0005 makes it a blocking dependency rather than a parallel one: Aurora DSQL has no row-level
-  security, so this ADR has to say how an unscoped query is made impossible, and no handler should be
-  built before it does.
+- ~~**How one Account's data is kept from another's without row-level security.**~~ **No longer
+  needed** (D-042, ADR 0006). Phase 1 is single-account, so there is no second Account for data to
+  leak to. If tenancy ever returns, this ADR has to be written *before* it does.
 - **The deployment and approval process.** The rules are in
   [`../agents/workflow.md`](../agents/workflow.md); the procedures themselves are unwritten.
 - **The Phase 1 REST and MCP contracts.** ADR 0004 decides *how* the contracts are produced and kept
