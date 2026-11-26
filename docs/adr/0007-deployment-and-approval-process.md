@@ -11,8 +11,11 @@ Owner approves *that specific change, shown as the infrastructure diff, never a 
 is enforced by something other than good intentions.
 
 **It decides seven things and deliberately leaves five to the Owner.** The five are listed under
-*What the Owner still has to decide*, and three of them (cadence, staging, who bootstraps) are
-recorded as open in D-016 and `mvp-scope.md` already. Writing this document approves nothing (D-022).
+*What the Owner still has to decide*. **Two of them are already on record as open** — the deploy
+cadence (D-016, "not decided") and whether a staging environment exists (`mvp-scope.md`'s "Not decided
+here" list). **The other three are raised for the first time by this document**, including who runs
+`cdk bootstrap`, which nothing in the decision log or the scope documents had thought to ask.
+Writing this document approves nothing (D-022).
 
 **One finding reorders the whole problem, so it is stated first.** D-016 exists partly because "an
 infrastructure change can replace a stateful resource and lose data." For this stack that threat is
@@ -90,8 +93,9 @@ fussy (documented subject formats, read 2026-11-26):
 So:
 
 - **`coach-gh-plan`** trusts exactly `repo:loitrinhxuan-agilityio/coach:ref:refs/heads/main` with
-  `StringEquals`, and holds read access plus the ability to create a change set and nothing else —
-  see the constraint below, which is what makes "and nothing else" true.
+  `StringEquals`, and holds read access, the ability to create a change set, and the ability to
+  publish an asset — and nothing else. The constraints below are what make "and nothing else" true,
+  and the asset half of it carries its own hazard, treated separately.
 - **`coach-gh-deploy`** trusts exactly
   `repo:loitrinhxuan-agilityio/coach:environment:production` with `StringEquals`, and is the only
   role from which anything can be executed.
@@ -121,7 +125,7 @@ exactly that role. Since `coach-gh-plan`'s subject is `ref:refs/heads/main` and 
 ever being asked for.** That is D-016 defeated by the default configuration of the tool, not by an
 attacker.
 
-**Two controls, both required, because neither is sufficient alone.**
+**Three controls, the first two required because neither is sufficient alone.**
 
 1. **An explicit `Deny` on `sts:AssumeRole`** in `coach-gh-plan`'s identity policy, for
    `arn:aws:iam::<account>:role/cdk-<qualifier>-deploy-role-*` and `...-cfn-exec-role-*`. An explicit
@@ -133,6 +137,16 @@ attacker.
    passing it), with an explicit `Deny` on `ExecuteChangeSet`, `CreateStack`, `UpdateStack`,
    `DeleteStack`, `RollbackStack`, `ContinueUpdateRollback` and `UpdateTerminationProtection`.
    Creating a change set changes no resource; executing one does, and the plan job cannot.
+3. **A narrowed copy of the bootstrap `FilePublishingRole` for assets.** Section 2 has the deploy job
+   only execute a change set, which means the Lambda bundle must already be in the staging bucket
+   when the Owner is asked — so the plan job has to be able to write one, and an earlier draft of
+   this ADR gave it read access only, which would have failed on the very first plan run with an
+   asset. `DefaultStackSynthesizer` publishes file assets through the bootstrap
+   `cdk-<qualifier>-file-publishing-role-*`, whose default policy allows `s3:PutObject*`,
+   **`s3:DeleteObject*`**, `s3:Abort*`, Get and List on the staging bucket plus KMS encrypt and
+   decrypt, and whose trust principal is again `AWS: Ref: AWS::AccountId` (bootstrap template, read
+   2026-11-26). The plan job gets a copy **without `DeleteObject*`**: publishing an asset is not a
+   licence to remove one.
 
 The role the CDK assumes is a property of the stack's synthesizer (`DefaultStackSynthesizer`, which
 the CDK guide documents as the configuration point), and the custom bootstrap template section 6
@@ -143,8 +157,8 @@ assembly records which role the CDK should assume, so while an earlier draft had
 the plan job's `cdk.out` with `cdk deploy`, one assembly could not have recorded two different roles.
 Section 2 now has the deploy job call `ExecuteChangeSet` directly, so **the plan job is the only job
 that runs the CDK CLI at all** and only its role is ever recorded. The deploy job needs no CDK
-configuration and no bootstrap role — just `cloudformation:ExecuteChangeSet` and `DescribeStacks` on
-the one stack. **What is still unread on a documentation page is the synthesizer property that sets
+configuration and no bootstrap role — `cloudformation:ExecuteChangeSet` and `DescribeStacks` on the one
+stack, plus read on the staging bucket for the asset check section 2 ends with. **What is still unread on a documentation page is the synthesizer property that sets
 the plan role**; only `DefaultStackSynthesizer`'s existence as the configuration point was verified,
 so whoever writes `infra/` should confirm the property name rather than take it from here.
 
@@ -247,6 +261,31 @@ have happened in the plan job. It does: `cdk diff`'s own documented output begin
 before the Owner is asked. The price is that `cdk deploy`'s conveniences are unavailable on this path,
 including `--revert-drift`, which therefore becomes its own deliberate, separately approved deploy
 rather than a flag on an ordinary one.
+
+**And it moves the integrity question rather than removing it.** A change set references an asset by
+its S3 key, and the key is a content hash — but nothing in S3 checks that the bytes at a key still
+match the hash that names it. So between the Owner reading the diff and pressing the button, anything
+with write access to the staging bucket could replace the zip and the change set would execute
+unchanged, deploying code nobody approved. Section 1 keeps that access down to one narrowed role on
+`main`; what closes the window itself is three things, two of them already true:
+
+- **Write-once asset keys.** S3 conditional writes let a `PUT` carry `If-None-Match`, which "prevents
+  overwrites of existing data by validating that there's not an object with the same key name already
+  in your bucket" and otherwise fails with `412 Precondition Failed`; "Bucket owners can use bucket
+  policies to enforce conditional writes for uploaded objects", through the `s3:if-none-match`
+  condition key. A bucket policy on the staging bucket therefore makes an asset key immutable once
+  written, which costs nothing here because the key *is* the content hash: the only legitimate
+  re-publish is byte-identical. **Worth confirming when `infra/` is built**: that the CDK skips
+  publishing an asset that already exists rather than re-putting it and taking a `412`.
+- **Versioning, which the bootstrap template already enables.** `StagingBucket` is created with
+  `VersioningConfiguration: Status: Enabled` and a rule expiring noncurrent versions after 30 days
+  (read 2026-11-26). That does not prevent a swap, because the change set names the key and not the
+  version — it makes one recoverable and visible after the fact, which is worth having and is not a
+  control.
+- **A check before executing.** The deploy job compares each referenced asset's stored checksum against
+  the hash in its key and refuses to execute if they differ. It needs only read access, it is the
+  cheapest of the three, and it is the one that does not depend on a policy being configured
+  correctly.
 
 **Why the diff comes after the merge, not before it.** D-016 already separates them: "A merge is not a
 deploy: merged changes can wait and be deployed together, each deploy with its own approval"
@@ -605,12 +644,19 @@ than filled in.
   template-only inaccuracy; `--fail`; `cdk drift` versus `cdk diff`, and `cdk drift --fail`;
   `cdk deploy --require-approval` values and `--revert-drift`; `--app` accepting a cloud assembly
   directory.
+- **S3**: conditional writes with `If-None-Match` preventing overwrites and returning
+  `412 Precondition Failed`, that "Bucket owners can use bucket policies to enforce conditional writes
+  for uploaded objects", and the existence of the `s3:if-none-match` condition key in the S3 service
+  authorization reference.
 - **CDK bootstrapping**: the `CDKToolkit` stack, the five IAM roles, the
   `cloudformation:* ecr:* ssm:* s3:* iam:*` permission set required of the bootstrapping identity, and
   `--show-template`. The `DeploymentActionRole`'s trust principal (`AWS: Ref: AWS::AccountId`) and its
   `DeployPermissions` and `CliPermissions` statements were read from `bootstrap-template.yaml` on
   `aws/aws-cdk-cli@main`, not inferred from the guide, because section 1's whole argument rests on
-  them. **Not read on a documentation page**: the synthesizer property that sets the deploy role, and
+  them. From the same file: `FilePublishingRole` has the same account-root trust and a default policy
+  allowing `s3:PutObject*`, `s3:DeleteObject*`, `s3:Abort*`, Get, List and KMS encrypt/decrypt on the
+  staging bucket; and `StagingBucket` is created with `VersioningConfiguration: Status: Enabled` and a
+  30-day noncurrent-version expiry. **Not read on a documentation page**: the synthesizer property that sets the deploy role, and
   whether the CDK CLI can override the role recorded in a synthesized assembly. Section 1 marks that
   as the one thing to check before the first deploy rather than claiming a resolution.
 - **CloudFormation**: update behaviours and what Replacement means; `DeletionPolicy` and the explicit
