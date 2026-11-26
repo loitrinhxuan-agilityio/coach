@@ -52,10 +52,12 @@ Five findings, all verified against AWS pages on 2026-11-26 rather than from mem
 4. **The free-tier reasoning was fragile and did not need to be.** API Gateway's free million calls is
    new-customers-only for twelve months, but at this volume the paid rate is a cent — so the budget
    does not depend on free tiers at all, which is a stronger position than the ADR took.
-5. **The ADR had lost its subject**, and finding 2 against finding 3 supplies the new one: pay about a
-   cent a month to stop the database scaling to zero, or accept an unmeasurable delay on the first set
-   of every session. Provisioned concurrency is the third option and is rejected on its price —
-   **$10.80 a month is the whole D-014 ceiling** — not on its merits.
+5. **The ADR had lost its subject**, and finding 2 against finding 3 supplies the new one: pay about
+   **two cents** a month to stop the database scaling to zero, or accept an unmeasurable delay on the
+   first set of every session. Provisioned concurrency is the third option, and its rejection needed
+   correcting during review: the ADR priced it at $10.80, which is a **1 GB** function, while the cost
+   table specifies **512 MB** — about **$5.40**, which is *inside* the D-014 ceiling. So it loses on
+   value, at roughly 270 times the ping's cost for strictly less, not on the ceiling.
 
 ## Affected users and systems
 

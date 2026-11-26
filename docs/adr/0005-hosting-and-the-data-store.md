@@ -46,7 +46,7 @@ and say only that pricing varies by Region. Nothing below is quoted from memory.
 **Usage assumed.** One Lifter; four training sessions a week (17 a month); every logged set a write;
 one agent conversation per session; the dashboard opened about 30 times a month. That comes to roughly
 1,500 API calls a month. The table uses **10,000 API calls and 10,000 Lambda invocations** — about
-eight times the estimate — so these figures are a ceiling, not a guess.
+seven times the estimate — so these figures are a ceiling, not a guess.
 
 | Component | What drives the bill | Monthly | Rate, and how firm it is |
 |---|---|---|---|
@@ -132,8 +132,8 @@ sets a measurement and a fallback chosen in advance instead.
 
 | Option | Monthly | What it buys |
 |---|---|---|
-| **Keep the cluster warm (chosen)** — EventBridge Scheduler every 5 minutes into a 128 MB Lambda running `SELECT 1` | about **$0.02** of Lambda and Scheduler, plus DPUs that have never been measured | Keeps DSQL `Active`, so delay 2 never happens. Defeats scale-to-zero in letter and costs cents in fact. **It also keeps backups working** — see below |
-| **Provisioned concurrency on the API Lambda** | about **$10.80** for one 1 GB function | Removes delay 1 only, and spends the whole D-014 budget doing it. **Rejected on the number** |
+| **Keep the cluster warm (chosen)** — EventBridge Scheduler every 5 minutes into a 128 MB Lambda running `SELECT 1` | about **$0.02** of Lambda and Scheduler, plus DPUs that have never been measured | *Intended* to hold DSQL `Active` so that delay 2 does not arise — a hypothesis the measurement tests, not a guarantee. Defeats scale-to-zero in letter and costs cents in fact. **It also keeps backups working** — see below |
+| **Provisioned concurrency on the API Lambda** | about **$5.40** at the 512 MB this ADR specifies | Removes delay 1 only. **Rejected on value, not on the ceiling** — see *Considered options* |
 | **Accept the delay** | $0.00 | Free, and lands on the first set of every session. **Declined by the Owner, 2026-11-26** |
 
 **The Owner chose the keep-warm ping on 2026-11-26 (D-044).** The stack was chosen because nothing is
@@ -192,11 +192,18 @@ the delay been accepted instead, this document would have needed a separate answ
   decide then than to carry the apparatus now.
 - **Scale to zero, or a ping that stops it.** This was the live trade-off, priced in the latency table
   above and **decided by the Owner on 2026-11-26 (D-044): the ping goes in.** Keeping the cluster
-  `Active` costs roughly two cents a month, removes the one delay nobody can put a number to, and is
-  what lets AWS Backup run at all; leaving it to scale down is free and puts an undocumented wait in
-  front of the first set of every session. Provisioned concurrency was the third option and is rejected on its price, not on
-  its merits: $10.80 a month is the entire D-014 ceiling, and it would fix only the Lambda third of
-  the problem.
+  `Active` costs roughly two cents a month, is *intended* to remove the one delay nobody can put a
+  number to, and is what lets AWS Backup run at all; leaving it to scale down is free and puts an
+  undocumented wait in front of the first set of every session.
+
+  **Provisioned concurrency was the third option, and the reason it loses had to be corrected.** An
+  earlier draft of this ADR priced it at $10.80 a month and called that "the entire D-014 ceiling".
+  That is the price of a **1 GB** function, while the cost table above specifies **512 MB** — so the
+  real figure is about **$5.40 a month**, which would put the stack near $7 and *inside* the ceiling.
+  It is rejected on value instead: roughly **270 times the ping's cost for strictly less**, since it
+  removes the Lambda cold start and does nothing for the DSQL resume or for backups. Enabling it also
+  forfeits the Lambda free tier. arm64 would be cheaper again, but AWS publishes no arm rate for
+  provisioned concurrency on the page read, so no arm figure is claimed here.
 - **The region.** Free (D-012). The earlier "must keep personal data in the EU" was an assumption
   drawn from ShredPace's sign-in region, not a requirement of this project.
 
