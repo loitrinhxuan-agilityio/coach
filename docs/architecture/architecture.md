@@ -34,7 +34,7 @@ reviews and the Owner approves, before any dependent issue starts).
 
 | ADR | Decision | What is open |
 |---|---|---|
-| [0005](../adr/0005-hosting-and-the-data-store.md) | Static dashboard on CloudFront, API on Lambda, Aurora DSQL behind it | Written 2026-11-25; D-014's cost and idle-latency conditions supplied 2026-11-26. **No longer incomplete.** One choice is left for the Owner: whether to keep the database warm for about a cent a month, or accept a first-request delay for which AWS publishes no figure |
+| [0005](../adr/0005-hosting-and-the-data-store.md) | Static dashboard on CloudFront, API on Lambda, Aurora DSQL behind it | Written 2026-11-25; D-014's cost and idle-latency conditions supplied 2026-11-26, and the latency trade-off settled by the Owner the same day (D-044: keep the cluster warm, at about two cents a month). **Nothing is open but the approval itself** — which also accepts the three obligations D-044 attaches and the loss of D-015's scale-to-zero property |
 
 ## Not yet written
 

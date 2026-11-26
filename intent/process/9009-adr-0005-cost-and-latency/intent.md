@@ -43,8 +43,9 @@ Five findings, all verified against AWS pages on 2026-11-26 rather than from mem
 1. **The component list was short.** Route 53, CloudWatch Logs, AWS Backup and the ACM certificate
    were all absent. A Route 53 hosted zone is a flat **$0.50 a month with no free tier** — the only
    certainly non-zero line in the entire stack, and it was in neither the ADR nor the decision log.
-2. **Cost is not the binding constraint.** The stack prices at about **$1.65 a month against $10**, so
-   D-015's Lambda-over-ECS argument is won by a margin wide enough to stop being a trade-off.
+2. **Cost is not the binding constraint.** The stack prices at about **$1.67 a month against $10**,
+   keep-warm ping included, so D-015's Lambda-over-ECS argument is won by a margin wide enough to stop
+   being a trade-off.
 3. **Idle latency is worse than "undocumented".** The DSQL lifecycle is `Active -> Idle -> Inactive`:
    two transitions, both with undocumented durations, and the guide says only that the first
    connection to either state "will be slower than usual". No SLO can be read from documentation.
@@ -61,7 +62,9 @@ Five findings, all verified against AWS pages on 2026-11-26 rather than from mem
 No application code exists, so nothing executable changes. What changes is what the next Builder is
 told: the Lambda is **not in a VPC** (DSQL's public endpoint and a SigV4 token remove the need, and
 with it the NAT gateway D-014 warns about), the first request of a session is a measured number rather
-than an assumed one, and the deploy may carry a scheduled keep-warm ping.
+than an assumed one, the stack **carries a scheduled keep-warm ping** as a CDK construct (D-044), and
+the first request is fired when the app or agent session opens rather than when the first set is
+logged, because the ping fixes the database delay and not the Lambda cold start.
 
 ## Constraints
 
@@ -79,9 +82,14 @@ than an assumed one, and the deploy may carry a scheduled keep-warm ping.
 
 ## Open questions
 
-1. **Which latency fallback does the Owner want?** The ADR recommends the keep-warm ping at about a
-   cent a month. It cannot be settled by evidence: it is a choice about whether to switch off the
-   property the stack was chosen for.
+1. ~~**Which latency fallback does the Owner want?**~~ **Answered during review, 2026-11-26 (D-044):
+   keep the cluster warm.** Recording it turned up a second reason stronger than the one the ADR
+   argued: **AWS Backup fails on an `Idle` or `Inactive` cluster**, so without the ping a log touched a
+   few times a week could not reliably back itself up, and would fail silently. The ping earns its cost
+   even if the latency measurement comes back fine. The choice carries three obligations — a DPU budget
+   per ping (under ~11.5, or the ping outspends the training), a ping interval that cannot be validated
+   from documentation and so is measured with it on and off, and the free mitigations staying mandatory
+   because the ping fixes the database delay only.
 2. **Is the ADR 0004 generator in Phase 1?** Still unsettled, and still the one answer that would
    change D-010's 50 stories.
 3. **Is the AWS account new?** The Free Tier page now describes a plan where the account "closes on

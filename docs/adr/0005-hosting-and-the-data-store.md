@@ -15,12 +15,13 @@ only charge that is certainly non-zero and the whole operational surface: **Rout
 **ACM** certificate, **CloudWatch Logs**, and **AWS Backup** for the database.
 
 **D-014's two conditions are answered below, and answering them moved what this ADR is for.** The
-cost table puts the stack at **about $1.65 a month against a $10 ceiling**, so cost is not the binding
+cost table puts the stack at **about $1.67 a month against a $10 ceiling**, so cost is not the binding
 constraint and the Lambda-over-ECS argument D-015 rested on is won by a margin wide enough to stop
 being a trade-off. Idle latency is the opposite: **AWS publishes no figure for it**, and the delay
 lands on the first set of a session, which is precisely D-004's product proof. So the live question in
-this document is now whether to spend a few cents a month defeating scale-to-zero — the property the
-stack was chosen for. That is the one thing the Owner has to decide here.
+this document was whether to spend a few cents a month defeating scale-to-zero — the property the
+stack was chosen for. **The Owner settled it on 2026-11-26 (D-044): keep the cluster warm.** What that
+leaves is the approval itself, and the obligations the choice carries, set out under *Idle latency*.
 
 ## Why
 
@@ -60,7 +61,13 @@ eight times the estimate — so these figures are a ceiling, not a guess.
 | **CloudWatch Logs** | ~20 MB ingested | **$0.00** | Inside the 5 GB free tier |
 | **ACM certificate** | one | **$0.00** | Free when used with CloudFront |
 | **AWS Backup** (DSQL) | a few MB of backup storage | **~$0.00, unpriced** | Charged per GB-month; rate not verified. Non-zero in principle |
-| | | **~$1.65** | against about $10 (D-014) |
+| **EventBridge Scheduler** (keep-warm, D-044) | 8,640 invocations a month | **~$0.01** | Per-invocation; rate not verified per region |
+| **Keep-warm Lambda** (D-044) | 8,640 inv. x 128 MB x ~200 ms = ~216 GB-s | **~$0.01** | Same Lambda rates as above. Its **DPU** cost is unmeasured — see *Idle latency* |
+| | | **~$1.67** | against about $10 (D-014) |
+
+The last two rows exist because of D-044, the keep-warm decision in *Idle latency* below. They are
+listed here rather than left implicit, since the first finding in this table is that this ADR's own
+component list used to be short.
 
 Three things in that table matter more than its total.
 
@@ -118,21 +125,55 @@ sets a measurement and a fallback chosen in advance instead.
 
 - **Measure before the logging loop is accepted.** First-request p50 and p95 after 15 minutes, 1 hour,
   24 hours and 7 days of idleness, recorded here as an amendment. That is the only way the number can
-  come to exist, and by then the stack is deployed, so it is nearly free to collect.
+  come to exist, and by then the stack is deployed, so it is nearly free to collect. Since the Owner
+  chose the keep-warm ping (D-044), the same measurement is run **with the ping on and with it off**:
+  that is what shows the ping works at all, and what the DPU cost of a ping actually is.
 - **Pick the fallback now, not after a bad measurement.** Three options, priced:
 
 | Option | Monthly | What it buys |
 |---|---|---|
-| **Keep the cluster warm** — EventBridge Scheduler every 5 minutes into a 128 MB Lambda running `SELECT 1` | about **$0.01** of Lambda plus a few thousand trivial DPUs | Keeps DSQL `Active`, so delay 2 never happens. Defeats scale-to-zero in letter and costs cents in fact |
+| **Keep the cluster warm (chosen)** — EventBridge Scheduler every 5 minutes into a 128 MB Lambda running `SELECT 1` | about **$0.02** of Lambda and Scheduler, plus DPUs that have never been measured | Keeps DSQL `Active`, so delay 2 never happens. Defeats scale-to-zero in letter and costs cents in fact. **It also keeps backups working** — see below |
 | **Provisioned concurrency on the API Lambda** | about **$10.80** for one 1 GB function | Removes delay 1 only, and spends the whole D-014 budget doing it. **Rejected on the number** |
-| **Accept the delay** | $0.00 | Free, and lands on the first set of every session |
+| **Accept the delay** | $0.00 | Free, and lands on the first set of every session. **Declined by the Owner, 2026-11-26** |
 
-**The recommendation is the keep-warm ping, and it is the genuine trade-off in this document.** The
-stack was chosen because nothing is paid while idle (D-015), and the remedy for its one serious
-weakness is to pay a little precisely so that it is never idle. At about a cent a month against some
-$8 of unused headroom the Owner is not choosing between cost and speed — the cost argument was won six
-times over. They are being asked to accept that the architecture's advertised virtue is deliberately
-switched off along the path the product's proof depends on.
+**The Owner chose the keep-warm ping on 2026-11-26 (D-044).** The stack was chosen because nothing is
+paid while idle (D-015), and the remedy for its one serious weakness is to pay a little precisely so
+that it is never idle. At about two cents a month against some $8 of unused headroom this was never a
+choice between cost and speed — the cost argument was won six times over. What the Owner accepted is
+that **the architecture's advertised virtue is deliberately switched off** along the path the product's
+proof depends on, and `AGENTS.md`'s infrastructure-as-code rule means the ping is a CDK construct like
+any other, not an operational habit.
+
+**A second reason, found while recording this and arguably the stronger one: the ping is what makes
+backups work.** AWS Backup is the only backup mechanism for Aurora DSQL, and a backup of an `Idle` or
+`Inactive` cluster **fails** with a `FailedPrecondition` error saying the cluster "must be in Active
+state" (Aurora DSQL user guide, read 2026-11-26). A personal training log touched a few times a week
+would therefore spend most of its life in a state where its scheduled backup cannot run, and the
+failure is silent unless something is watching for it. **This holds even if the latency measurement
+comes back fine**, so the ping earns its two cents independently of the delay it was chosen for. Had
+the delay been accepted instead, this document would have needed a separate answer for backups.
+
+**Three things follow from the choice, and they are part of it.**
+
+1. **The ping needs a DPU budget, and it is the one number that decides whether this stays free.** The
+   free allowance is 100,000 DPUs a month and a five-minute schedule is 8,640 invocations, so **the
+   ping has to cost under about 11.5 DPUs per invocation** — a connection, a SigV4 token and
+   `SELECT 1` — or the keep-warm ping, rather than the Owner's training, becomes the main driver of the
+   database bill. Nobody knows that figure; it is the same unmeasurable DPU question as before, except
+   that it now runs continuously whether or not anyone trains. **So the interval is a tunable the
+   measurement sets, not a constant chosen now.** Five minutes is the starting point; fifteen minutes
+   raises the budget to about 34 DPUs per ping and is the first thing to try if the measurement is bad.
+2. **The five-minute interval cannot be validated from documentation either.** AWS publishes no
+   duration for the `Active -> Idle` transition, so the interval is chosen to sit comfortably under a
+   threshold nobody has published. If the real timeout were shorter than the interval, the ping would
+   not keep the cluster `Active` at all and would buy nothing but DPUs. **The ping's effectiveness is
+   therefore measured, not assumed** — by sampling cluster status and by measuring first-request
+   latency with the ping running against the same measurement with it switched off.
+3. **It fixes delay 2 only.** The Lambda cold start and the per-connection token remain, so the free
+   mitigations stay mandatory: arm64, a small bundle, no VPC, and **firing the first request when the
+   app or the agent session opens rather than when the first set is logged**, so what remains overlaps
+   with the Lifter walking to the rack. The measurement in the bullet above still happens — now to
+   confirm the ping works, to set its interval, and to size what is left.
 
 ## Considered options
 
@@ -149,10 +190,11 @@ switched off along the path the product's proof depends on.
   no cross-account isolation to enforce and the comparison has nothing to decide. **DSQL is carried on
   D-015's direction, as before.** If tenancy ever returns, this option reopens, and it is cheaper to
   decide then than to carry the apparatus now.
-- **Scale to zero, or a ping that stops it.** The live trade-off, priced in the latency table above.
-  Keeping the cluster `Active` costs roughly a cent a month and removes the one delay nobody can put a
-  number to; leaving it to scale down is free and puts an undocumented wait in front of the first set
-  of every session. Provisioned concurrency was the third option and is rejected on its price, not on
+- **Scale to zero, or a ping that stops it.** This was the live trade-off, priced in the latency table
+  above and **decided by the Owner on 2026-11-26 (D-044): the ping goes in.** Keeping the cluster
+  `Active` costs roughly two cents a month, removes the one delay nobody can put a number to, and is
+  what lets AWS Backup run at all; leaving it to scale down is free and puts an undocumented wait in
+  front of the first set of every session. Provisioned concurrency was the third option and is rejected on its price, not on
   its merits: $10.80 a month is the entire D-014 ceiling, and it would fix only the Lambda third of
   the problem.
 - **The region.** Free (D-012). The earlier "must keep personal data in the EU" was an assumption
@@ -211,7 +253,8 @@ account-scoped aggregate, but that is **inference from error text**, not evidenc
 basis for any decision here.
 
 Under D-026 none of this justifies the stack; D-015 does. The **cost and latency** questions that
-stood between this document and approval are answered above: cost at about $1.65 a month against a $10
-ceiling, and latency as a measurement obligation plus a fallback priced in advance, because no
-published figure exists. What is left for the Owner is the fallback choice and the approval itself.
+stood between this document and approval are answered above: cost at about $1.67 a month against a $10
+ceiling, and latency as a measurement obligation plus a remedy priced in advance, because no
+published figure exists, and the Owner settled the one choice it offered (D-044: keep the cluster
+warm). What is left is the approval itself.
 The isolation question that stood here originally was removed by ADR 0006, not answered.
