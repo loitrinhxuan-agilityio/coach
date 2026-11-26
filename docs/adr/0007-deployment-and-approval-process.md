@@ -185,9 +185,10 @@ the plan job's `cdk.out` with `cdk deploy`, one assembly could not have recorded
 Section 2 now has the deploy job call `ExecuteChangeSet` directly, so **the plan job is the only job
 that runs the CDK CLI at all** and only its role is ever recorded. The deploy job needs no CDK
 configuration and no bootstrap role — `cloudformation:ExecuteChangeSet` and `DescribeStacks` on the one
-stack, plus read on the staging bucket for the asset check section 2 ends with. **What is still unread on a documentation page is the synthesizer property that sets
-the plan role**; only `DefaultStackSynthesizer`'s existence as the configuration point was verified,
-so whoever writes `infra/` should confirm the property name rather than take it from here.
+stack, plus read on the staging bucket for the asset check section 2 ends with. **What is still unread
+on a documentation page is the synthesizer property that sets the role the plan job uses**; only
+`DefaultStackSynthesizer`'s existence as the configuration point was verified, so whoever writes
+`infra/` should confirm the property name rather than take it from here.
 
 **Why a repo-wide trust policy is a hazard here specifically.** AWS's documentation shows a wildcard
 form, `StringLike` on `repo:octo-org/octo-repo:*`, as the way to allow "any branch, pull request merge
@@ -709,9 +710,11 @@ than filled in.
   them. From the same file: `FilePublishingRole` has the same account-root trust and a default policy
   allowing `s3:PutObject*`, `s3:DeleteObject*`, `s3:Abort*`, Get, List and KMS encrypt/decrypt on the
   staging bucket; and `StagingBucket` is created with `VersioningConfiguration: Status: Enabled` and a
-  30-day noncurrent-version expiry. **Not read on a documentation page**: the synthesizer property that sets the deploy role, and
-  whether the CDK CLI can override the role recorded in a synthesized assembly. Section 1 marks that
-  as the one thing to check before the first deploy rather than claiming a resolution.
+  30-day noncurrent-version expiry. **Not read on a documentation page**: the synthesizer property that
+  sets the role the plan job uses to create the change set. Section 1 marks that as the one thing to
+  check before the first deploy rather than claiming a resolution. *(Whether the CLI can override the
+  role recorded in a synthesized assembly was listed here while the deploy job still ran `cdk deploy`;
+  the question went away when it stopped, since only the plan job runs the CDK CLI now.)*
 - **CloudFormation**: update behaviours and what Replacement means; `DeletionPolicy` and the explicit
   statement that it "doesn't apply to resources whose physical instance is replaced"; stack policies
   as a fail-safe that is not access control, and that a stack policy is enforced on the change-set path
