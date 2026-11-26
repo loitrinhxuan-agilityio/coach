@@ -33,16 +33,16 @@ trade-off inside it that deserves the Owner's attention.
 - **Lambda or ECS.** Settled by D-015 and D-014: Lambda, because idle cost is the binding constraint.
   The accepted price is cold starts on the logging loop and a 30-second API Gateway ceiling, both of
   which D-015 lists as known trade-offs.
-- **Aurora DSQL, or Postgres with row-level security.** This is the live trade-off and the reason this
-  ADR is worth reading. **Aurora DSQL has no row-level security** (recorded in `decision-log.md`,
-  confirmed against the official SQL-support page and a January 2026 test, unverified for November
-  2026). Under ADR 0002 every record belongs to an Account, so choosing DSQL moves account isolation
-  entirely into application code — the database will not catch an unscoped query. A managed Postgres
-  would give defence in depth for that one property, at a cost that has not been compared against the
-  $10 ceiling and against DSQL's zero idle cost. **DSQL is carried here because it is D-015's
-  direction, not because the comparison was made.** If the Owner wants the database to enforce
-  isolation, this is the decision point, and it is cheaper to change now than after the first
-  migration.
+- **Aurora DSQL, or Postgres with row-level security.** ~~This is the live trade-off and the reason
+  this ADR is worth reading.~~ **Settled by [ADR 0006](0006-phase-1-is-single-account.md), and no
+  longer a trade-off.** Aurora DSQL has no row-level security — re-verified 2026-11-25 against the
+  live `CREATE VIEW` page, so the earlier "unverified for November 2026" caveat is discharged. That
+  used to matter because ADR 0002 made every record belong to an Account, so DSQL moved isolation
+  into application code where the database could not catch an unscoped query, and a managed Postgres
+  would have given defence in depth for that one property. Phase 1 is now single-account, so there is
+  no cross-account isolation to enforce and the comparison has nothing to decide. **DSQL is carried on
+  D-015's direction, as before.** If tenancy ever returns, this option reopens, and it is cheaper to
+  decide then than to carry the apparatus now.
 - **The region.** Free (D-012). The earlier "must keep personal data in the EU" was an assumption
   drawn from ShredPace's sign-in region, not a requirement of this project.
 
@@ -98,5 +98,6 @@ at once: retry" and `422 too_many_rows` (limit 3,000) hint at optimistic concurr
 account-scoped aggregate, but that is **inference from error text**, not evidence, and it is not a
 basis for any decision here.
 
-Under D-026 none of this justifies the stack; D-015 does, and the open cost, latency and
-isolation questions above are what stand between this document and approval.
+Under D-026 none of this justifies the stack; D-015 does, and the open **cost and latency** questions
+above are what stand between this document and approval. The isolation question that stood here
+originally was removed by ADR 0006, not answered.

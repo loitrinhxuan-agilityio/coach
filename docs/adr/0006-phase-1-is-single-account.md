@@ -50,7 +50,8 @@ its own text until the Owner approves this one; on approval it becomes `supersed
 
 ## Consequences
 
-- **`requirements.md` S3 is deleted, not reworded.** It has no subject: there is no second Account for
+- **`requirements.md` S3 is withdrawn, not deleted** — the row stays, because other documents cite it
+  by number. It has no subject either way: there is no second Account for
   data to leak to. `REVIEW.md`'s Security pass loses "an unscoped query is the highest-value finding
   in this repository" and is rewritten around what remains — credentials and PII in logs and errors.
 - **Sign-up is structurally impossible until tenancy returns.** A second person signing in gets `403`
