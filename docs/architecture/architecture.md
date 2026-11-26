@@ -13,7 +13,13 @@ an ADR.
 | ADR | Decision |
 |---|---|
 | [0001](../adr/0001-key-based-agent-access-first.md) | Agents connect with a Key first; OAuth comes after v1 |
+| [0003](../adr/0003-lifter-and-agent-are-separate-principals.md) | A Lifter and an Agent are separate principals on one API, and some operations are Lifter-only |
+| [0004](../adr/0004-one-operation-registry-generated-surfaces.md) | Operations are defined once in a registry, and every agent-facing surface is generated from it |
 | [0006](../adr/0006-phase-1-is-single-account.md) | Phase 1 is single-account; tenancy is deferred behind surrogate UUID primary keys |
+
+ADRs 0003 and 0004 were accepted by the Owner on 2026-11-26 (D-043). **Accepting 0004 settled its
+rule, not its schedule:** the generator is still not among D-010's 50 stories, and whether it is built
+in Phase 1 remains the Owner's to settle. That question is recorded in 0004 itself.
 
 ## Superseded
 
@@ -23,14 +29,12 @@ an ADR.
 
 ## Proposed, awaiting review and the Owner's approval
 
-Written 2026-11-25. **None is approved, and writing one approves nothing** (D-022: the Independent
-Reviewer reviews and the Owner approves, before any dependent issue starts).
+**Writing one approves nothing, and neither does being reviewed** (D-022: the Independent Reviewer
+reviews and the Owner approves, before any dependent issue starts).
 
-| ADR | Decision | Known gap |
+| ADR | Decision | What is open |
 |---|---|---|
-| [0003](../adr/0003-lifter-and-agent-are-separate-principals.md) | A Lifter and an Agent are separate principals on one API, and some operations are Lifter-only | — |
-| [0004](../adr/0004-one-operation-registry-generated-surfaces.md) | Operations are defined once in a registry, and every agent-facing surface is generated from it | Whether the generator is in Phase 1 changes D-010's scope and is the Owner's to settle |
-| [0005](../adr/0005-hosting-and-the-data-store.md) | Static dashboard on CloudFront, API on Lambda, Aurora DSQL behind it | Incomplete: D-014 and D-022 require a monthly cost per component and an idle-latency answer, and neither is written |
+| [0005](../adr/0005-hosting-and-the-data-store.md) | Static dashboard on CloudFront, API on Lambda, Aurora DSQL behind it | Written 2026-11-25; D-014's cost and idle-latency conditions supplied 2026-11-26. **No longer incomplete.** One choice is left for the Owner: whether to keep the database warm for about a cent a month, or accept a first-request delay for which AWS publishes no figure |
 
 ## Not yet written
 

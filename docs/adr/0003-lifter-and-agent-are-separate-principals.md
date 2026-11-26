@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: accepted
 ---
 
 # A Lifter and an Agent are separate principals on one API, and some operations are Lifter-only
@@ -12,6 +12,11 @@ that Account. The check lives in the API, never in the dashboard.
 This is a structural decision, not a feature. In Phase 1 the Lifter-only set is nearly empty — Keys
 are created by script, there is no export (D-006 puts CSV later), no sign-up and no consent gate
 (D-028). The decision is that the capability declaration exists from the first handler anyway.
+
+**Accepted by the Owner on 2026-11-26** (D-043), together with ADR 0004. No part of this record
+changed on acceptance: it is approved as written and reviewed. What it unblocks is the authorisation
+work item 2 of `development-preparation.md` names, and the JWT-verification detail ADR 0006 hands to
+this decision is still unwritten — acceptance does not supply it.
 
 ## Why
 
