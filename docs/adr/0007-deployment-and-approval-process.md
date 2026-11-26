@@ -86,14 +86,63 @@ fussy (documented subject formats, read 2026-11-26):
 So:
 
 - **`coach-gh-plan`** trusts exactly `repo:loitrinhxuan-agilityio/coach:ref:refs/heads/main` with
-  `StringEquals`, and holds read access plus whatever the CDK lookup and deploy roles need to create
-  a read-only change set.
+  `StringEquals`, and holds read access plus the ability to create a change set and nothing else —
+  see the constraint below, which is what makes "and nothing else" true.
 - **`coach-gh-deploy`** trusts exactly
   `repo:loitrinhxuan-agilityio/coach:environment:production` with `StringEquals`, and is the only
-  role that can mutate anything.
+  role from which anything can be executed.
 
 Both pin `token.actions.githubusercontent.com:aud` to `sts.amazonaws.com` with `StringEquals` as
 well, because a trust policy that checks only `sub` and not `aud` is weaker than it looks.
+
+**The split is worthless unless the plan role is kept away from the CDK bootstrap deploy role, and
+by default it is not.** There is no such thing as a read-only change set: creating one and executing
+one are two permissions on the same role, and the CDK's bootstrap template puts them together. Read
+from the bootstrap template on `aws/aws-cdk-cli@main` on 2026-11-26, `DeploymentActionRole`:
+
+- its trust policy's principal is `AWS: Ref: AWS::AccountId` — **the account root**, so it delegates
+  to identity policies and is assumable by any principal in the account that is allowed to;
+- its `DeployPermissions` statement allows `cloudformation:CreateChangeSet`, `DeleteChangeSet`,
+  **`ExecuteChangeSet`**, `CreateStack`, `UpdateStack`, `RollbackStack` and
+  `ContinueUpdateRollback` on `Resource: "*"`;
+- its `CliPermissions` statement adds **`cloudformation:DeleteStack`** and
+  `UpdateTerminationProtection`, under a comment that says in as many words "Our CI/CD does not need
+  DeleteStack, but we also want to use this role from the CLI, and there you can call `cdk destroy`";
+- and it holds `iam:PassRole` on the CloudFormation execution role.
+
+`cdk diff --method=change-set` "Uses the deploy role", so a plan job left on the default path assumes
+exactly that role. Since `coach-gh-plan`'s subject is `ref:refs/heads/main` and names no environment,
+**anything that can run a job on `main` — a step added to the plan job, a workflow merged later, a
+`workflow_dispatch` — could assume it and execute or delete the stack without the Owner's approval
+ever being asked for.** That is D-016 defeated by the default configuration of the tool, not by an
+attacker.
+
+**Two controls, both required, because neither is sufficient alone.**
+
+1. **An explicit `Deny` on `sts:AssumeRole`** in `coach-gh-plan`'s identity policy, for
+   `arn:aws:iam::<account>:role/cdk-<qualifier>-deploy-role-*` and `...-cfn-exec-role-*`. An explicit
+   deny beats every allow, which is what makes it hold against a bootstrap role that trusts the
+   account root. On its own it does not work, because it also stops the plan job diffing at all.
+2. **A change-set-only role for the plan job** — `cloudformation:CreateChangeSet`,
+   `DescribeChangeSet`, `DescribeStacks`, `GetTemplate`, `DeleteChangeSet`, read on the staging
+   bucket, and `iam:PassRole` on the CloudFormation execution role (creating a change set requires
+   passing it), with an explicit `Deny` on `ExecuteChangeSet`, `CreateStack`, `UpdateStack`,
+   `DeleteStack`, `RollbackStack`, `ContinueUpdateRollback` and `UpdateTerminationProtection`.
+   Creating a change set changes no resource; executing one does, and the plan job cannot.
+
+The role the CDK assumes is a property of the stack's synthesizer (`DefaultStackSynthesizer`, which
+the CDK guide documents as the configuration point), and the custom bootstrap template section 6
+already contemplates is where the extra role is declared.
+
+**One mechanical consequence to settle before the first deploy, flagged rather than assumed.** The
+synthesized cloud assembly records which role to assume, and section 2 has the deploy job replay the
+plan job's `cdk.out`. If the two jobs need different roles recorded, one assembly cannot serve both,
+and the choice is either to override the role at deploy time or to let the assembly name the deploy
+role and lean on control 1 alone. **This ADR does not pick, because the exact synthesizer property
+and the CLI's override behaviour were not read on a documentation page** — only
+`DefaultStackSynthesizer`'s existence as the configuration point was. It is recorded here so that
+whoever writes `infra/` checks it rather than discovering it, and so that nobody reads section 2's
+single-assembly guarantee as already reconciled with this section.
 
 **Why a repo-wide trust policy is a hazard here specifically.** AWS's documentation shows a wildcard
 form, `StringLike` on `repo:octo-org/octo-repo:*`, as the way to allow "any branch, pull request merge
@@ -184,8 +233,11 @@ reviewable and makes extending it a pull request.
 
 **Layer 2 — AWS refuses even if layer 1 is wrong.** `DeletionProtectionEnabled: true` on the cluster;
 `RemovalPolicy.RETAIN` on the cluster and the site bucket; and an explicit `Deny` on
-`dsql:DeleteCluster` in the CloudFormation execution role, which is expressible in code because
-`cdk bootstrap` accepts a custom execution policy. A CloudFormation **stack policy** denying
+`dsql:DeleteCluster` in the CloudFormation execution role — **conditioned on
+`aws:ResourceTag/protected`, not blanket**, so that a throwaway stack can still be torn down, with
+`dsql:UntagResource` denied on a tagged cluster so the condition cannot be removed first (section 5
+explains why the blanket form does not work). It is expressible in code because `cdk bootstrap`
+accepts a custom execution policy. A CloudFormation **stack policy** denying
 `Update:Replace` and `Update:Delete` on the cluster's logical ID is the textbook control here, and
 AWS describes it precisely as what layer 2 is for: "Use a stack policy only as a fail-safe mechanism
 to prevent accidental updates to specific stack resources." It is recorded as an option rather than
@@ -286,6 +338,27 @@ day. Route 53 charges no hosted zone at all if it reuses the production zone, an
 zone that is deleted within 12 hours of creation is not charged" if it needs its own. The cost is
 hours of DSQL storage and whatever DPUs the rehearsal burns.
 
+**"Destroyed the same day" is not free, because section 3's layer 2 would prevent it.** A second
+stack of the same app in the same account inherits all three protections — `DeletionProtectionEnabled:
+true`, `RemovalPolicy.RETAIN`, and the `dsql:DeleteCluster` deny in the CloudFormation execution role,
+which section 6 makes a permanent property of the account. `cdk destroy` would leave the ephemeral
+cluster running. So **the protections have to distinguish production from a throwaway, and the
+distinction has to be one the plan job can see:**
+
+- `DeletionProtectionEnabled` and `RemovalPolicy` are per-stack properties, set from CDK context, so
+  the ephemeral stack sets them to `false` and `DESTROY`. Turning them off on *production* is a
+  property change that appears in the diff, and the protected-resource list in layer 1 is where it is
+  caught.
+- The execution-role deny is account-wide and cannot be per-stack, so it is conditioned on a tag —
+  deny `dsql:DeleteCluster` where `aws:ResourceTag/protected` is `true` — and the production cluster
+  carries the tag. **The weakness of that is worth stating rather than discovering: a tag-conditioned
+  deny is only as strong as control over the tag**, so the same role must also be denied
+  `dsql:UntagResource` on a cluster carrying it.
+
+If the ephemeral cluster is left behind anyway, it costs **$0.36 per GB-month** in Ireland — below a
+cent at this size — but it keeps drawing on the account's shared 1 GB and 100,000 DPU allowance,
+which is the same objection raised against a permanent staging cluster above.
+
 ## 6. Bootstrap, and what to do about drift
 
 **Bootstrapping is the one step this process cannot gate, because it creates the thing that does the
@@ -311,8 +384,16 @@ Three ways out, all of which the Owner has to choose between:
   which is the step they were trying to avoid.
 - **Bootstrap, then narrow.** Bootstrap with the default policies, then re-run with
   `--cloudformation-execution-policies` pointing at a least-privilege policy that denies
-  `dsql:DeleteCluster`, so the permanent state of the account is narrower than the state it was
-  created from.
+  `dsql:DeleteCluster` on a cluster tagged `protected`, so the permanent state of the account is
+  narrower than the state it was created from.
+
+**Narrowing is not optional, because of what the default bootstrap leaves behind.** Section 1 sets
+out the `DeploymentActionRole` hole in full: the role trusts the account root and holds
+`ExecuteChangeSet`, `CreateStack`, `UpdateStack` and `DeleteStack`. Whoever bootstraps therefore also
+has to create the change-set-only role the plan job uses and the explicit `sts:AssumeRole` deny that
+keeps `coach-gh-plan` away from the bootstrap roles — in the same act, before the first pipeline run,
+since until then a job on `main` can deploy without an approval. `cdk bootstrap --show-template` emits
+the default so the modified version can be reviewed as a diff against it rather than written blind.
 
 **Drift.** `cdk drift` "calls CloudFormation's drift detection operation to compare the actual state of
 resources in AWS ("reality") against their expected configuration in CloudFormation", and `--fail`
@@ -468,7 +549,12 @@ than filled in.
   directory.
 - **CDK bootstrapping**: the `CDKToolkit` stack, the five IAM roles, the
   `cloudformation:* ecr:* ssm:* s3:* iam:*` permission set required of the bootstrapping identity, and
-  `--show-template`.
+  `--show-template`. The `DeploymentActionRole`'s trust principal (`AWS: Ref: AWS::AccountId`) and its
+  `DeployPermissions` and `CliPermissions` statements were read from `bootstrap-template.yaml` on
+  `aws/aws-cdk-cli@main`, not inferred from the guide, because section 1's whole argument rests on
+  them. **Not read on a documentation page**: the synthesizer property that sets the deploy role, and
+  whether the CDK CLI can override the role recorded in a synthesized assembly. Section 1 marks that
+  as the one thing to check before the first deploy rather than claiming a resolution.
 - **CloudFormation**: update behaviours and what Replacement means; `DeletionPolicy` and the explicit
   statement that it "doesn't apply to resources whose physical instance is replaced"; stack policies
   as a fail-safe that is not access control; resource-type support showing `AWS::DSQL::Cluster`
