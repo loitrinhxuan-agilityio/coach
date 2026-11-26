@@ -38,9 +38,11 @@ merge to main
    │
    └─ job "deploy"    environment: production.  WAITS for the Owner.
                       Assumes the deploy role by OIDC.
-                      downloads the same cdk.out
-                      cdk deploy --app cdk.out --require-approval never
+                      aws cloudformation execute-change-set  — the change set
+                      the Owner saw, by ARN.  No second synthesis, no cdk deploy.
 ```
+
+One `concurrency` group covers the whole workflow, so only one plan-and-deploy run is ever in flight.
 
 The ordering is the mechanism. `cdk diff` with `--method=change-set` "Always creates a change set and
 fails if it can't be created. Use this when you need guaranteed accuracy"; the default `auto` falls
@@ -51,9 +53,11 @@ inaccuracy are bad for an approval gate — one shows phantom replacements, the 
 computed by a different method than the Owner thinks — so the method is pinned and the job fails
 rather than degrading silently.
 
-**`--require-approval` cannot be the gate.** The CDK's own option takes `any-change`, `broadening` or
-`never` and prompts at a terminal. In a GitHub Actions job there is no terminal to prompt, so it must
-be `never` and the approval has to come from somewhere else. That "somewhere else" is section 2.
+**`--require-approval` cannot be the gate, which is why the deploy step is not a `cdk deploy` at all.**
+The CDK's own option takes `any-change`, `broadening` or `never` and prompts at a terminal. In a GitHub
+Actions job there is no terminal to prompt, so it could only ever be `never`, and the approval has to
+come from somewhere else. That "somewhere else" is section 2 — and section 2 ends up executing the
+change set directly, so the option never appears in the workflow.
 
 ## 1. Credentials: OIDC, and what the trust policy must pin
 
@@ -134,15 +138,15 @@ The role the CDK assumes is a property of the stack's synthesizer (`DefaultStack
 the CDK guide documents as the configuration point), and the custom bootstrap template section 6
 already contemplates is where the extra role is declared.
 
-**One mechanical consequence to settle before the first deploy, flagged rather than assumed.** The
-synthesized cloud assembly records which role to assume, and section 2 has the deploy job replay the
-plan job's `cdk.out`. If the two jobs need different roles recorded, one assembly cannot serve both,
-and the choice is either to override the role at deploy time or to let the assembly name the deploy
-role and lean on control 1 alone. **This ADR does not pick, because the exact synthesizer property
-and the CLI's override behaviour were not read on a documentation page** — only
-`DefaultStackSynthesizer`'s existence as the configuration point was. It is recorded here so that
-whoever writes `infra/` checks it rather than discovering it, and so that nobody reads section 2's
-single-assembly guarantee as already reconciled with this section.
+**A collision this created has since dissolved, and the reason is worth keeping.** A synthesized cloud
+assembly records which role the CDK should assume, so while an earlier draft had the deploy job replay
+the plan job's `cdk.out` with `cdk deploy`, one assembly could not have recorded two different roles.
+Section 2 now has the deploy job call `ExecuteChangeSet` directly, so **the plan job is the only job
+that runs the CDK CLI at all** and only its role is ever recorded. The deploy job needs no CDK
+configuration and no bootstrap role — just `cloudformation:ExecuteChangeSet` and `DescribeStacks` on
+the one stack. **What is still unread on a documentation page is the synthesizer property that sets
+the plan role**; only `DefaultStackSynthesizer`'s existence as the configuration point was verified,
+so whoever writes `infra/` should confirm the property name rather than take it from here.
 
 **Why a repo-wide trust policy is a hazard here specifically.** AWS's documentation shows a wildcard
 form, `StringLike` on `repo:octo-org/octo-repo:*`, as the way to allow "any branch, pull request merge
@@ -201,17 +205,48 @@ it gives, in GitHub's words (read 2026-11-26):
   43,200 (30 days)" but say nothing about how long a job may sit waiting for a reviewer. A pending
   deploy is therefore of unknown lifetime and should be assumed to expire eventually.
 
-**Making the approved artifact the deployed artifact** is the half of D-016 that the environment does
-not solve, because an approval of run #41 is an approval of a button, not of bytes. Two things close
-it:
+**Making the approved change the deployed change** is the half of D-016 that the environment does not
+solve, because an approval of run #41 is an approval of a button, not of bytes.
 
-1. The plan job uploads its **`cdk.out` cloud assembly** as the run's artifact and the deploy job
-   deploys that directory with `--app`, which the CDK CLI accepts as "the command for running your
-   app or cloud assembly directory". The deploy job re-synthesizes nothing. Artifacts belong to a
-   run, so the assembly cannot change between the diff and the approval.
-2. The diff comment records the **commit SHA** and the change-set name. An approval is therefore
-   traceable to one commit and one template, which is the record `mvp-scope.md` asks for when it
-   lists "how each approval is recorded" as undecided.
+**Pinning the assembly is not enough, and an earlier draft of this ADR thought it was.** A cloud
+assembly pins the *end state*, not the *delta*. Had the deploy job run `cdk deploy --app cdk.out`, it
+would have built a **second** change set against whatever was running at deploy time, and the change
+set the Owner read would never have been executed. With a per-merge cadence and no documented limit on
+how long an approval may sit, that goes wrong like this: runs A and B both diff against stack S0; the
+Owner approves A, so the stack becomes S1; the Owner then approves B, whose template was never built
+on top of A. The deploy converges the stack to B's end state and silently undoes A, and **the Owner
+approved a diff against S0 that showed none of it.** This is the same objection this ADR raises
+against approving on the pull request — "it stops being true the moment another change merges" — and
+it applied just as well to the design's own post-merge half.
+
+**So the deploy job executes the change set itself, and does not deploy.** Three things close it:
+
+1. The plan job creates a named change set and the deploy job runs `ExecuteChangeSet` on **that ARN**.
+   What the Owner read and what CloudFormation applies are then the same object, not two objects
+   computed from the same source at different times.
+2. **CloudFormation makes the stale case fail loudly rather than quietly.** "After you execute a change
+   set, CloudFormation deletes any additional change sets that are associated with the stack because
+   they're no longer valid for the updated stack" (read 2026-11-26). So approving A destroys B's change
+   set, and B's deploy job fails with nothing to execute instead of applying a delta nobody reviewed.
+   **This holds only if every mutation goes through a change set**, which is why the deploy role gets
+   `ExecuteChangeSet` and is explicitly denied `UpdateStack` and `CreateStack`: a direct stack update
+   would move the stack without invalidating anything, and the guarantee would evaporate.
+3. A `concurrency` group on the workflow, so two runs cannot be pending at once in the first place.
+   Point 2 is the backstop for when one is cancelled or re-run anyway.
+
+The plan job still uploads `cdk.out` as the run's artifact — the CDK CLI accepts "the command for
+running your app or cloud assembly directory" for `--app` — but it is now evidence of what was
+synthesized rather than the thing that gets deployed. The diff comment records the **commit SHA** and
+the change-set ARN, which is the record `mvp-scope.md` asks for when it lists "how each approval is
+recorded" as undecided.
+
+**What this costs, stated rather than discovered.** The deploy step is an AWS API call, not a CDK
+command, so the CDK CLI never runs with mutating credentials — a gain — but asset publishing has to
+have happened in the plan job. It does: `cdk diff`'s own documented output begins
+`start: Publishing <asset-hash>` / `success: Published`, so the Lambda bundle is in the staging bucket
+before the Owner is asked. The price is that `cdk deploy`'s conveniences are unavailable on this path,
+including `--revert-drift`, which therefore becomes its own deliberate, separately approved deploy
+rather than a flag on an ordinary one.
 
 **Why the diff comes after the merge, not before it.** D-016 already separates them: "A merge is not a
 deploy: merged changes can wait and be deployed together, each deploy with its own approval"
@@ -225,11 +260,24 @@ diff is true.
 The gate has three layers, in increasing order of how little they trust a human.
 
 **Layer 1 — the plan job fails on a destructive change set.** Between `cdk diff` and the approval,
-the plan job inspects the change set and fails if it finds either a resource whose `Replacement` is
-`True`, or the removal of a resource on a short protected list (the DSQL cluster, the Cognito user
-pool, the S3 site bucket). A failed plan job means the deploy job never becomes available, so the
-Owner is not offered a button at all. The protected list is in the repository, which makes it
-reviewable and makes extending it a pull request.
+the plan job inspects the change set and fails if it finds any of three things:
+
+- a resource whose `Replacement` is `True`;
+- the **removal** of a resource on a short protected list — the DSQL cluster, the Cognito user pool,
+  the S3 site bucket, and D-044's scheduler and keep-warm Lambda;
+- **any change to a protected resource's own protections**: `DeletionProtectionEnabled`, the
+  `DeletionPolicy` attribute, or the `protected` tag.
+
+The third is there because the first two would not catch it. Turning `DeletionProtectionEnabled` off is
+`Update requires: No interruption`, and moving `RemovalPolicy` from `RETAIN` to `DESTROY` changes an
+attribute rather than a resource — so a change that disarms layer 2 is neither a replacement nor a
+removal, and a gate watching only for those would wave through the step that makes the next deploy
+destructive. Section 5 relies on this, since that is how an ephemeral stack is allowed to set the
+protections off while production cannot have them turned off unnoticed.
+
+A failed plan job means the deploy job never becomes available, so the Owner is not offered a button at
+all. The protected list is in the repository, which makes it reviewable and makes extending it a pull
+request.
 
 **Layer 2 — AWS refuses even if layer 1 is wrong.** `DeletionProtectionEnabled: true` on the cluster;
 `RemovalPolicy.RETAIN` on the cluster and the site bucket; and an explicit `Deny` on
@@ -240,9 +288,13 @@ explains why the blanket form does not work). It is expressible in code because 
 accepts a custom execution policy. A CloudFormation **stack policy** denying
 `Update:Replace` and `Update:Delete` on the cluster's logical ID is the textbook control here, and
 AWS describes it precisely as what layer 2 is for: "Use a stack policy only as a fail-safe mechanism
-to prevent accidental updates to specific stack resources." It is recorded as an option rather than
-adopted, for one reason: a stack policy is set on the stack through the API, not declared in the
-template, so it is a third control that cannot live in this repository.
+to prevent accidental updates to specific stack resources." It suits section 2's deploy path
+particularly well, because on that path it cannot be waved away: "If you execute a change set on a
+stack that has a stack policy associated with it, CloudFormation enforces the policy when it updates
+the stack. You can't specify a temporary stack policy that overrides the existing policy when you
+execute a change set." It is recorded as an option rather than adopted, for one reason: a stack policy
+is set on the stack through the API, not declared in the template, so it is a third control that
+cannot live in this repository.
 
 **One correction to the mental model, because the obvious guard does not do what it looks like.**
 `DeletionPolicy: Retain` does not protect against replacement. AWS is explicit: the attribute "doesn't
@@ -400,8 +452,10 @@ resources in AWS ("reality") against their expected configuration in CloudFormat
 "Return with exit code 1 if drift is detected". Run it in the plan job: a diff computed against a
 drifted stack is a diff of the wrong thing, and the Owner would be approving a change relative to a
 baseline that is not what is running. `cdk deploy --revert-drift` exists and uses CloudFormation's
-`REVERT_DRIFT` deployment mode to put drifted resources back — but reverting drift *is* a change, so
-it goes through the same approval as any other.
+`REVERT_DRIFT` deployment mode to put drifted resources back — but reverting drift *is* a change, so it
+goes through the same approval as any other, and since section 2's deploy path executes a change set
+rather than running `cdk deploy`, a drift revert is a deliberate, separately planned and approved run
+rather than a flag added to an ordinary one.
 
 **Two things make drift detection less reassuring than it sounds, and both are verified.**
 
@@ -471,8 +525,12 @@ is what D-016 bought on purpose.
   and it stops being true the moment another change merges. It would also require AWS credentials in a
   pull-request context on a public repository, which section 1 refuses.
 - **`cdk deploy --require-approval any-change` as the gate.** Rejected: it prompts at a terminal and
-  there is no terminal. It is set to `never` in the workflow precisely because the real gate is
-  upstream of it, and that reads alarming out of context, which is why it is written down here.
+  there is no terminal. The option does not appear in the workflow at all, because the deploy step
+  executes a change set rather than running `cdk deploy`.
+- **Deploying the approved assembly with `cdk deploy --app cdk.out`.** This is what an earlier draft of
+  this ADR specified, and the Independent Reviewer was right that it does not deliver D-016. It pins
+  the end state and recomputes the delta at deploy time, so with two approvals pending the second can
+  silently undo the first. Replaced by executing the reviewed change set; see section 2.
 - **CDK Pipelines (a self-mutating CodePipeline in AWS).** Rejected for Phase 1. It is the AWS-native
   answer and it puts the approval in CodePipeline rather than GitHub, but it adds an always-on
   pipeline, CodeBuild projects and an artifact bucket to a stack whose whole argument is that nothing
@@ -557,7 +615,11 @@ than filled in.
   as the one thing to check before the first deploy rather than claiming a resolution.
 - **CloudFormation**: update behaviours and what Replacement means; `DeletionPolicy` and the explicit
   statement that it "doesn't apply to resources whose physical instance is replaced"; stack policies
-  as a fail-safe that is not access control; resource-type support showing `AWS::DSQL::Cluster`
+  as a fail-safe that is not access control, and that a stack policy is enforced on the change-set path
+  with no temporary override ("You can't specify a temporary stack policy that overrides the existing
+  policy when you execute a change set"); that executing a change set "deletes any additional change
+  sets that are associated with the stack because they're no longer valid for the updated stack",
+  which is what makes section 2's stale-approval case fail closed; resource-type support showing `AWS::DSQL::Cluster`
   supporting drift detection and `AWS::Cognito::UserPool` **not** supporting it; and
   `AWS::DSQL::Cluster`'s five properties, every one `Update requires: No interruption`.
 - **Aurora DSQL**: `ALTER TABLE` supported syntax (no `ALTER COLUMN ... TYPE`, no `SET NOT NULL`, no
