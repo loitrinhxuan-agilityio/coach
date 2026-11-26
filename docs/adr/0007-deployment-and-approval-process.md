@@ -1,0 +1,496 @@
+---
+status: proposed
+---
+
+# The deployment and approval process: OIDC instead of a stored key, one environment gate, and a diff that cannot quietly destroy data
+
+This is the last architecture document item 1 of
+[`development-preparation.md`](../agents/development-preparation.md) named and nobody wrote. It
+describes how a change in this repository becomes a change in AWS, and how D-016's requirement — the
+Owner approves *that specific change, shown as the infrastructure diff, never a blanket approval* —
+is enforced by something other than good intentions.
+
+**It decides seven things and deliberately leaves five to the Owner.** The five are listed under
+*What the Owner still has to decide*, and three of them (cadence, staging, who bootstraps) are
+recorded as open in D-016 and `mvp-scope.md` already. Writing this document approves nothing (D-022).
+
+**One finding reorders the whole problem, so it is stated first.** D-016 exists partly because "an
+infrastructure change can replace a stateful resource and lose data." For this stack that threat is
+almost absent and a different one has taken its place. `AWS::DSQL::Cluster` has **five properties and
+every one of them is `Update requires: No interruption`** (CloudFormation template reference, read
+2026-11-26). There is no property you can change that makes CloudFormation replace the cluster. The
+ways to lose the database are renaming its logical ID, removing it from the template, deleting the
+stack — and **running a schema migration**, which `cdk diff` never sees at all. A gate built only
+around the infrastructure diff would therefore guard the safe half of the problem. This document
+says so rather than letting the Owner infer that an approved diff means an approved change.
+
+## The shape of a deploy
+
+One pipeline, two jobs, one approval between them.
+
+```
+merge to main
+   │
+   ├─ job "plan"      no environment.  Assumes the plan role by OIDC.
+   │                  cdk synth → cdk diff --method=change-set
+   │                  destructive-change gate runs here and can fail the job
+   │                  uploads cdk.out as the run's artifact, posts the diff
+   │
+   └─ job "deploy"    environment: production.  WAITS for the Owner.
+                      Assumes the deploy role by OIDC.
+                      downloads the same cdk.out
+                      cdk deploy --app cdk.out --require-approval never
+```
+
+The ordering is the mechanism. `cdk diff` with `--method=change-set` "Always creates a change set and
+fails if it can't be created. Use this when you need guaranteed accuracy"; the default `auto` falls
+back to a template-only diff when the change set cannot be made, and a template-only diff "Any change
+detected to properties that require resource replacement is displayed as a resource replacement, even
+if the change is purely cosmetic" (CDK CLI reference, read 2026-11-26). Both directions of that
+inaccuracy are bad for an approval gate — one shows phantom replacements, the other shows a diff
+computed by a different method than the Owner thinks — so the method is pinned and the job fails
+rather than degrading silently.
+
+**`--require-approval` cannot be the gate.** The CDK's own option takes `any-change`, `broadening` or
+`never` and prompts at a terminal. In a GitHub Actions job there is no terminal to prompt, so it must
+be `never` and the approval has to come from somewhere else. That "somewhere else" is section 2.
+
+## 1. Credentials: OIDC, and what the trust policy must pin
+
+D-016 forbids a long-lived deploy credential in the repository or on a laptop. GitHub's OpenID
+Connect provider removes the need for one: the workflow asks GitHub for a short-lived JWT and trades
+it for AWS credentials through `sts:AssumeRoleWithWebIdentity`.
+
+- **Provider URL** `https://token.actions.githubusercontent.com`, **audience** `sts.amazonaws.com`
+  "if you are using the official action" (`aws-actions/configure-aws-credentials`).
+- The job needs `permissions: id-token: write`, which GitHub notes "does not give the workflow
+  permission to modify or write to any resources."
+- There is no secret in the repository, nothing to rotate, and nothing to leak in a log.
+
+**The trust policy is the whole security boundary, and the `sub` claim is the only part of it that
+distinguishes this repository's `main` from anybody else's anything.** GitHub's own prerequisite is
+blunt: "To control how your cloud provider issues access tokens, you **must** define at least one
+condition", and "IAM recommends that users evaluate the IAM condition key,
+`token.actions.githubusercontent.com:sub`, in the trust policy of any role that trusts GitHub's OIDC
+identity provider."
+
+The `sub` GitHub issues depends on what the job is, which is what makes two roles clean rather than
+fussy (documented subject formats, read 2026-11-26):
+
+| What the job is | `sub` |
+|---|---|
+| references an environment | `repo:ORG-NAME/REPO-NAME:environment:ENVIRONMENT-NAME` |
+| triggered by a pull request, no environment | `repo:ORG-NAME/REPO-NAME:pull_request` |
+| a branch, no environment, not a pull request | `repo:ORG-NAME/REPO-NAME:ref:refs/heads/BRANCH-NAME` |
+
+So:
+
+- **`coach-gh-plan`** trusts exactly `repo:loitrinhxuan-agilityio/coach:ref:refs/heads/main` with
+  `StringEquals`, and holds read access plus whatever the CDK lookup and deploy roles need to create
+  a read-only change set.
+- **`coach-gh-deploy`** trusts exactly
+  `repo:loitrinhxuan-agilityio/coach:environment:production` with `StringEquals`, and is the only
+  role that can mutate anything.
+
+Both pin `token.actions.githubusercontent.com:aud` to `sts.amazonaws.com` with `StringEquals` as
+well, because a trust policy that checks only `sub` and not `aud` is weaker than it looks.
+
+**Why a repo-wide trust policy is a hazard here specifically.** AWS's documentation shows a wildcard
+form, `StringLike` on `repo:octo-org/octo-repo:*`, as the way to allow "any branch, pull request merge
+branch, or environment" — and it does not label it unsafe, because for most repositories it is not.
+**This repository is public.** Anyone can fork it and open a pull request, and a pull-request job
+that references no environment presents `sub: repo:ORG/REPO:pull_request`, which `repo:ORG/REPO:*`
+matches. A repo-wide trust policy would therefore hand an AWS role in the Owner's account to a
+subject that any stranger can cause to exist. The role would be scoped, and "scoped read access to
+the account holding the Owner's training data, obtainable by opening a pull request" is still the
+wrong sentence to have written.
+
+GitHub documents that secrets are not passed to a workflow triggered from a forked repository and
+that `GITHUB_TOKEN` is read-only there. **It does not say, on the pages read on 2026-11-26, whether a
+fork pull request can be granted `id-token: write`.** This ADR therefore does not rely on it: no role
+trusts a `pull_request` subject at all, the plan job runs on `main` after merge rather than on the
+pull request, and the pull request gets a `cdk synth` with no AWS credentials. The cost is real and
+named — **the Owner sees the diff after the merge, not before it** — and section 2 explains why that
+is the right way round under D-016 rather than a compromise.
+
+The same documentation warns that `pull_request_target` and `workflow_run`, used with a checkout of
+an untrusted pull request, "expose the repository to security compromises" and are "privileged,
+which means they share the same cache of the main branch with other privileged workflow triggers, and
+may have repository write access and access to referenced secrets." Neither trigger is used.
+
+## 2. Showing the diff, and making the approved thing the deployed thing
+
+A **GitHub Environment** named `production`, with the Owner as required reviewer, is the gate. What
+it gives, in GitHub's words (read 2026-11-26):
+
+- "A job that references an environment must follow any protection rules for the environment before
+  running or accessing the environment's secrets." The job does not start; it sits and waits.
+- "Enter up to 6 people or teams. Only one of the required reviewers needs to approve the job for it
+  to proceed."
+- "Optionally, to prevent users from approving workflows runs that they triggered, select **Prevent
+  self-review**." This must be on. Without it the Dev Lead's own merge could approve its own deploy,
+  which is D-016 deleted.
+- Deployment branches restricted to `main`.
+- "Allow administrators to bypass configured protection rules" must be **deselected**.
+- "To reject the job, click **Reject**. If a job is rejected, the workflow will fail."
+
+**What it does not give, and each of these is a real limit, not a caveat.**
+
+- **It gates the job, not the reading.** GitHub shows the reviewer a run and a button. Whether the
+  Owner reads the diff before pressing it is outside any mechanism. That is exactly why section 3
+  exists: the classes of change that must not be approved casually are refused *before* the button
+  appears, so the button is never the only thing standing between a skim and a lost database.
+- **It is a repository setting, not a file.** Like making the checks required on `main` — still
+  outstanding since change 9010 — the environment, its reviewer, the self-review ban and the admin
+  bypass cannot be expressed in this repository. `AGENTS.md` says infrastructure as code only, and
+  this is the second control that cannot be. The ADR records it as the Owner's to configure; a
+  workflow that merely *names* an unconfigured environment silently creates one with no protection
+  at all ("Running a workflow that references an environment that does not exist will create an
+  environment with the referenced name"), so an unconfigured environment is worse than no gate,
+  because the pipeline looks gated.
+- **No documented timeout.** The pages read state a maximum *wait timer* of "an integer between 1 and
+  43,200 (30 days)" but say nothing about how long a job may sit waiting for a reviewer. A pending
+  deploy is therefore of unknown lifetime and should be assumed to expire eventually.
+
+**Making the approved artifact the deployed artifact** is the half of D-016 that the environment does
+not solve, because an approval of run #41 is an approval of a button, not of bytes. Two things close
+it:
+
+1. The plan job uploads its **`cdk.out` cloud assembly** as the run's artifact and the deploy job
+   deploys that directory with `--app`, which the CDK CLI accepts as "the command for running your
+   app or cloud assembly directory". The deploy job re-synthesizes nothing. Artifacts belong to a
+   run, so the assembly cannot change between the diff and the approval.
+2. The diff comment records the **commit SHA** and the change-set name. An approval is therefore
+   traceable to one commit and one template, which is the record `mvp-scope.md` asks for when it
+   lists "how each approval is recorded" as undecided.
+
+**Why the diff comes after the merge, not before it.** D-016 already separates them: "A merge is not a
+deploy: merged changes can wait and be deployed together, each deploy with its own approval"
+(`workflow.md`). The Owner approves the *deploy*, and the thing they must see is the diff between
+what is running and what will run — which is not knowable from a pull request that has not merged, and
+is wrong the moment another change merges first. Diffing after merge is the only point at which the
+diff is true.
+
+## 3. Refusing a destructive change rather than hoping it is read
+
+The gate has three layers, in increasing order of how little they trust a human.
+
+**Layer 1 — the plan job fails on a destructive change set.** Between `cdk diff` and the approval,
+the plan job inspects the change set and fails if it finds either a resource whose `Replacement` is
+`True`, or the removal of a resource on a short protected list (the DSQL cluster, the Cognito user
+pool, the S3 site bucket). A failed plan job means the deploy job never becomes available, so the
+Owner is not offered a button at all. The protected list is in the repository, which makes it
+reviewable and makes extending it a pull request.
+
+**Layer 2 — AWS refuses even if layer 1 is wrong.** `DeletionProtectionEnabled: true` on the cluster;
+`RemovalPolicy.RETAIN` on the cluster and the site bucket; and an explicit `Deny` on
+`dsql:DeleteCluster` in the CloudFormation execution role, which is expressible in code because
+`cdk bootstrap` accepts a custom execution policy. A CloudFormation **stack policy** denying
+`Update:Replace` and `Update:Delete` on the cluster's logical ID is the textbook control here, and
+AWS describes it precisely as what layer 2 is for: "Use a stack policy only as a fail-safe mechanism
+to prevent accidental updates to specific stack resources." It is recorded as an option rather than
+adopted, for one reason: a stack policy is set on the stack through the API, not declared in the
+template, so it is a third control that cannot live in this repository.
+
+**One correction to the mental model, because the obvious guard does not do what it looks like.**
+`DeletionPolicy: Retain` does not protect against replacement. AWS is explicit: the attribute "doesn't
+apply to resources whose physical instance is replaced during stack update operations." Retain
+protects a resource that leaves the template. It does nothing about one that CloudFormation decides
+to recreate. For `AWS::DSQL::Cluster` that distinction happens to be free — no property triggers
+replacement — but the habit of treating `RETAIN` as a replacement guard is wrong and would be wrong
+for the next stateful thing added.
+
+**Layer 3 — the one `cdk diff` cannot see, and the reason this section is not finished.** Aurora DSQL
+will not let a bad schema change be undone. A primary key "can't be changed or added later"; `ALTER
+TABLE` supports `DROP NOT NULL` but there is no `SET NOT NULL`, no `ALTER COLUMN ... TYPE` and no
+`ADD PRIMARY KEY` in the supported syntax; `TRUNCATE` is unsupported and `DROP TABLE` is not (all read
+2026-11-26). So the irreversible operations are a `DROP COLUMN`, a `DROP TABLE`, and a `DELETE` with a
+wrong predicate — none of which appear in a CloudFormation change set, because the schema is not
+CloudFormation's. **If migrations are run outside this gate, D-016's "stateless and stateful changes
+alike" is satisfied in letter and not in substance.** The options are set out under *What the Owner
+still has to decide*; this ADR does not pick one, because picking it decides how the application is
+built and that is not this document's to decide.
+
+## 4. Rollback, when the stateful part is Aurora DSQL
+
+Rolling back splits cleanly in two, and only one half is a rollback.
+
+**The stateless half is easy and is not special.** The dashboard is files in S3 and the API is a
+Lambda; reverting to the previous commit and deploying it is an ordinary deploy, which means it needs
+its own Owner approval like any other (D-016, no blanket approvals). The practical consequence is
+worth stating: **a rollback is as slow as the Owner is available.** If that is unacceptable for some
+future incident, the remedy is a decision the Owner makes in advance, not an exception an agent takes
+during one.
+
+**The stateful half is not a rollback at all.** Verified against the AWS Backup and Aurora DSQL
+documentation on 2026-11-26:
+
+- **AWS Backup is the only mechanism** — ADR 0005 already says this, and the Aurora DSQL user guide's
+  backup page describes AWS Backup and nothing else.
+- **A restore never happens in place.** "When you restore Aurora DSQL clusters, AWS Backup always
+  creates new clusters to preserve your source data." A new cluster has a new identifier and a new
+  endpoint, so recovery is: restore, then a stack change to point the Lambda at the new cluster, then
+  an approval, then a deploy. The restore is the quick part.
+- **There is no point-in-time recovery.** AWS Backup's feature-availability table marks Aurora DSQL
+  with cross-Region backup, cross-account backup, full management, lifecycle to cold storage and
+  logically air-gapped vault — and **leaves "Continuous backup and point-in-time restore" blank**, as
+  it leaves incremental backup and restore testing blank. So the recovery point is the last scheduled
+  snapshot, the loss window is the backup interval, and AWS Backup's restore-testing feature cannot
+  be used to prove the restore works. **Someone has to test a restore by hand, once, before the
+  Owner's real training data is the only copy.** That is a Phase 1 obligation this ADR adds, in the
+  same spirit as ADR 0005's latency measurement.
+- **And the backup only exists if D-044's ping is running.** A backup of an `Idle` or `Inactive`
+  cluster fails: `"Code": "FailedPrecondition"`, `"Message": "Cluster 'cluster-id' is in state 'IDLE'
+  and can't be backed up..."`. ADR 0005 already treats the ping as what makes backups work. The
+  deployment consequence is new: **the keep-warm ping is a recovery control, so a deploy that breaks
+  it silently removes the ability to recover,** and the plan job should treat the scheduler and its
+  Lambda as protected resources on the same list as the cluster.
+
+The honest summary, which the Owner should read as a limit of the chosen architecture rather than of
+this process: for the stateless half, rollback is a redeploy of the previous commit. For the data,
+there is no rollback — there is a restore to a new cluster, losing everything since the last snapshot,
+and the restore has never been tried.
+
+## 5. Is there a staging environment? Priced, not asserted
+
+`mvp-scope.md` lists this as undecided, and D-014's ceiling is the reason it was never obvious. Rates
+read from the AWS pricing pages on **2026-11-26**, for **Europe (Ireland)** where the page publishes a
+regional figure.
+
+| What a second environment adds | Monthly | How firm |
+|---|---|---|
+| A second DSQL cluster, storage | **$0.36 per GB-month** beyond the allowance | Ireland rate, read from the page's own Region selector |
+| A second DSQL cluster, activity | **$9.50 per million DPUs** beyond the allowance | Ireland rate, same selector |
+| ...but the free tier is shared | **$0.00 while it lasts** | "Each month, your first 100,000 DPUs and 1 GB of storage are free and automatically applied to your monthly bill" — *your bill*, so one allowance for the account, not one per cluster. The page does not use the words "per account"; this is read from "your monthly bill" |
+| A second hosted zone, **if** staging gets its own domain | **$0.50** | "$0.50 per hosted zone per month for the first 25 hosted zones", not prorated |
+| A staging host as records in the **existing** zone | **$0.00** | No per-record charge; queries are $0.40 per million, and alias records pointing at CloudFront distributions "do not incur a charge" |
+| A second CloudFront distribution, S3 bucket, API Gateway, Lambda set, Cognito pool | **$0.00** | All inside the same always-free and indefinite allowances ADR 0005 already relies on |
+
+**So the bill is between $0.00 and about $0.50 a month, and the honest total is "under a dollar".**
+D-014's ceiling does not decide this, which means the argument has to be made on something else, and
+there are three somethings:
+
+- **Against.** A second environment is a second thing to bootstrap, a second set of OIDC roles and
+  trust policies to get right, and — if its deploys are gated too — a second approval the Owner gives.
+  If its deploys are *not* gated, it is a path into the same AWS account that D-016 does not cover.
+- **Against, specific to this stack.** The free DSQL allowance is shared, and ADR 0005 records the
+  production DPU figure as the one line nobody can predict. A staging cluster consumes an allowance of
+  unknown remaining size, which makes the Phase 1 DPU measurement harder to read, not easier.
+- **For.** It is the only place a restore can be tested, a destructive migration can be rehearsed, and
+  the plan-and-approve pipeline itself can be exercised before it is pointed at the Owner's real
+  training data. Sections 3 and 4 both end in obligations that have nowhere else to run.
+
+A middle option exists and is cheaper than either: **an ephemeral environment** — the same CDK app
+deployed to a second stack, used for a restore test or a migration rehearsal, and destroyed the same
+day. Route 53 charges no hosted zone at all if it reuses the production zone, and AWS notes "a hosted
+zone that is deleted within 12 hours of creation is not charged" if it needs its own. The cost is
+hours of DSQL storage and whatever DPUs the rehearsal burns.
+
+## 6. Bootstrap, and what to do about drift
+
+**Bootstrapping is the one step this process cannot gate, because it creates the thing that does the
+gating.** `cdk bootstrap` deploys a CloudFormation stack named `CDKToolkit` holding an S3 asset
+bucket, an ECR repository and five IAM roles — `CloudFormationExecutionRole`, `DeploymentActionRole`,
+`FilePublishingRole`, `ImagePublishingRole`, `LookupRole`. AWS states the identity doing it "must have
+at least the following permissions": `cloudformation:*`, `ecr:*`, `ssm:*`, `s3:*` and `iam:*`, on
+`*` (read 2026-11-26). That is administrator-grade, and it has to happen **before** any GitHub
+workflow can assume anything, along with creating the OIDC identity provider and the two roles
+themselves.
+
+This collides with D-015 and D-016 at the same point: the agent deploys and the Owner does not use the
+console, yet the first act requires credentials no workflow can hold and the repository may not store.
+Three ways out, all of which the Owner has to choose between:
+
+- **The Owner runs it.** `cdk bootstrap --show-template` emits the template, so the bootstrap can be
+  reviewed as code in a pull request and then applied by the Owner from a terminal with short-lived
+  credentials. Running a CLI is not "using the console" in D-015's sense — the Owner is executing a
+  reviewed artifact, not clicking. This keeps the admin credential with the person accountable for the
+  account.
+- **The Dev Lead runs it with a credential the Owner mints and revokes.** Short-lived, so D-016's
+  prohibition is respected in substance. The Owner still has to create and hand over a credential,
+  which is the step they were trying to avoid.
+- **Bootstrap, then narrow.** Bootstrap with the default policies, then re-run with
+  `--cloudformation-execution-policies` pointing at a least-privilege policy that denies
+  `dsql:DeleteCluster`, so the permanent state of the account is narrower than the state it was
+  created from.
+
+**Drift.** `cdk drift` "calls CloudFormation's drift detection operation to compare the actual state of
+resources in AWS ("reality") against their expected configuration in CloudFormation", and `--fail`
+"Return with exit code 1 if drift is detected". Run it in the plan job: a diff computed against a
+drifted stack is a diff of the wrong thing, and the Owner would be approving a change relative to a
+baseline that is not what is running. `cdk deploy --revert-drift` exists and uses CloudFormation's
+`REVERT_DRIFT` deployment mode to put drifted resources back — but reverting drift *is* a change, so
+it goes through the same approval as any other.
+
+**Two things make drift detection less reassuring than it sounds, and both are verified.**
+
+- **Not every resource supports it.** `AWS::DSQL::Cluster` does. **`AWS::Cognito::UserPool` does
+  not** — CloudFormation's resource-type support table marks it `Yes` for import and IaC generator and
+  **`No` for drift detection** (read 2026-11-26). Under ADR 0006 the user pool is the only record of
+  who the Lifter is, and the `cognito_sub` pinned in the `settings` row is derived from it. So the one
+  resource whose hand-editing would lock the Owner out of their own data is the one resource
+  drift detection cannot see. ADR 0006's remedy still stands and is the right one: re-running the
+  provisioning script is the documented recovery.
+- **Drift is only out-of-band change.** It says nothing about the database contents, for the same
+  reason section 3's layer 3 exists.
+
+## 7. Where the runtime configuration comes from
+
+ADR 0005 observed ShredPace serving `GET /config.json` from the CDN with `region`, `userPoolId`,
+`clientId` and `cognitoDomain`, and recorded it as "a pattern worth considering separately and is not
+decided here". This is that separately.
+
+**Start by naming what is actually secret: nothing.** A Cognito user-pool id and app-client id are sent
+to the browser by any Cognito sign-in flow; ShredPace serves them as static JSON on the public
+internet. The single permitted `cognito_sub` from ADR 0006 is not a deploy-time input at all — it is a
+row that the provisioning script writes after reading the `sub` back from the pool, precisely so the
+two cannot drift. Nothing in this stack needs a secret store, and saying so is the decision.
+
+| Option | Monthly | What it is actually for |
+|---|---|---|
+| **AWS Secrets Manager** | **$0.40 per secret per month**, plus $0.05 per 10,000 API calls | Secrets that rotate. Paying $0.40 a month to store a public identifier is paying for the wrong property |
+| **SSM Parameter Store, standard** | **$0.00** — "Standard parameters are available at no additional charge", and standard-throughput API interactions are too | A fine place for a non-secret value the Lambda reads. Costs a runtime API call on a cold start, which lands on the delay ADR 0005 spent a section on |
+| **CDK context / stack outputs into the build (chosen for the API side)** | $0.00 | The Lambda gets the pool id as an environment variable set by CDK at deploy time. No runtime lookup, nothing on the cold-start path |
+| **`config.json` written by the deploy, served from the CDN (chosen for the dashboard)** | $0.00 | The dashboard is static files with no build-time knowledge of the stack. CDK writes `config.json` as part of the S3 deployment, so the pool the dashboard talks to is always the pool the stack just created |
+
+Prices read 2026-11-26.
+
+**The one trap in the chosen pair**, and it is the mirror image of ADR 0005's `/api` cache rule:
+`/config.json` is a static asset, so CloudFront *will* cache it, and a deploy that rebuilds the user
+pool while a stale `config.json` is cached leaves the dashboard pointing at a pool that no longer
+exists. `/api` must not be cached for confidentiality; `/config.json` may be cached but must be
+invalidated on every deploy that changes it. Both are CloudFront behaviours and both belong in the
+same review, alongside the `Authorization`-header check ADR 0005 already flags.
+
+## Costs this process adds
+
+| Component | Monthly | How firm |
+|---|---|---|
+| GitHub Actions, standard runners | **$0.00** | "The use of standard GitHub-hosted runners is free: ... In public repositories." Larger runners are billed even in public repositories, so the workflow must not request one |
+| CloudFormation change sets and drift detection | **$0.00** | "There is no additional charge for using AWS CloudFormation with resource providers in the following namespaces: AWS::* and Alexa::*." Nothing here uses a third-party resource type |
+| IAM OIDC provider and roles | **$0.00** | IAM is not charged |
+| CDK bootstrap: S3 asset bucket, ECR repository | **rounds below a cent** | A few MB of assets. The ECR repository is created and unused, since the Lambda is a zip rather than a container |
+| A staging environment, if the Owner wants one | **$0.00 to ~$0.50** | Section 5 |
+| | **~$0.00** | against about $10 (D-014), on top of ADR 0005's ~$1.67 |
+
+Read 2026-11-26. The process is free; what it costs is the Owner's attention, once per deploy, which
+is what D-016 bought on purpose.
+
+## Considered options
+
+- **A long-lived IAM access key in a GitHub secret.** Rejected: D-016 forbids it outright. Recorded
+  because it is the thing most repositories do, and because it is worth being explicit that "a GitHub
+  Actions secret" is a long-lived deploy credential stored in the repository's settings — the
+  prohibition is not satisfied by the key being out of the working tree.
+- **A repo-wide OIDC trust policy (`StringLike` on `repo:ORG/REPO:*`).** Rejected for the reason in
+  section 1: this repository is public, so a subject any stranger can cause to exist falls inside the
+  wildcard.
+- **Approving the diff on the pull request instead of after the merge.** Rejected. The diff that
+  matters is between what is running and what will run; before the merge that diff is not yet true,
+  and it stops being true the moment another change merges. It would also require AWS credentials in a
+  pull-request context on a public repository, which section 1 refuses.
+- **`cdk deploy --require-approval any-change` as the gate.** Rejected: it prompts at a terminal and
+  there is no terminal. It is set to `never` in the workflow precisely because the real gate is
+  upstream of it, and that reads alarming out of context, which is why it is written down here.
+- **CDK Pipelines (a self-mutating CodePipeline in AWS).** Rejected for Phase 1. It is the AWS-native
+  answer and it puts the approval in CodePipeline rather than GitHub, but it adds an always-on
+  pipeline, CodeBuild projects and an artifact bucket to a stack whose whole argument is that nothing
+  is paid while idle, and it moves the approval into the console that D-015 says the Owner does not
+  use. Worth reopening if deploys ever become frequent enough that GitHub Actions' coupling to the
+  repository is the limiting factor.
+- **No gate on staging, if staging exists.** Open, not rejected — see below. D-016 is about production,
+  and requiring an approval to deploy a throwaway environment is how a gate gets routed around.
+
+## What the Owner still has to decide
+
+1. **Deploy cadence.** D-016 left it open: per merge, or batched per release. Per merge means the diff
+   is small enough to read and the approvals are frequent; batched means fewer interruptions and a
+   larger diff each time, which is the condition under which skim-approval happens. The Dev Lead's
+   view, offered as a view: per merge while `infra/` is small, revisit if it becomes tiresome.
+2. **Whether a staging environment exists**, and if so whether its deploys are gated. Section 5 prices
+   it at under a dollar; the argument is about approval surface, not money.
+3. **Who runs `cdk bootstrap` the first time**, from section 6's three options.
+4. **Whether a refusal by the destructive-change gate can be overridden, and how.** A gate with no
+   override will one day block a legitimate change; a gate with a convenient override is the
+   skim-approval it was built to prevent. One middle course: an override exists, requires a commit to
+   the protected list in a reviewed pull request, and therefore leaves a record.
+5. **Whether schema migrations go through this gate.** If they do, the migration has to be expressed
+   as something reviewable and the plan job has to render it beside the infrastructure diff. If they
+   do not, D-016's "stateful changes alike" does not reach the only operations on this stack that
+   cannot be undone. This is the question with the most consequence and the least AWS documentation.
+
+## Consequences
+
+- **Three controls in this design cannot be expressed in this repository**, which is a real exception
+  to `AGENTS.md`'s infrastructure-as-code rule rather than a technicality: the GitHub Environment and
+  its reviewer; making the checks required on `main` (outstanding since change 9010); and, if adopted,
+  the CloudFormation stack policy. All three are the Owner's to set, and a pipeline that names an
+  unconfigured environment is *less* safe than one with no gate, because it looks gated.
+- **ADR 0005's keep-warm ping becomes a recovery control, not only a latency one.** It already made
+  backups possible; it now also means a deploy that breaks it removes the ability to back up, silently.
+  The ping, its schedule and its Lambda join the protected-resource list.
+- **A Phase 1 obligation is added: test a restore once, by hand, before the Owner's data is the only
+  copy.** AWS Backup's restore-testing feature is not available for Aurora DSQL, so nothing else will
+  do it.
+- **Rollback of the application is a deploy, so it needs an approval, so it is as fast as the Owner is
+  available.** Anyone who expects a one-command rollback should read this sentence first.
+- **ADR 0005's Aurora DSQL cost row is out of date in one respect.** It records "$8/million DPU and
+  $0.33/GB-month ... US East figures; no Ireland rate published". The pricing page's Region selector
+  now publishes **Europe (Ireland) at $9.50 per million DPUs and $0.36 per GB-month** (read
+  2026-11-26). **The $1.67 total does not change**, because that row is recorded as expected-zero
+  inside the free allowance either way, and D-012 leaves the region free. What changes is that the
+  caveat is false, and a false caveat invites the next person to repeat it. The decision log's
+  architecture notes are corrected in this change; amending an accepted ADR is the Owner's call and is
+  raised in the pull request rather than taken here.
+- **Item 5 of `development-preparation.md` is answerable once this is approved**, and item 1 has no
+  unwritten ADR left. Neither row is marked closed here; closing one is the Owner's.
+
+## Evidence
+
+Everything below was read on **2026-11-26**. Where a page publishes no figure, that is recorded rather
+than filled in.
+
+- **GitHub OIDC**: provider URL, `sts.amazonaws.com` audience, `id-token: write`, the "must define at
+  least one condition" prerequisite, the IAM recommendation to evaluate `:sub`, the `StringLike`
+  `repo:org/repo:*` wildcard example, and the subject formats for environment, pull request and ref.
+  Note: repositories created after 15 July 2026 use an immutable subject format carrying owner and
+  repository IDs (`repo:octo-org@123456/octo-repo@456789:ref:refs/heads/main`), so the exact string
+  the trust policy pins must be read from a real token rather than assumed.
+- **GitHub Environments**: up to six reviewers and one approval sufficient, Prevent self-review,
+  branch restrictions, admin bypass, "must follow any protection rules ... before running", the
+  create-on-reference behaviour, "If a job is rejected, the workflow will fail", and the wait timer's
+  1–43,200 minute range. **No page read states a timeout for a job waiting on a reviewer.**
+- **GitHub Actions billing**: standard GitHub-hosted runners are free in public repositories; larger
+  runners are billed even there.
+- **CDK CLI**: `cdk diff --method` semantics including the `change-set` guarantee and the
+  template-only inaccuracy; `--fail`; `cdk drift` versus `cdk diff`, and `cdk drift --fail`;
+  `cdk deploy --require-approval` values and `--revert-drift`; `--app` accepting a cloud assembly
+  directory.
+- **CDK bootstrapping**: the `CDKToolkit` stack, the five IAM roles, the
+  `cloudformation:* ecr:* ssm:* s3:* iam:*` permission set required of the bootstrapping identity, and
+  `--show-template`.
+- **CloudFormation**: update behaviours and what Replacement means; `DeletionPolicy` and the explicit
+  statement that it "doesn't apply to resources whose physical instance is replaced"; stack policies
+  as a fail-safe that is not access control; resource-type support showing `AWS::DSQL::Cluster`
+  supporting drift detection and `AWS::Cognito::UserPool` **not** supporting it; and
+  `AWS::DSQL::Cluster`'s five properties, every one `Update requires: No interruption`.
+- **Aurora DSQL**: `ALTER TABLE` supported syntax (no `ALTER COLUMN ... TYPE`, no `SET NOT NULL`, no
+  `ADD PRIMARY KEY`; "Dropping of primary key columns is not supported"); "You can't change this key
+  or add a new primary key later"; `DELETE FROM` instead of `TRUNCATE`; the cluster lifecycle table
+  and the `FailedPrecondition` backup error, with **no duration published for either the
+  `Active -> Idle` or the `Idle -> Inactive` transition**; and "Aurora DSQL does not currently support
+  row-level security" on the `CREATE VIEW` page.
+- **AWS Backup**: "AWS Backup always creates new clusters to preserve your source data", and the
+  feature-availability table leaving continuous backup / point-in-time restore, incremental backup and
+  restore testing **blank** for Aurora DSQL.
+- **Prices**: Aurora DSQL Europe (Ireland) $9.50 per million DPUs and $0.36 per GB-month, against US
+  East (Ohio) $8.00 and $0.33, read from the page's own Region selector; the free tier of 100,000 DPUs
+  and 1 GB a month applied to the bill; Route 53 $0.50 per hosted zone per month for the first 25, not
+  prorated, no charge for a zone deleted within 12 hours of creation, $0.40 per million standard
+  queries, and no query charge for alias records pointing at CloudFront; Secrets Manager $0.40 per
+  secret per month plus $0.05 per 10,000 API calls, from the page's own worked examples; SSM Parameter
+  Store standard parameters and standard-throughput interactions at no additional charge; and no
+  additional CloudFormation charge for `AWS::*` resource providers.
+- **Not read.** AWS Backup's per-GB storage rate for Aurora DSQL is published behind a Region selector
+  that did not render; at the few MB this database will hold it rounds below a cent, so no figure is
+  claimed here and ADR 0005's "~$0.00, unpriced" stands.

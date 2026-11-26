@@ -30,26 +30,25 @@ in Phase 1 remains the Owner's to settle. That question is recorded in 0004 itse
 
 ## Proposed, awaiting review and the Owner's approval
 
-**None.** Every ADR written so far has been decided: five accepted, one superseded. **Writing one
-approves nothing** (D-022: the Independent Reviewer reviews and the Owner approves, before any
-dependent issue starts), and that is how each of these reached the table above.
+| ADR | Decision |
+|---|---|
+| [0007](../adr/0007-deployment-and-approval-process.md) | How a change reaches AWS: GitHub OIDC rather than a stored deploy key, one GitHub Environment gate carrying D-016's per-change approval, and a plan job that refuses a destructive diff before the Owner is offered a button |
 
-What remains is not an unapproved ADR but an unwritten one — see below.
+**Writing one approves nothing** (D-022: the Independent Reviewer reviews and the Owner approves,
+before any dependent issue starts), and that is how each ADR in the table above reached it. ADR 0007
+leaves five questions open for the Owner, including the deploy cadence D-016 deliberately did not
+settle and whether a staging environment exists.
 
 ## Not yet written
 
 Item 1 of [`../agents/development-preparation.md`](../agents/development-preparation.md) named five
-ADRs. ADR 0006 removed one of them and ADRs 0003, 0004 and 0005 are now accepted (D-043, D-045), so
-**one is missing outright and one is only partly covered**:
+ADRs. ADR 0006 removed one of them, ADRs 0003, 0004 and 0005 are now accepted (D-043, D-045), and the
+deployment process is written and awaiting review as 0007 above, so **one is only partly covered and
+none is missing outright**:
 
 - ~~**How one Account's data is kept from another's without row-level security.**~~ **No longer
   needed** (D-042, ADR 0006). Phase 1 is single-account, so there is no second Account for data to
   leak to. If tenancy ever returns, this ADR has to be written *before* it does.
-- **The deployment and approval process.** The rules are in
-  [`../agents/workflow.md`](../agents/workflow.md); the procedures themselves are unwritten. **This is
-  now the only architecture ADR item 1 named that has not been written**, and D-016 makes it
-  load-bearing: every production deploy needs the Owner's approval of the specific infrastructure diff,
-  and the proposal must not rely on long-lived deploy credentials.
 - **The Phase 1 REST and MCP contracts.** ADR 0004 decides *how* the contracts are produced and kept
   in step. It does not specify them: the roughly 25 Phase 1 operations (D-013) still have to be
   written and approved, and item 4 stays open until they are.
