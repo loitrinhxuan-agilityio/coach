@@ -48,10 +48,12 @@ trade-off inside it that deserves the Owner's attention.
 
 ## Consequences
 
-- **The isolation ADR becomes a blocking dependency, not a parallel one.** With no row-level security,
-  item 3 of `development-preparation.md` has to say how an unscoped query is made *impossible* rather
-  than merely avoided, and the Independent Reviewer needs a mechanical check. That ADR is still
-  unwritten and no handler should be built before it exists.
+- **The isolation ADR is no longer needed, and item 3 closes with nothing built.** This bullet
+  previously made it a blocking dependency. [ADR 0006](0006-phase-1-is-single-account.md) makes Phase 1
+  single-account, so there is no second Account for data to leak to, and item 3 of
+  `development-preparation.md` has no subject. Aurora DSQL's lack of row-level security stops being a
+  risk the architecture has to answer for. If tenancy ever returns, that ADR has to be written *before*
+  it does.
 - Cold starts land on the first request of a session, which is the logging loop D-004's product proof
   depends on. The latency answer D-014 asks for is therefore part of this decision, not a detail.
 - CloudFront fronts two origins (S3 and API Gateway) with a path split on `/api`, so the CDN
@@ -59,15 +61,17 @@ trade-off inside it that deserves the Owner's attention.
   of this class: its CDN drops `Authorization` on GET requests, which is why it directs plain HTTP
   callers to a custom header instead. ADR 0001 sends a Key as a header, so the header name must be
   checked against CloudFront's behaviour before it is published.
-- **`/api` must not be cached, and that is an account-isolation requirement rather than a performance
-  one.** A new CloudFront behaviour defaults to a caching policy (`CachingOptimized`). If `/api` gets
-  one and the credential — the Key header, or the Cognito session — is not part of the cache key, then
-  a `GET` such as `/api/today` cached for one Account can be served to another. That crosses the
-  account boundary **inside the CDN, before any application code runs**, so the scoping ADR 0002
-  relies on never executes, and with no row-level security in Aurora DSQL nothing further down catches
-  it either. The decision: `/api` uses `CachingDisabled`, and credentials reach the origin through an
-  origin-request policy, never through the cache key. This belongs beside the header-forwarding check
-  above so the isolation ADR can require it and the Independent Reviewer can verify it.
+- **`/api` must not be cached — a confidentiality requirement, not a performance one.** A new
+  CloudFront behaviour defaults to a caching policy (`CachingOptimized`). If `/api` gets one and the
+  credential — the Key header, or the Cognito session — is not part of the cache key, a `GET` such as
+  `/api/today` cached for a signed-in request can be served to **an unauthenticated requester**, who
+  then reads the Lifter's training data without any credential at all. It happens inside the CDN,
+  before any application code runs, so nothing below it can intervene. The decision: `/api` uses
+  `CachingDisabled`, and credentials reach the origin through an origin-request policy, never through
+  the cache key. It sits beside the header-forwarding check above so the Independent Reviewer can
+  verify both together. *(This bullet originally argued the leak would cross an account boundary.
+  Under ADR 0006 there is one Account, so the boundary it crosses is authenticated-to-anonymous — a
+  different reason for the same decision.)*
 - Cognito's admin-created users start with a temporary password, which is what D-009's first-sign-in
   story is built around, and it suits Accounts created by script (D-003).
 

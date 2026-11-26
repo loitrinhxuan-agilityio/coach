@@ -67,6 +67,7 @@ validated.
 | D-040 | 2026-11-23 | **The ShredPace research is untracked and kept on the Owner's machine.** `docs/product/shredpace/` leaves the repository — 98 of its 99 files — and `.gitignore` excludes the folder's *contents* with one exception: a tracked `README.md` at that path stays, explaining where the research went and how to restore it. The contents are excluded rather than the directory, because git cannot re-include a file beneath an excluded directory. This replaces the narrower `evidence/` rule it subsumes. **The local files are untouched and history is not rewritten,** so every commit up to this one still carries the research and it stays recoverable. | It is reference material about a product this one does not own, and D-026 already removed its claim on scope: evidence for how a feature should behave when it is built, never a checklist. A repository about to hold application code does not need 99 files of another product's internals. Size was not the reason — the 113 MB is almost all `evidence/screenshots/`, already ignored. **Known cost:** of the seven markdown links into the folder, the stub `README.md` resolves three (two directory links and one to the README itself); three — to `evidence/README.md`, `review/open-questions.md` and `review/handoff.md` — stay dead in a clone, as the six existing links into `evidence/` already were. The ~65 remaining mentions are prose, not links. | `.gitignore`; `intent/process/9003-untrack-shredpace/`; dead references in `README.md`, this log, `requirements.md`, `vision.md`, `issues/prd.md` and `docs/design/ailiftcoach/system/ux-patterns.md` |
 | D-041 | 2026-11-23 | **Assumption 1 in `mvp-scope.md` is confirmed: PRD stories 198 and 199 are reworded rather than widening Phase 1.** Story 198's "ask the check-in first" becomes "hold a set that looks wrong" and story 199's "I'm going away" becomes "fix that last set". **Stories 44 and 45 stay out of Phase 1.** | Both stories named examples their own phase cannot support: the check-in is story 44 and time away has no Phase 1 story at all. Rewording was the cheaper of the two corrections — pulling story 44 in would have made a fifty-first story of the set the Owner accepted in D-010, with story 45 following it. The assumption named both stories, so both were reworded: story 199's scripted conversations exist to test story 198's guide, and correcting one would have made each fail the other. | `issues/prd.md` stories 198 and 199; `mvp-scope.md` assumption 1 and this log's item B; `intent/phase-1/0198-agent-guide/` |
 
+| D-042 | 2026-11-26 | **Phase 1 is single-account, and there is no Sample account.** No `account` table and no `account_id` column. The Lifter is a Cognito user; their preferences are one `settings` row holding the single permitted `cognito_sub`, the time zone and the display unit; everything else about them is derived from their logged history. Aurora holds no email and no name — Cognito is the only record of the person. Tenancy is deferred behind **surrogate UUID primary keys everywhere**, which keep the retrofit additive. Sign-up is structurally impossible until that migration happens, and that is the accepted price. | D-028 had already narrowed ADR 0002's justification to one reason — the Sample account must be a second Account — and the Owner has now decided there is no Sample account, so nothing was left holding it up. D-026 forbids building for a candidate, and a second Account is a candidate (D-005: whether the product is ever public "does not matter"; D-012: revisit *if* anyone else holds an Account). Multi-tenancy was also the project's largest self-inflicted risk: `REVIEW.md` called an unscoped query the highest-value finding in the repository, and that bug class exists only because of tenancy. Deferring was checked rather than assumed — on Aurora DSQL the retrofit is `ADD COLUMN`, backfill, `CREATE INDEX ASYNC` and a `CHECK ... NOT VALID` with async `VALIDATE`, with no table rebuild, *provided* no primary key is natural or composite. | Supersedes ADR 0002 (proposed, through ADR 0006); amends ADR 0005 (the isolation dependency is gone and the cache rule keeps its decision with a new reason); `requirements.md` S2 rewritten and S3 withdrawn; `REVIEW.md` Security pass rewritten; `GLOSSARY.md` (**Account** gains a line, **Sample account** retired); `development-preparation.md` item 3 closes with nothing built; pending edits below |
 ### Dependencies created by D-004 (not scope)
 
 - The Owner must approve `docs/agents/quality-gates.md` and `docs/agents/pr-checklist.md`; both are still "proposed".
@@ -86,14 +87,51 @@ ignores, so these hashes are how a re-fetch is compared with the snapshot.
 | `skill.md` | `8d87a48032369cec85ceb2070db6219624cef524d473d1440a6e0ea7a34e213c` |
 | `changelog.md` | `f2e94ce5ce4ce496590180537898569654dd70ef34c5bfe9866d9040ecd04f2b` |
 
+### Schema and contract details agreed with D-042
+
+Settled in the same session. These are not separate decisions with their own trade-offs; they are the
+shape that follows from D-042 and ADR 0006, recorded here because the Phase 1 contracts (item 4 of
+`docs/agents/development-preparation.md`) are not written yet and would otherwise lose them.
+
+**Identity and access**
+
+- One provisioning script creates the Cognito user, reads back its `sub`, and writes the `settings` row in the same run, so the two cannot drift. Re-running it is the documented recovery after a pool or stack rebuild.
+- Any further identity provider is **linked to the existing Cognito user**, never allowed to create a second one. A Google sign-in that created its own user would make one Lifter two `sub`s, each holding half a history.
+- A single `cognito_sub` column, not an `allowed_subject` table. If linking ever proves impractical, the table is an additive migration.
+- **Sign-in never writes to Aurora.** No just-in-time provisioning, so there is no race at the front door.
+- The JWT is verified against the pool's JWKS with `iss` and the app client checked. Pinning a subject is only as strong as verifying the token that carries it.
+- Keys are stored as **SHA-256** of the raw Key, with a display prefix and a name. Not bcrypt or argon2: a Key is a long random token, not a human-chosen password, so slow hashing buys nothing and adds latency to every request. Revocation is `revoked_at`, which is not the same concept as a soft delete.
+
+**Schema shape**
+
+- **Surrogate UUID primary keys everywhere.** No natural or composite primary keys. This is binding, not a preference: it is the single thing that keeps a later tenancy retrofit additive.
+- A typed single `settings` row guarded by `CHECK (only_row)`, not an entity-attribute-value table. Two settings do not justify losing types and `NOT NULL` — and DSQL cannot add `SET NOT NULL` later.
+- No `lifter` table. Under S7 every attribute a Lifter profile would hold is health data and out of Phase 1.
+- **Soft delete everywhere** (`deleted_at`); the API never destroys a row, so a Phase 2 undo has something to restore. Every mutation goes through one write path, so an activity log can be added in one place later. The seed script for visual fixtures is exempt, because the rule binds the API.
+- Per-Lifter unique names use a **partial unique index** — `UNIQUE (lower(name)) WHERE deleted_at IS NULL` — so a tombstone does not block recreating a deleted custom exercise.
+- Idempotency (S4): `client_ref` is kept **forever**, `UNIQUE (client_ref)`, stored on the created row rather than in a side table. No TTL and no cleanup job. A retry whose row was since deleted still matches, and the response surfaces that the row was deleted rather than reporting a plain success.
+
+**Units, time and loading**
+
+- Weights are stored as **canonical kilograms** in fixed-precision `numeric`, never a float. The display unit is a setting. Comparisons and stall detection run in kilograms, so rounding cannot make a lift appear to regress.
+- A set carries **one `weight_kg`**; the *exercise* carries `load_type` saying how to read it (barbell total, one dumbbell, assist). For an assisted machine lower is better, so stall detection must read `load_type` or it reports progress backwards.
+- A session stores a `timestamptz` instant **and** a denormalised local `session_date`, which is the local date of the session's **start**. Weekly totals aggregate by session date, never by each set's instant. If the time zone ever changes, stored dates need a documented backfill.
+- Available loads live on the `settings` row. No Gym entity in Phase 1: several gyms, travel and "home today" are candidates, not commitments.
+
+**Stated gaps, not to be quietly fixed**
+
+- **Bodyweight movements record reps only.** Bodyweight is health data and out of Phase 1 (S7), so a pull-up has no `weight_kg`, and Phase 1 volume figures exclude bodyweight load. Reinterpreting S7 to store bodyweight would be scope creep by the back door.
+- Suggestions read the exercise's own history and rep range. **No Lifter attribute and no onboarding questionnaire**, which is why Phase 1 needs neither.
+- Visual-test fixtures are seeded **inside the test run** and are never a production Account. Populated screenshots must not come from the Owner's real training data: the repository is public.
+
 ## Notes for the Dev Lead's architecture proposal (from the grilling, 2026-11-18)
 
 Facts found while checking the Owner's stack (D-015). None of this changes a decision; it is what the proposal must address. Dated, web-sourced and to be re-verified against current AWS pages.
 
-- **Aurora DSQL has no row-level security** (the official SQL-support page says so, and a January 2026 test agreed; unconfirmed for November 2026). Account isolation under ADR 0002 would be enforced in application code only, so every query must be scoped to its Account and the Independent Reviewer must check that. The proposal should say how an unscoped query is made impossible.
+- **Aurora DSQL has no row-level security** — re-verified 2026-11-25 against the live `CREATE VIEW` page ("Aurora DSQL does not currently support row-level security"), so this is now confirmed rather than inferred. **Made moot by D-042:** Phase 1 is single-account, so there is no cross-account isolation for the database to enforce or application code to carry. Account isolation under ADR 0002 would be enforced in application code only, so every query must be scoped to its Account and the Independent Reviewer must check that. The proposal should say how an unscoped query is made impossible.
 - **Aurora DSQL uses optimistic concurrency.** A conflict is reported at commit as a serialization error, and the application must retry. This reinforces the PRD's idempotency rule (story 28) and favours append-only writes for sets.
-- **Per-transaction limits:** 3,000 rows and 10 MiB of writes, 5 minutes per transaction, and connections last at most 60 minutes. Seeding the Sample account and deleting an Account's data must be batched.
-- **Not supported:** temporary tables and PL/pgSQL, so rules live in application code, as the PRD already assumes. The docs now say foreign keys are supported; an older page said otherwise, so the proposal should check the current page.
+- **Per-transaction limits:** 3,000 rows and 10 MiB of writes, 5 minutes per transaction, and connections last at most 60 minutes. Deleting the Lifter's data and seeding visual-test fixtures must be batched. (Under D-042 there is no Sample account to seed.)
+- **Not supported:** temporary tables, triggers, `TRUNCATE`, `ALTER COLUMN ... TYPE`, `SET NOT NULL`, and `ADD PRIMARY KEY` — a primary key cannot be changed or added after the table is created, which is why D-042 makes surrogate UUID keys binding. **Correction, re-verified 2026-11-25:** PL/pgSQL *is* supported (though `BEGIN ... EXCEPTION` blocks are not), and foreign keys have been supported since 2026-08-26 with `NO ACTION`, `RESTRICT`, `CASCADE`, `SET NULL` and `SET DEFAULT`. Rules still live in application code, as the PRD assumes. Partial and expression indexes are supported; `CREATE INDEX ASYNC` is required on a table that already has rows.
 - **Cost:** pay per use with scale to zero, and a free tier of the first 100,000 DPUs and 1 GB a month. That fits the $10 ceiling (D-014), but how many DPUs a personal log uses is unknown and should be measured in Phase 1.
 - **Idle latency is not documented for DSQL.** Lambda cold starts add to it. D-014 requires the proposal to show how the first set of a session stays fast.
 - **Cognito has no dynamic client registration,** which MCP-style connectors normally expect. Workarounds are a pre-registered app client or a registration proxy, and Claude's connector settings do have fields for a client ID and secret. This makes D-011's OAuth item (first in Phase 2) larger and riskier than "about five stories" and must be verified with a real connector early.
@@ -148,6 +186,12 @@ story is tagged **[Phase 1]** (50) or **[Phase 2]** (8). Stories 202–205 were 
 approval of the specific infrastructure change (D-016), with a new "Deploying" section in `workflow.md`.
 
 **Still pending:**
+- **D-042 leaves five documents describing a Sample account that no longer exists:** `README.md` (the Test data
+  row), `mvp-scope.md` (story 26), `issues/prd.md` (story 201 and the note about populated screens), `vision.md`
+  (the Phase 1 contents line) and I-11 below. These are scope documents, so they are the Owner's to edit.
+- **`docs/agents/development-preparation.md` needs two edits after D-042:** item 3 (account isolation without
+  row-level security) has no subject and closes with nothing built, and item 1's "five ADRs" becomes four. It is
+  the Owner's own readiness list, so it is not edited here.
 - Wording: E-02 and D-019 say "phase 2" for phone layouts. That predates the numbered phases (D-011 made Phase 2
   start with OAuth). Read it as "a later phase, after desktop"; the vision, requirements and PRD say "later phase".
 - OAuth connectors need user stories written; the PRD has none.

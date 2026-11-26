@@ -24,17 +24,17 @@ Reviewer reviews and the Owner approves, before any dependent issue starts).
 | [0003](../adr/0003-lifter-and-agent-are-separate-principals.md) | A Lifter and an Agent are separate principals on one API, and some operations are Lifter-only | — |
 | [0004](../adr/0004-one-operation-registry-generated-surfaces.md) | Operations are defined once in a registry, and every agent-facing surface is generated from it | Whether the generator is in Phase 1 changes D-010's scope and is the Owner's to settle |
 | [0005](../adr/0005-hosting-and-the-data-store.md) | Static dashboard on CloudFront, API on Lambda, Aurora DSQL behind it | Incomplete: D-014 and D-022 require a monthly cost per component and an idle-latency answer, and neither is written |
+| [0006](../adr/0006-phase-1-is-single-account.md) | Phase 1 is single-account; tenancy is deferred behind surrogate-key constraint | Proposes to supersede **accepted** ADR 0002, so approving it flips two records at once |
 
 ## Not yet written
 
-Of the five ADRs that block the start of application development
-([`../agents/development-preparation.md`](../agents/development-preparation.md), item 1), two are
-still missing and one is only partly covered:
+Item 1 of [`../agents/development-preparation.md`](../agents/development-preparation.md) named five
+ADRs. **ADR 0006 removes one of them**, so four remain, of which one is missing outright and one is
+only partly covered:
 
-- **How one Account's data is kept from another's without row-level security.** Nothing exists. ADR
-  0005 makes it a blocking dependency rather than a parallel one: Aurora DSQL has no row-level
-  security, so this ADR has to say how an unscoped query is made impossible, and no handler should be
-  built before it does.
+- ~~**How one Account's data is kept from another's without row-level security.**~~ **No longer
+  needed** (D-042, ADR 0006). Phase 1 is single-account, so there is no second Account for data to
+  leak to. If tenancy ever returns, this ADR has to be written *before* it does.
 - **The deployment and approval process.** The rules are in
   [`../agents/workflow.md`](../agents/workflow.md); the procedures themselves are unwritten.
 - **The Phase 1 REST and MCP contracts.** ADR 0004 decides *how* the contracts are produced and kept
