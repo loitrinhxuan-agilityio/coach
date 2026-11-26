@@ -35,9 +35,10 @@ One pipeline, two jobs, one approval between them.
 merge to main
    │
    ├─ job "plan"      no environment.  Assumes the plan role by OIDC.
-   │                  cdk synth → cdk diff --method=change-set
-   │                  destructive-change gate runs here and can fail the job
-   │                  uploads cdk.out as the run's artifact, posts the diff
+   │                  cdk deploy --method=prepare-change-set --change-set-name <run>
+   │                  publishes assets, creates the change set, deploys nothing
+   │                  destructive-change gate reads describe-change-set, can fail the job
+   │                  posts the diff; uploads cdk.out as the run's artifact
    │
    └─ job "deploy"    environment: production.  WAITS for the Owner.
                       Assumes the deploy role by OIDC.
@@ -47,14 +48,39 @@ merge to main
 
 One `concurrency` group covers the whole workflow, so only one plan-and-deploy run is ever in flight.
 
-The ordering is the mechanism. `cdk diff` with `--method=change-set` "Always creates a change set and
-fails if it can't be created. Use this when you need guaranteed accuracy"; the default `auto` falls
-back to a template-only diff when the change set cannot be made, and a template-only diff "Any change
-detected to properties that require resource replacement is displayed as a resource replacement, even
-if the change is purely cosmetic" (CDK CLI reference, read 2026-11-26). Both directions of that
-inaccuracy are bad for an approval gate — one shows phantom replacements, the other shows a diff
-computed by a different method than the Owner thinks — so the method is pinned and the job fails
-rather than degrading silently.
+**The change set has to be a lasting one, which rules out the obvious way of producing it.** An
+earlier draft had the plan job run `cdk diff --method=change-set` and the deploy job execute that
+change set. It cannot: the CDK treats a diff change set as scratch. In `aws/aws-cdk-cli`,
+`createDiffChangeSet` calls `createChangeSetAndCleanup`, which names the change set
+`cdk-diff-change-set-<uuid>` and, in a cleanup block that runs "whether or not creation succeeded",
+calls `cleanupOldChangeset` on it — and, when the stack did not exist before, `deleteStack` on the
+`REVIEW_IN_PROGRESS` shell the `CREATE` change set left behind (source read 2026-11-26). The CLI's own
+message calls it "a read-only change set". So the object the Owner was meant to approve would be gone
+before they saw it, **and the first run would have failed anyway**, because section 1 denies the plan
+role `DeleteStack`.
+
+The CDK has a first-class flow for this, and its documentation names the use case: `cdk deploy`'s
+`--method=prepare-change-set` — "Create change set but don't perform deployment. This is useful if you
+have external tools that will inspect the change set **or if you have an approval process for change
+sets**" — with `execute-change-set` as its counterpart. The plan job uses the first; the deploy job
+calls `ExecuteChangeSet` through the AWS API rather than the CDK's counterpart, so that it needs
+neither the CDK nor a bootstrap role. `prepare-change-set` creates no `cdk diff` scratch change set,
+so nothing is cleaned up and nothing needs `DeleteStack`.
+
+**The gate reads the change set, not a diff.** Layer 1 and the Owner both work from
+`describe-change-set` on the prepared change set, which carries real `Replacement` values. That
+removes a problem the earlier draft had to argue around: `cdk diff --method=template` reports that
+"Any change detected to properties that require resource replacement is displayed as a resource
+replacement, even if the change is purely cosmetic", and `--method=auto` silently falls back to it, so
+a diff-based gate could show phantom replacements or quietly change how it computed its answer. A
+prepared change set has one answer and it is CloudFormation's.
+
+**One consequence of `CREATE` to know before the first deploy.** A prepared change set for a stack
+that does not yet exist leaves that stack in `REVIEW_IN_PROGRESS` until the change set is executed or
+deleted, and the CDK's own source notes that a leftover one "blocks subsequent change set creation".
+If the Owner rejects the very first deploy, clearing the shell needs `DeleteStack`, which the plan
+role does not have — so that one cleanup falls to whoever holds the bootstrap credential in section 6.
+It is a first-deploy-only wrinkle, and it is better known than discovered.
 
 **`--require-approval` cannot be the gate, which is why the deploy step is not a `cdk deploy` at all.**
 The CDK's own option takes `any-change`, `broadening` or `never` and prompts at a terminal. In a GitHub
@@ -118,7 +144,8 @@ from the bootstrap template on `aws/aws-cdk-cli@main` on 2026-11-26, `Deployment
   DeleteStack, but we also want to use this role from the CLI, and there you can call `cdk destroy`";
 - and it holds `iam:PassRole` on the CloudFormation execution role.
 
-`cdk diff --method=change-set` "Uses the deploy role", so a plan job left on the default path assumes
+`cdk diff --method=change-set` "Uses the deploy role", and so does `cdk deploy` in any method, so a
+plan job left on the default path assumes
 exactly that role. Since `coach-gh-plan`'s subject is `ref:refs/heads/main` and names no environment,
 **anything that can run a job on `main` — a step added to the plan job, a workflow merged later, a
 `workflow_dispatch` — could assume it and execute or delete the stack without the Owner's approval
@@ -235,9 +262,10 @@ it applied just as well to the design's own post-merge half.
 
 **So the deploy job executes the change set itself, and does not deploy.** Three things close it:
 
-1. The plan job creates a named change set and the deploy job runs `ExecuteChangeSet` on **that ARN**.
-   What the Owner read and what CloudFormation applies are then the same object, not two objects
-   computed from the same source at different times.
+1. The plan job creates a named, lasting change set with `--method=prepare-change-set`, and the deploy
+   job runs `ExecuteChangeSet` on **that ARN**. What the Owner read and what CloudFormation applies are
+   then the same object, not two objects computed from the same source at different times. It has to be
+   a prepared change set rather than a diff one, for the reason given under *The shape of a deploy*.
 2. **CloudFormation makes the stale case fail loudly rather than quietly.** "After you execute a change
    set, CloudFormation deletes any additional change sets that are associated with the stack because
    they're no longer valid for the updated stack" (read 2026-11-26). So approving A destroys B's change
@@ -256,36 +284,48 @@ recorded" as undecided.
 
 **What this costs, stated rather than discovered.** The deploy step is an AWS API call, not a CDK
 command, so the CDK CLI never runs with mutating credentials — a gain — but asset publishing has to
-have happened in the plan job. It does: `cdk diff`'s own documented output begins
-`start: Publishing <asset-hash>` / `success: Published`, so the Lambda bundle is in the staging bucket
+have happened in the plan job. It does: `--method=prepare-change-set` is a `cdk deploy`, which publishes
+the stack's assets before it creates the change set, so the Lambda bundle is in the staging bucket
 before the Owner is asked. The price is that `cdk deploy`'s conveniences are unavailable on this path,
 including `--revert-drift`, which therefore becomes its own deliberate, separately approved deploy
 rather than a flag on an ordinary one.
 
 **And it moves the integrity question rather than removing it.** A change set references an asset by
-its S3 key, and the key is a content hash — but nothing in S3 checks that the bytes at a key still
-match the hash that names it. So between the Owner reading the diff and pressing the button, anything
+its S3 key, and that key is a fingerprint of the asset's source — but nothing in S3 checks that the
+bytes at a key still match the fingerprint that names it. So between the Owner reading the diff and pressing the button, anything
 with write access to the staging bucket could replace the zip and the change set would execute
 unchanged, deploying code nobody approved. Section 1 keeps that access down to one narrowed role on
 `main`; what closes the window itself is three things, two of them already true:
 
-- **Write-once asset keys.** S3 conditional writes let a `PUT` carry `If-None-Match`, which "prevents
-  overwrites of existing data by validating that there's not an object with the same key name already
-  in your bucket" and otherwise fails with `412 Precondition Failed`; "Bucket owners can use bucket
-  policies to enforce conditional writes for uploaded objects", through the `s3:if-none-match`
-  condition key. A bucket policy on the staging bucket therefore makes an asset key immutable once
-  written, which costs nothing here because the key *is* the content hash: the only legitimate
-  re-publish is byte-identical. **Worth confirming when `infra/` is built**: that the CDK skips
-  publishing an asset that already exists rather than re-putting it and taking a `412`.
-- **Versioning, which the bootstrap template already enables.** `StagingBucket` is created with
-  `VersioningConfiguration: Status: Enabled` and a rule expiring noncurrent versions after 30 days
-  (read 2026-11-26). That does not prevent a swap, because the change set names the key and not the
-  version — it makes one recoverable and visible after the fact, which is worth having and is not a
-  control.
-- **A check before executing.** The deploy job compares each referenced asset's stored checksum against
-  the hash in its key and refuses to execute if they differ. It needs only read access, it is the
-  cheapest of the three, and it is the one that does not depend on a policy being configured
-  correctly.
+**First, a correction to what the key means, because the obvious check does not work.** An asset's key
+carries the staging fingerprint, not a digest of the object in S3: `AssetHashType.SOURCE` bases the
+hash "on the contents of the source path" and `OUTPUT` "on the contents of the bundling output" (CDK
+API reference, read 2026-11-26). S3's own stored checksum is a third value again — `CRC64NVME` is "the
+default checksum algorithm used for checksum calculations" — so **"the stored checksum equals the hash
+in the key" is never true for a Lambda zip**, and a deploy job that refused when they differed would
+refuse every deploy. An earlier draft of this ADR specified exactly that. Two builds of identical
+source can also produce different zip bytes under the same key, so "the only legitimate re-publish is
+byte-identical" was wrong too.
+
+What works is pinning a value recorded **at publish time**:
+
+- **The plan job records each published object's `VersionId`** beside the change-set ARN in the diff
+  comment, and the deploy job refuses to execute unless the key's current version is still that one.
+  Versioning is already on — the bootstrap template creates `StagingBucket` with
+  `VersioningConfiguration: Status: Enabled` and a 30-day noncurrent-version expiry (read 2026-11-26) —
+  and a `VersionId` needs no cooperation from whatever did the upload, which is why it is the primary
+  control rather than a checksum. A SHA-256 supplied at upload with `x-amz-checksum-sha256` would do
+  the same job, but only if the CDK's publisher sends one, which was not verified.
+- **Write-once asset keys** remain worth having, with the rationale corrected. S3 conditional writes let
+  a `PUT` carry `If-None-Match`, which "prevents overwrites of existing data by validating that there's
+  not an object with the same key name already in your bucket" and otherwise fails with
+  `412 Precondition Failed`; "Bucket owners can use bucket policies to enforce conditional writes for
+  uploaded objects", through the `s3:if-none-match` condition key. That stops a swap happening at all,
+  rather than detecting it. **Worth confirming when `infra/` is built**: whether the CDK skips
+  publishing an asset whose key already exists, or re-puts it and takes the `412`.
+- **Versioning is recovery, not prevention.** The change set names the key and not the version, so a
+  swap would still deploy; what versioning buys is that the original object is still there for 30 days
+  and the substitution is visible afterwards.
 
 **Why the diff comes after the merge, not before it.** D-016 already separates them: "A merge is not a
 deploy: merged changes can wait and be deployed together, each deploy with its own approval"
@@ -298,8 +338,9 @@ diff is true.
 
 The gate has three layers, in increasing order of how little they trust a human.
 
-**Layer 1 — the plan job fails on a destructive change set.** Between `cdk diff` and the approval,
-the plan job inspects the change set and fails if it finds any of three things:
+**Layer 1 — the plan job fails on a destructive change set.** Between preparing the change set and the
+approval, the plan job inspects it with `describe-change-set` and fails if it finds any of three
+things:
 
 - a resource whose `Replacement` is `True`;
 - the **removal** of a resource on a short protected list — the DSQL cluster, the Cognito user pool,
@@ -641,11 +682,22 @@ than filled in.
   1–43,200 minute range. **No page read states a timeout for a job waiting on a reviewer.**
 - **GitHub Actions billing**: standard GitHub-hosted runners are free in public repositories; larger
   runners are billed even there.
-- **CDK CLI**: `cdk diff --method` semantics including the `change-set` guarantee and the
-  template-only inaccuracy; `--fail`; `cdk drift` versus `cdk diff`, and `cdk drift --fail`;
+- **CDK CLI**: `cdk deploy --method`'s four values, with `prepare-change-set` documented as "Create
+  change set but don't perform deployment ... if you have an approval process for change sets" and
+  `execute-change-set` as its counterpart, plus `--change-set-name`; `cdk diff --method` semantics
+  including the template-only inaccuracy; `--fail`; `cdk drift` versus `cdk diff`, and `cdk drift --fail`;
   `cdk deploy --require-approval` values and `--revert-drift`; `--app` accepting a cloud assembly
   directory.
-- **S3**: conditional writes with `If-None-Match` preventing overwrites and returning
+- **CDK source** (`aws/aws-cdk-cli@main`, `packages/@aws-cdk/toolkit-lib/lib/api/deployments/cfn-api.ts`):
+  `createDiffChangeSet` names its change set `cdk-diff-change-set-<uuid>` and `createChangeSetAndCleanup`
+  removes it in a cleanup block that runs "whether or not creation succeeded", also calling `deleteStack`
+  on the `REVIEW_IN_PROGRESS` shell when the stack did not exist before, with a comment that a leftover
+  one "blocks subsequent change set creation". This is why the plan job does not use `cdk diff` to make
+  the change set the Owner approves.
+- **CDK asset hashes**: `AssetHashType.SOURCE` bases the hash "on the contents of the source path" and
+  `OUTPUT` "on the contents of the bundling output" — neither is a digest of the uploaded object.
+- **S3**: `CRC64NVME` as "the default checksum algorithm used for checksum calculations", with SHA-256
+  available as `x-amz-checksum-sha256`; conditional writes with `If-None-Match` preventing overwrites and returning
   `412 Precondition Failed`, that "Bucket owners can use bucket policies to enforce conditional writes
   for uploaded objects", and the existence of the `s3:if-none-match` condition key in the S3 service
   authorization reference.
