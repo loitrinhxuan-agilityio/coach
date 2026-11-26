@@ -55,5 +55,18 @@ list to judge readiness — today, the Owner.
 1. **The scope documents are still untouched.** `README.md`, `mvp-scope.md`, `issues/prd.md`,
    `vision.md` and I-11 still describe a Sample account. They are listed as pending edits in the
    decision log and are not in this change, because they are scope rather than process.
-2. **Does row 9 need revisiting?** It says five assumptions in `mvp-scope.md` are unconfirmed. D-041
-   confirmed one of them. Not changed here, because it predates this session and was not checked.
+2. ~~**Does row 9 need revisiting?**~~ **Checked and corrected, 2026-11-26.** It said five assumptions
+   in `mvp-scope.md` were unconfirmed. It is **four of five**: assumption 1 is struck through in that
+   file as confirmed by D-041. Checking it also showed that the file's *"Not decided here"* list has
+   gone stale — the identity provider is settled (Cognito, by accepted ADR 0005) and the numeric
+   latency target it asks for was deliberately replaced by a measurement obligation rather than
+   answered, because AWS publishes no figure. Those are scope-document edits, so they are listed as
+   pending in the decision log rather than made here.
+
+**Extended 2026-11-26, after PR #13 merged.** This change was reopened to bring the list back in line
+with a `main` that had moved again: ADRs 0003, 0004 and 0005 are now accepted (D-043, D-045), so rows
+1, 2, 4 and 5 were rewritten, and rows 6 and 7 gained a defect found while using the gate — 
+`independent-review.yml` **exits 0 even when it posts findings**, so a green check does not mean a
+clean review. That matters here because row 6's outstanding item is making the checks *required*, and
+requiring a check that always passes is a gate in name only. Row 6 now carries a proposed fix for the
+Owner to accept or reject. Still no row is marked approved.

@@ -194,9 +194,21 @@ approval of the specific infrastructure change (D-016), with a new "Deploying" s
   (the Phase 1 contents line) and I-11 below. These are scope documents, so they are the Owner's to edit.
 - **`docs/agents/development-preparation.md`:** the edits D-042 caused — item 3 has no subject and closes with
   nothing built, and item 1's "five ADRs" becomes four — are **in change 9008, awaiting the Owner on PR #12**, which
-  also corrected items 2, 6 and 7. **D-043 and D-045 make item 1 stale again:** it describes ADRs 0003, 0004 and
-  0005 as proposed, and **all three are now accepted** — leaving the unwritten deployment-process ADR as the only
-  architecture item of the five originally named. It is the Owner's own readiness list, so it is not edited here.
+  also corrected items 2, 6 and 7. **D-043 and D-045 are covered there too:** PR #12 was extended on
+  2026-11-26 once ADRs 0003, 0004 and 0005 were accepted, rewriting rows 1, 2, 4, 5, 6, 7 and 9 and correcting row
+  9's assumption count. The unwritten deployment-process ADR is now the only architecture item of the five
+  originally named. No row is marked approved: closing one is the Owner's.
+- **`mvp-scope.md`'s "Not decided here" list is partly stale.** It lists the identity provider, which is settled
+  (Cognito, by accepted ADR 0005), and "the numeric latency target for the first set of a session", which ADR 0005
+  deliberately **replaced with a measurement obligation** rather than answering, because AWS publishes no figure for
+  the DSQL idle transitions. Still genuinely undecided there: how often production deploys happen, the language and
+  framework, and whether a separate staging environment exists. It is a scope document, so the Owner's to edit.
+- **A CI defect for the Owner to settle:** `.github/workflows/independent-review.yml` exits 0 whether it posts
+  findings or none, so a green `Independent review` check does not mean a clean review — the verdict is in the pull
+  request's inline comments. Found by using the gate on PR #13, where the check reported passing three times while
+  the reviewer held five, then one, then two findings. This matters for `development-preparation.md` item 6, whose
+  outstanding step is making the checks *required*: a required check that always passes is a gate in name only. The
+  Dev Lead proposes making the workflow exit non-zero when it posts a finding; the Owner decides.
 - Wording: E-02 and D-019 say "phase 2" for phone layouts. That predates the numbered phases (D-011 made Phase 2
   start with OAuth). Read it as "a later phase, after desktop"; the vision, requirements and PRD say "later phase".
 - OAuth connectors need user stories written; the PRD has none.
