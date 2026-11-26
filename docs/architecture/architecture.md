@@ -15,6 +15,7 @@ an ADR.
 | [0001](../adr/0001-key-based-agent-access-first.md) | Agents connect with a Key first; OAuth comes after v1 |
 | [0003](../adr/0003-lifter-and-agent-are-separate-principals.md) | A Lifter and an Agent are separate principals on one API, and some operations are Lifter-only |
 | [0004](../adr/0004-one-operation-registry-generated-surfaces.md) | Operations are defined once in a registry, and every agent-facing surface is generated from it |
+| [0005](../adr/0005-hosting-and-the-data-store.md) | Static dashboard on CloudFront, API on Lambda, Aurora DSQL behind it, and a ping that keeps the cluster from scaling to zero |
 | [0006](../adr/0006-phase-1-is-single-account.md) | Phase 1 is single-account; tenancy is deferred behind surrogate UUID primary keys |
 
 ADRs 0003 and 0004 were accepted by the Owner on 2026-11-26 (D-043). **Accepting 0004 settled its
@@ -29,24 +30,26 @@ in Phase 1 remains the Owner's to settle. That question is recorded in 0004 itse
 
 ## Proposed, awaiting review and the Owner's approval
 
-**Writing one approves nothing, and neither does being reviewed** (D-022: the Independent Reviewer
-reviews and the Owner approves, before any dependent issue starts).
+**None.** Every ADR written so far has been decided: five accepted, one superseded. **Writing one
+approves nothing** (D-022: the Independent Reviewer reviews and the Owner approves, before any
+dependent issue starts), and that is how each of these reached the table above.
 
-| ADR | Decision | What is open |
-|---|---|---|
-| [0005](../adr/0005-hosting-and-the-data-store.md) | Static dashboard on CloudFront, API on Lambda, Aurora DSQL behind it | Written 2026-11-25; D-014's cost and idle-latency conditions supplied 2026-11-26, and the latency trade-off settled by the Owner the same day (D-044: keep the cluster warm, at about two cents a month). **Nothing is open but the approval itself** — which also accepts the three obligations D-044 attaches and the loss of D-015's scale-to-zero property |
+What remains is not an unapproved ADR but an unwritten one — see below.
 
 ## Not yet written
 
 Item 1 of [`../agents/development-preparation.md`](../agents/development-preparation.md) named five
-ADRs. **ADR 0006 removes one of them**, so four remain, of which one is missing outright and one is
-only partly covered:
+ADRs. ADR 0006 removed one of them and ADRs 0003, 0004 and 0005 are now accepted (D-043, D-045), so
+**one is missing outright and one is only partly covered**:
 
 - ~~**How one Account's data is kept from another's without row-level security.**~~ **No longer
   needed** (D-042, ADR 0006). Phase 1 is single-account, so there is no second Account for data to
   leak to. If tenancy ever returns, this ADR has to be written *before* it does.
 - **The deployment and approval process.** The rules are in
-  [`../agents/workflow.md`](../agents/workflow.md); the procedures themselves are unwritten.
+  [`../agents/workflow.md`](../agents/workflow.md); the procedures themselves are unwritten. **This is
+  now the only architecture ADR item 1 named that has not been written**, and D-016 makes it
+  load-bearing: every production deploy needs the Owner's approval of the specific infrastructure diff,
+  and the proposal must not rely on long-lived deploy credentials.
 - **The Phase 1 REST and MCP contracts.** ADR 0004 decides *how* the contracts are produced and kept
   in step. It does not specify them: the roughly 25 Phase 1 operations (D-013) still have to be
   written and approved, and item 4 stays open until they are.

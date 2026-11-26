@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: accepted
 ---
 
 # Hosting and the data store: a static dashboard on CloudFront, the API on Lambda, Aurora DSQL behind it
@@ -22,6 +22,32 @@ lands on the first set of a session, which is precisely D-004's product proof. S
 this document was whether to spend a few cents a month defeating scale-to-zero — the property the
 stack was chosen for. **The Owner settled it on 2026-11-26 (D-044): keep the cluster warm.** What that
 leaves is the approval itself, and the obligations the choice carries, set out under *Idle latency*.
+
+**Accepted by the Owner on 2026-11-26** (D-045). Approving this record accepts five things together,
+and they are listed because not all of them are obvious from the headline:
+
+1. **The stack** as D-015 intended it, with the four components this ADR's first draft omitted — Route
+   53, ACM, CloudWatch Logs and AWS Backup — now named.
+2. **The cost**, at about **$1.67 a month** against D-014's roughly $10, on rates read on 2026-11-26
+   and labelled where AWS publishes no Ireland figure, plus one line — DSQL's DPUs — that nobody can
+   predict and that is therefore recorded as expected-zero and measured.
+3. **D-044's keep-warm ping**, and with it the **knowing loss of D-015's "nothing is paid while idle"**.
+4. **That the ping's effect on latency is a hypothesis, not a result.** AWS publishes no
+   `Active -> Idle` threshold and does not say whether idleness is judged on connections or on activity,
+   so a five-minute `SELECT 1` may or may not hold the cluster `Active`. The reviewer caught this
+   document asserting it as certain. The backup effect does not depend on that threshold and is the one
+   benefit that is certain.
+5. **Three obligations that fall on Phase 1, not on a later phase:** the latency measurement with the
+   ping on and off, the per-ping DPU figure that decides whether the ping stays inside the free
+   allowance, and the free mitigations — arm64, a small bundle, no VPC, and firing the first request
+   when the app or the agent session opens rather than when the first set is logged.
+
+**On the review order.** D-022 has the Independent Reviewer review and the Owner approve. The Reviewer
+reviewed this change and raised **five findings, all of which were correct and all of which were
+applied** — including the two above that changed what approval means: provisioned concurrency had been
+rejected on the price of a function twice the size this ADR specifies, and the ping's effect had been
+stated as a guarantee. The Owner approved after those fixes but **without waiting for the re-review of
+them**, which is recorded here rather than left to be inferred from timestamps.
 
 ## Why
 
