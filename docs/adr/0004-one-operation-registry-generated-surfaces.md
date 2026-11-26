@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: accepted
 ---
 
 # Operations are defined once in a registry, and every agent-facing surface is generated from it
@@ -14,6 +14,17 @@ The docs site, the per-operation reference and the 30-operation Custom-GPT subse
 not commitments.** D-026 amends D-006: "Phase 1 is the only committed scope. Every other feature is a
 candidate, decided when Phase 1 is in daily use." So they are not a reason for this decision. They
 appear below only as work the registry would make cheap *if* the Owner ever pulls them in.
+
+**Accepted by the Owner on 2026-11-26** (D-043), together with ADR 0003.
+
+**Acceptance settles the rule, not the schedule.** This record decides that operations are defined
+once and that every surface naming them is generated. It does **not** add the generator to Phase 1:
+D-010 lists Phase 1's 50 stories and the generator is not among them, and under D-026 nothing outside
+that list is committed scope. So the rule binds whenever a surface that names operations is built, and
+the first such surface inside Phase 1 is the guide's Part B. **Whether the generator itself is built
+in Phase 1 or the first two surfaces stay hand-written remains the Owner's to settle**, and settling
+it the other way would change D-010. The architecture index recorded this as 0004's known gap before
+acceptance; acceptance does not close it.
 
 ## Why
 
