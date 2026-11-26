@@ -1,5 +1,5 @@
 ---
-status: accepted
+status: superseded by ADR-0006
 ---
 
 # The data model is multi-account from the first migration, though Phase 1 has one user
@@ -13,15 +13,15 @@ narrowed to one reason — **the Sample account has to be a second Account.** "F
 a reason for anything structural (D-026), and the consent, deletion and per-key rate-limit stories are features for
 a second person the Owner is not building for, so they no longer carry this decision either.
 
-## Proposed supersession 2026-11-26 (ADR 0006, D-042)
+## Superseded 2026-11-26 (ADR 0006, D-042)
 
-[ADR 0006](0006-phase-1-is-single-account.md) proposes to **reverse** this decision: Phase 1 becomes
-single-account, with no `account` table and no `account_id` column. The reason is that the Owner has
-decided there is no Sample account, and D-028 had already narrowed this record's justification to that
-one reason — so nothing is left holding it up.
+[ADR 0006](0006-phase-1-is-single-account.md) **reverses** this decision: Phase 1 is single-account,
+with no `account` table and no `account_id` column. The reason is that the Owner decided there is no
+Sample account, and D-028 had already narrowed this record's justification to that one reason — so
+nothing was left holding it up.
 
-This record keeps `status: accepted` and the text below until the Owner approves ADR 0006. On approval
-it becomes `superseded by ADR-0006`. Nothing here is rewritten: it is what was decided on the day.
+Nothing below is rewritten. It is what was decided on 2026-11-18 and amended on 2026-11-23, and it
+stays readable as that record.
 
 ## Considered options
 

@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: accepted
 ---
 
 # Phase 1 is single-account, and tenancy is deferred behind a surrogate-key constraint
@@ -9,8 +9,12 @@ the Lifter is a Cognito user, their preferences are one row, and everything else
 history. Tenancy is deferred, and the one thing that keeps deferring it cheap — **surrogate UUID
 primary keys everywhere** — is recorded here as a binding constraint rather than a preference.
 
-**This ADR proposes to supersede ADR 0002**, which is accepted. ADR 0002 keeps `status: accepted` and
-its own text until the Owner approves this one; on approval it becomes `superseded by ADR-0006`.
+**This ADR supersedes ADR 0002.** Accepted by the Owner on 2026-11-26, after the Independent Reviewer
+raised that rewriting the review instructions while ADR 0002 was still accepted would leave the
+isolation review switched off under an architecture that still required it. The Owner took the first
+of the two remedies the review offered: accept this ADR now, so `requirements.md` and `REVIEW.md`
+match the architecture in the same commit. [ADR 0002](0002-multi-account-from-day-one.md) becomes
+`superseded by ADR-0006` and keeps its own text as the record of what was decided on the day.
 
 ## Why
 

@@ -2,6 +2,14 @@
 
 Author: Owner, via the Dev Lead. Status: draft.
 
+> **Decided during review, 2026-11-26.** This intent proposed a two-step flip: land ADR 0006 as
+> `proposed`, then change both statuses once the Owner approved it. The Independent Reviewer pointed
+> out that the same change already rewrote `REVIEW.md` and `requirements.md` S2/S3 as though ADR 0006
+> were approved, which would have switched off the isolation review while ADR 0002 still mandated it.
+> The Owner took the first remedy the review offered and **accepted ADR 0006 in this change**, so
+> ADR 0002 is `superseded by ADR-0006` here rather than later. The principle the two-step protected —
+> that no commit shows an inconsistent pair of records — is kept; only the mechanism changed.
+
 ## Problem
 
 [ADR 0002](../../../docs/adr/0002-multi-account-from-day-one.md) is **accepted**: the data model is
