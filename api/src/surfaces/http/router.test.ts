@@ -134,11 +134,10 @@ describe('the route table', () => {
     expect((reply.body as ErrorBody).error.code).toBe('not_found')
   })
 
-  test('an entry with no implementation answers internal, not a crash', async () => {
-    const handle = createHandler({ repo: seededRepo(), operations: {} })
-    const reply = await call(handle, eventFor())
-    expect(reply.statusCode).toBe(500)
-    expect((reply.body as ErrorBody).error.code).toBe('internal')
+  test('an entry with no implementation stops the handler being built', () => {
+    expect(() => createHandler({ repo: seededRepo(), operations: {} })).toThrow(
+      /get_account has no implementation/,
+    )
   })
 })
 

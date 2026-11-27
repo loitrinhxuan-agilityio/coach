@@ -7,16 +7,11 @@ import { errorBody, statusFor } from '../../errors/catalogue.js'
 import type { ErrorBody, ErrorCode } from '../../errors/types.js'
 import { OperationError } from '../../errors/types.js'
 import { logRequest } from '../../logging/line.js'
-import { getAccount } from '../../operations/get-account.js'
+import type { Operation } from '../../operations/index.js'
+import { implementations } from '../../operations/index.js'
 import { registry } from '../../registry/index.js'
 import type { OperationEntry } from '../../registry/types.js'
 import type { Repository } from '../../repository/types.js'
-
-type Operation = (ctx: { repo: Repository; principal: Principal }) => Promise<unknown>
-
-// The code behind each registry entry, by name. The registry says what an operation is; this says
-// what runs. Routing never reads it: a route exists because an entry does.
-const implementations: Record<string, Operation> = { get_account: getAccount }
 
 // What a request that matched no route is logged as, and what a request is logged as before a
 // Key has been found. Neither is a value an entry or a principal can have.
@@ -25,8 +20,10 @@ const NO_PRINCIPAL = 'none'
 
 const routeKey = (method: string, path: string): string => `${method} ${path}`
 
-// ADR 0004: the routes are built by walking the registry, not written by hand. Adding an entry
-// adds a route with no change here.
+// ADR 0004: the routes are built by walking the registry, not written by hand, so this file names
+// no path. A route is served only once an implementation of the entry's name exists in
+// operations/index.ts: createHandler refuses to be built without one, and operations/index.test.ts
+// asserts the registry and the implementations list the same names.
 export function buildRouteTable(
   entries: readonly OperationEntry[],
 ): ReadonlyMap<string, OperationEntry> {
@@ -55,7 +52,15 @@ export function createHandler(options: {
   operations?: Record<string, Operation>
 }): (event: APIGatewayProxyEventV2) => Promise<APIGatewayProxyStructuredResultV2> {
   const { repo, entries = registry, operations = implementations } = options
-  const routes = buildRouteTable(entries)
+  // Every entry is paired with its implementation now, so a missing one stops the process at
+  // startup, where it cannot be deployed past, rather than answering 500 to every call.
+  const routes = new Map(
+    [...buildRouteTable(entries)].map(([key, entry]) => {
+      const run = operations[entry.name]
+      if (run === undefined) throw new Error(`registry entry ${entry.name} has no implementation`)
+      return [key, { entry, run }] as const
+    }),
+  )
 
   return async (event) => {
     const started = performance.now()
@@ -70,15 +75,14 @@ export function createHandler(options: {
 
     try {
       // A path or method no entry declares is not_found, before anyone is asked who they are.
-      const entry = routes.get(routeKey(event.requestContext.http.method, event.rawPath))
-      if (entry === undefined) throw new OperationError('not_found')
+      const route = routes.get(routeKey(event.requestContext.http.method, event.rawPath))
+      if (route === undefined) throw new OperationError('not_found')
+      const { entry, run } = route
       operation = entry.name
 
       principal = await authenticate(event.headers, repo)
       assertMayCall(entry, principal)
 
-      const run = operations[entry.name]
-      if (run === undefined) throw new OperationError('internal')
       response = respond(200, await run({ repo, principal }))
     } catch (error) {
       const { code, field } = failure(error)
