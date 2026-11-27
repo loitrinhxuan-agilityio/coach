@@ -63,6 +63,17 @@ describe('authenticate: who is this request?', () => {
     )
   })
 
+  test('whitespace inside the credential is malformed -> key_missing, not a lookup of part of it', async () => {
+    // RFC 7235 token68 has no internal whitespace. Reading "Bearer abc extra" as the Key "abc"
+    // would authenticate a request that never presented a well-formed credential.
+    expect(
+      await codeOf(authenticate({ Authorization: `Bearer ${FAKE_KEY} extra` }, seededRepo())),
+    ).toBe('key_missing')
+    expect(await codeOf(authenticate({ Authorization: 'Bearer a b' }, seededRepo()))).toBe(
+      'key_missing',
+    )
+  })
+
   test('a Bearer value matching no stored hash -> key_unknown', async () => {
     expect(
       await codeOf(authenticate({ Authorization: 'Bearer not-a-stored-key' }, seededRepo())),
@@ -83,6 +94,34 @@ describe('authenticate: who is this request?', () => {
       key_id: stored?.id,
       agent_name: 'fake-agent',
     })
+  })
+
+  test('neither refusal carries the presented credential in its message or its serialised form', async () => {
+    const presented = 'fake-presented-credential-must-not-leak'
+    const repo = seededRepo()
+    const refusals: unknown[] = []
+    for (const headers of [
+      { Authorization: `Bearer ${presented}` }, // key_unknown
+      { Authorization: `Basic ${presented}` }, // key_missing
+      { Authorization: `${presented}` }, // key_missing
+    ]) {
+      try {
+        await authenticate(headers, repo)
+      } catch (error) {
+        refusals.push(error)
+      }
+    }
+    expect(refusals).toHaveLength(3)
+    expect(refusals.map((error) => (error as OperationError).code).sort()).toEqual([
+      'key_missing',
+      'key_missing',
+      'key_unknown',
+    ])
+    for (const error of refusals) {
+      expect((error as OperationError).message).not.toContain(presented)
+      expect(JSON.stringify(error)).not.toContain(presented)
+      expect(String((error as OperationError).stack)).not.toContain(presented)
+    }
   })
 
   test('a Cognito-shaped JWT -> key_unknown', async () => {
@@ -110,12 +149,23 @@ describe('assertMayCall: may this principal make this call?', () => {
     summary: 'A fixture only the Lifter may call.',
   }
 
+  const entryFor = (principals: OperationEntry['principals']): OperationEntry => ({
+    ...lifterOnlyEntry,
+    principals,
+  })
+  const lifter: Principal = { kind: 'lifter', key_id: 'fake-key-id', agent_name: 'fake-lifter' }
+
   test('an entry without "agent" in principals -> lifter_only', () => {
-    expect(() => assertMayCall(lifterOnlyEntry, agent)).toThrow(OperationError)
-    try {
-      assertMayCall(lifterOnlyEntry, agent)
-    } catch (error) {
-      expect((error as OperationError).code).toBe('lifter_only')
+    expect(() => assertMayCall(lifterOnlyEntry, agent)).toThrowError(
+      expect.objectContaining({ name: 'OperationError', code: 'lifter_only' }),
+    )
+  })
+
+  test('an entry with empty principals refuses everyone (default deny)', () => {
+    for (const principal of [agent, lifter]) {
+      expect(() => assertMayCall(entryFor([]), principal)).toThrowError(
+        expect.objectContaining({ code: 'lifter_only' }),
+      )
     }
   })
 
@@ -123,5 +173,9 @@ describe('assertMayCall: may this principal make this call?', () => {
     const entry = entryByName('get_account')
     if (!entry) throw new Error('get_account is missing from the registry')
     expect(() => assertMayCall(entry, agent)).not.toThrow()
+  })
+
+  test('an entry listing "lifter" admits a lifter principal', () => {
+    expect(() => assertMayCall(lifterOnlyEntry, lifter)).not.toThrow()
   })
 })
