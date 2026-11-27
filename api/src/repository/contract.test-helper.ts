@@ -1,9 +1,16 @@
-import type { Repository } from './types.js'
+import type { Repository, SettingsRow } from './types.js'
 
 // The behaviour every Repository must have. The in-memory implementation runs it today; the Aurora
 // DSQL implementation runs the same function against a real database, which is the only way the two
 // are shown to agree. Hashes here are obviously fake.
-export function repositoryContract(makeRepo: () => Repository): void {
+//
+// `makeRepo` must return a Repository with no Keys each time it is called, because most tests insert
+// the same Key into it. `settings` states the one settings row that store holds, or null when it
+// holds none; getSettings must return exactly that, so a stand-in default can never pass.
+export function repositoryContract(
+  makeRepo: () => Repository,
+  { settings }: { settings: SettingsRow | null } = { settings: null },
+): void {
   const hashOf = (label: string) => `fake-sha256-${label}`
 
   describe('the repository contract', () => {
@@ -79,12 +86,8 @@ export function repositoryContract(makeRepo: () => Repository): void {
       expect(await repo.findKeyByName('second-agent')).toBeNull()
     })
 
-    test('getSettings returns null or a complete row, never a default', async () => {
-      const settings = await makeRepo().getSettings()
-      if (settings !== null) {
-        expect(settings.time_zone).toEqual(expect.any(String))
-        expect(settings.display_unit).toBe('kg')
-      }
+    test('getSettings returns exactly the row the store holds, or null, never a default', async () => {
+      expect(await makeRepo().getSettings()).toEqual(settings)
     })
   })
 }
