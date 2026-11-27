@@ -7,7 +7,7 @@ import { registry } from '../../registry/index.js'
 import type { OperationEntry } from '../../registry/types.js'
 import { memoryRepository } from '../../repository/memory.js'
 import type { Repository } from '../../repository/types.js'
-import { buildRouteTable, createHandler, handler } from './router.js'
+import { buildRouteTable, createHandler } from './router.js'
 
 // Obviously fake. The hash is written out in full (sha256 of "abc", a published test vector) so
 // the test does not lean on the implementation to say what the right hash is.
@@ -262,12 +262,6 @@ describe('the HTTP surface', () => {
     const { error } = reply.body as ErrorBody
     expect(error.code).toBe('invalid_request')
     expect(error.field).toBe('weight_kg')
-  })
-
-  test('the exported handler answers internal until a repository is wired, and does not throw', async () => {
-    const reply = await call(handler, eventFor())
-    expect(reply.statusCode).toBe(500)
-    expect((reply.body as ErrorBody).error.code).toBe('internal')
   })
 })
 

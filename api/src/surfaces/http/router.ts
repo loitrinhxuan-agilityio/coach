@@ -98,15 +98,3 @@ export function createHandler(options: {
     return response
   }
 }
-
-// Until the Aurora DSQL repository is wired in (Task 11, deployed by Task 12) there is nothing real
-// to read a Key from. Every call to this one fails, which the boundary reports as `internal`, so
-// an entry point built before that wiring exists answers honestly instead of letting anyone in.
-const unwired: Repository = {
-  findKeyByHash: () => Promise.reject(new Error('no repository is wired')),
-  findKeyByName: () => Promise.reject(new Error('no repository is wired')),
-  insertKey: () => Promise.reject(new Error('no repository is wired')),
-  getSettings: () => Promise.reject(new Error('no repository is wired')),
-}
-
-export const handler = createHandler({ repo: unwired })
