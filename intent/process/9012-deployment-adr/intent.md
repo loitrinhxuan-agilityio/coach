@@ -63,7 +63,7 @@ the first deploy costs a production incident.
 - **A D row only once the Owner decides something.** A D row records a decision the Owner made, and
   while the ADR was `proposed` they had made none, so the change added none. The approval of
   2026-11-27 is such a decision, so it is recorded as **D-047** — taking that number rather than D-046,
-  which change 9014 holds on an open pull request.
+  which change 9014 held on an open pull request at the time and has since merged.
 
 ## Affected users and systems
 

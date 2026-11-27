@@ -30,18 +30,27 @@ A change folder fills up as the change progresses:
 
 ## The number
 
-`NNNN` is the PRD story number from [`../issues/prd.md`](../issues/prd.md), zero-padded:
+`NNNN` is a PRD story number from [`../issues/prd.md`](../issues/prd.md), zero-padded:
 story 14 is `0014-log-by-speaking`. The same number runs through the GitHub issue, the branch
-`change/0014-log-by-speaking` and the pull request, so a change can be followed end to end
-with no lookup table.
+`change/0014-log-by-speaking` and the pull request, so a change can be followed end to end.
+
+**A change may cover more than one story** (D-046). It takes the number of its **lead story** and
+lists every member story in its own `intent.md`, so the folder is the lookup table. One change still
+has exactly one number, which is what D-033 needed the number for — measuring elapsed time between two
+commits with no bookkeeping. What this gives up is the story-to-change bijection: knowing a story
+number no longer tells you which change delivers it, and
+[`phase-1/README.md`](phase-1/README.md) is where that mapping lives for Phase 1.
 
 Work with no story — process work, a refactor, a chore, an incident — takes a number from
 **9000** upward. Process work goes in `process/`, which is where most 9000-range changes
 belong. This folder itself was added by `change/9001-artifact-chain`.
 
 The number is only an identifier. `issues/prd.md` is explicitly not authoritative about scope;
-Phase 1's fifty story numbers are enumerated in D-010 in
-[the decision log](../docs/product/decision-log.md), which is.
+Phase 1's story numbers are enumerated in D-010 in
+[the decision log](../docs/product/decision-log.md), which is. D-010 names fifty; D-046 withdraws
+story 201 and refiles story 199 to `process/`, leaving **49 committed — 48 product features and one
+process change**. [`phase-1/README.md`](phase-1/README.md) partitions them into capabilities and sets
+the build order.
 
 ## Who writes here, and the gate
 
