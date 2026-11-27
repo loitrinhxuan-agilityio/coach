@@ -604,6 +604,35 @@ describe('input the body can carry', () => {
     expect(reply.body.id).toBe(9)
   })
 
+  // The tripwire for the call above. The handler never reads `arguments`, which is right only
+  // while every operation takes none. The first entry with a required input field fails this
+  // test, and whoever adds it must make tools/call validate and pass the arguments on.
+  test('no registry entry requires input', () => {
+    for (const entry of registry) {
+      expect(entry.input.type, entry.name).toBe('object')
+      if (entry.input.type === 'object') expect(entry.input.required, entry.name).toEqual([])
+    }
+  })
+
+  test('a tools/call with no id is acknowledged and never runs the operation', async () => {
+    let ran = false
+    const handle = createMcpHandler({
+      repo: seededRepo(),
+      operations: {
+        get_account: async () => {
+          ran = true
+          return {}
+        },
+      },
+    })
+    const reply = await call(
+      handle,
+      eventFor({ body: rpcBody({ method: 'tools/call', params: { name: 'get_account' } }) }),
+    )
+    expect(reply.statusCode).toBe(202)
+    expect(ran).toBe(false)
+  })
+
   test('arguments the operation does not take are not handed to it', async () => {
     const seen: unknown[] = []
     const handle = createMcpHandler({
@@ -713,6 +742,11 @@ describe('the log line', () => {
       'a successful tool call',
       () => callEvent('get_account'),
       { outcome: 'ok', operation: 'get_account', principal: 'agent' },
+    ],
+    [
+      'a tools/call with no id, which is a notification and never runs',
+      () => eventFor({ body: rpcBody({ method: 'tools/call', params: { name: 'get_account' } }) }),
+      { outcome: 'ok', operation: 'unknown', principal: 'agent' },
     ],
     [
       'a tool call with no Key',

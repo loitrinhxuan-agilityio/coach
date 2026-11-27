@@ -30,7 +30,7 @@ const MCP_PATH = '/mcp'
 
 type Message = { id: string | number | undefined; method: string; params: unknown }
 
-const isRecord = (value: unknown): value is Record<string, unknown> =>
+const isJsonObject = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value)
 
 // The body is JSON-RPC 2.0, one message per request: the revision above has no batches. Anything
@@ -45,7 +45,7 @@ function parseMessage(event: APIGatewayProxyEventV2): Message {
   } catch {
     throw new OperationError('invalid_request')
   }
-  if (!isRecord(value) || value.jsonrpc !== '2.0' || typeof value.method !== 'string') {
+  if (!isJsonObject(value) || value.jsonrpc !== '2.0' || typeof value.method !== 'string') {
     throw new OperationError('invalid_request')
   }
   const { id, method, params } = value
@@ -70,7 +70,7 @@ const rpc = (id: string | number, result: unknown) => ({ jsonrpc: '2.0' as const
 
 // The tool a `tools/call` names, which may be nothing a client could have been told about.
 function toolName(message: Message): string | undefined {
-  if (message.method !== 'tools/call' || !isRecord(message.params)) return undefined
+  if (message.method !== 'tools/call' || !isJsonObject(message.params)) return undefined
   return typeof message.params.name === 'string' ? message.params.name : undefined
 }
 
@@ -99,7 +99,7 @@ export function createMcpHandler(options: {
       if (event.rawPath !== MCP_PATH) throw new OperationError('not_found')
       if (event.requestContext.http.method !== 'POST') {
         // No GET stream and no session to delete, so the only method is POST. R8 has no code for
-        // a wrong method, so the line records the nearest: the caller asked for something this
+        // a wrong method, so the line carries the nearest: the caller asked for something this
         // endpoint does not do.
         outcome = 'invalid_request'
         response = { statusCode: 405, headers: { allow: 'POST' } }
@@ -108,7 +108,11 @@ export function createMcpHandler(options: {
         // Named before anyone is asked who they are, so a refusal is logged against the tool it
         // was for, as the HTTP surface logs it against the route.
         const called = toolName(message)
-        if (called !== undefined && tools.has(called)) operation = called
+        // A call with no id is a notification: it is acknowledged and never runs, so the line must
+        // not name an operation that did not happen.
+        if (called !== undefined && message.id !== undefined && tools.has(called)) {
+          operation = called
+        }
 
         principal = await authenticate(event.headers, repo)
 
@@ -116,6 +120,9 @@ export function createMcpHandler(options: {
           // A notification (the client's "initialized") is acknowledged and never answered.
           response = { statusCode: 202 }
         } else if (message.method === 'initialize') {
+          // Always answers this revision, whatever the client asked for. Deliberate: one revision
+          // is the decision, so there is no negotiation. The risk is a client SDK that does not
+          // know this revision and disconnects on seeing it.
           response = jsonResponse(
             200,
             rpc(message.id, {
@@ -136,6 +143,9 @@ export function createMcpHandler(options: {
             const tool = tools.get(called)
             if (tool === undefined) throw new OperationError('not_found')
             assertMayCall(tool.entry, principal)
+            // The call's `arguments` are not read and the operation is given none. That is safe only
+            // while no input schema has a required field; server.test.ts fails the build when one
+            // does ("no registry entry requires input"), and this call must then change.
             const output = await tool.run({ repo, principal })
             response = jsonResponse(
               200,
