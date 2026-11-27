@@ -14,3 +14,6 @@ docs/product/shredpace/*
 
 # Node dependencies for the design tools (docs/design/ailiftcoach/tools/).
 node_modules/
+
+# The test runner's scratch output (.vitest/json/output.json); never commit it.
+.vitest/
