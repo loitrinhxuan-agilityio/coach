@@ -1,4 +1,4 @@
-import type { ErrorCode } from './types.js'
+import type { ErrorBody, ErrorCode } from './types.js'
 
 // One entry per code: the HTTP status and the fix sentence. The fix is a constant, never built
 // from the request, so the wording of every error lives here and nowhere else.
@@ -33,7 +33,7 @@ export function statusFor(code: ErrorCode): number {
   return catalogue[code].status
 }
 
-export function errorBody(code: ErrorCode, requestId: string, field?: string) {
+export function errorBody(code: ErrorCode, requestId: string, field?: string): ErrorBody {
   return {
     error: {
       code,

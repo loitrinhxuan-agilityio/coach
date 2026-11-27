@@ -17,3 +17,14 @@ export class OperationError extends Error {
     this.field = field
   }
 }
+
+// The one shape every failure takes on the wire (R8). Named here so a surface can type what it
+// renders without importing the catalogue that builds it.
+export type ErrorBody = {
+  error: {
+    code: ErrorCode
+    fix: string
+    field: string | null
+    request_id: string
+  }
+}
