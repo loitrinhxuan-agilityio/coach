@@ -50,6 +50,8 @@ const repoRoot = resolve(here, '../..')
 // (CREATE ROLE, AWS IAM GRANT to this stack's Lambda role, GRANT on the tables). Until then the API
 // Lambdas hold dsql:DbConnectAdmin, which is more than they need.
 export const API_DB_ROLE = 'admin'
+// A test pins this to the literal 'admin'. Changing it, which the least-privilege follow-up must,
+// needs a migration that creates the role first, and the test is there to say so.
 
 // The IAM action that lets a Lambda mint the SigV4 auth token for a database role. The `admin` role
 // takes the admin action and any other role the ordinary one, which is how api/src/db/connection.ts
@@ -64,9 +66,10 @@ const API_TIMEOUT = Duration.seconds(29)
 
 // R17: the API Lambda's bundle is under 1 MB, measured on this output, minified. Unminified the
 // bundle is about 1.28 MB, so `minify` is what keeps it inside the budget and the test reads what
-// this produces. The budget measures index.js, the code. The source map beside it (index.js.map,
-// about 1.9 MB) also ships, and is not counted: it is read only to make a stack trace legible, and
-// every function carries NODE_OPTIONS=--enable-source-maps for that.
+// this produces. The R17 1 MB figure is index.js alone, the code. The source map beside it
+// (index.js.map, about 1.9 MB) also ships: it is left out of the 1 MB figure because Node reads it
+// only to make a stack trace legible, and every function carries NODE_OPTIONS=--enable-source-maps
+// for that. A second, provisional 3 MB limit in the tests covers code and map together.
 //
 // CommonJS, because `pg` is CommonJS and an ES module bundle of it needs a `require` shim. `pg-native`
 // is not bundled: `pg` only loads it if asked for `pg.native`, which nothing here does, and it is not

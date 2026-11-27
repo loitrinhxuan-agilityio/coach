@@ -175,14 +175,18 @@ describe('the deployed handler', () => {
     return received
   }
 
-  test('a missing setting is reported to CloudFormation, by name and never by value', async () => {
+  function taskRoot() {
     const dir = mkdtempSync(join(tmpdir(), 'task-root-'))
     mkdirSync(join(dir, 'migrations'))
     writeFileSync(join(dir, 'migrations', '0001_x.sql'), 'SELECT 1')
     vi.stubEnv('LAMBDA_TASK_ROOT', dir)
-    vi.stubEnv('DSQL_ENDPOINT', '')
-    vi.stubEnv('AWS_REGION', 'fake-region-1')
-    vi.stubEnv('DSQL_DB_ROLE', 'fake-role')
+  }
+
+  test('a missing DSQL_DB_ROLE is reported to CloudFormation by name, and no other setting is echoed', async () => {
+    taskRoot()
+    vi.stubEnv('DSQL_ENDPOINT', 'sentinel-endpoint.dsql.invalid')
+    vi.stubEnv('AWS_REGION', 'sentinel-region-1')
+    vi.stubEnv('DSQL_DB_ROLE', '')
     const received = await call('Create')
     expect(received).toHaveLength(1)
     expect(received[0]?.method).toBe('PUT')
@@ -190,8 +194,20 @@ describe('the deployed handler', () => {
     expect(received[0]?.headers['content-type']).toBe('')
     const answer = JSON.parse(received[0]?.body ?? '{}')
     expect(answer.Status).toBe('FAILED')
+    expect(answer.Reason).toContain('DSQL_DB_ROLE is not set')
+    // The name is what the error carries, never a value of anything it read.
+    expect(answer.Reason).not.toContain('sentinel')
+  })
+
+  test('a missing DSQL_ENDPOINT is reported by name, and the role it was given is not echoed', async () => {
+    taskRoot()
+    vi.stubEnv('DSQL_ENDPOINT', '')
+    vi.stubEnv('AWS_REGION', 'sentinel-region-1')
+    vi.stubEnv('DSQL_DB_ROLE', 'sentinel-role')
+    const answer = JSON.parse((await call('Create'))[0]?.body ?? '{}')
+    expect(answer.Status).toBe('FAILED')
     expect(answer.Reason).toContain('DSQL_ENDPOINT is not set')
-    expect(answer.Reason).not.toContain('fake-role')
+    expect(answer.Reason).not.toContain('sentinel')
   })
 
   test('a missing task root is reported too', async () => {

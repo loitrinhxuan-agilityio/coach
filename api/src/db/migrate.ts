@@ -191,6 +191,26 @@ async function settleIndex(
   }
 }
 
+// The job a CREATE INDEX started, from the rows it answered with.
+//
+// A statement that answered with NO rows started no job (IF NOT EXISTS found the index already
+// there), and is the only case where there is nothing to wait for. A statement that answered with
+// rows but none holding a usable `job_id` is not that: it is DSQL answering in a shape this runner
+// was not written for, and skipping the wait then would leave correctness resting on `indisvalid`
+// reading false while a build is in flight, which nobody has seen DSQL do. So it stops the
+// migration. A number or bigint is accepted and written out as text, a string must not be empty.
+export function jobIdOf(index: string, rows: readonly { job_id?: unknown }[]): string | undefined {
+  if (rows.length === 0) return undefined
+  const job = rows[0]?.job_id
+  if (typeof job === 'string' && job !== '') return job
+  if (typeof job === 'number' && Number.isFinite(job)) return String(job)
+  if (typeof job === 'bigint') return String(job)
+  throw new MigrationError(
+    `CREATE INDEX for ${index} answered with a row that has no usable job_id, so its build cannot ` +
+      'be waited on; the migration was stopped and is not marked as applied',
+  )
+}
+
 export type MigrationOutcome = { applied: string[]; skipped: string[] }
 
 // Applies, in the order given, each migration that the `migrations` table does not list. A file that
@@ -218,8 +238,7 @@ export async function runMigrations(
       const index = indexNameOf(statement)
       const { rows } = await transact((client) => client.query<{ job_id?: unknown }>(statement))
       if (index !== null) {
-        const job = rows[0]?.job_id
-        await settleIndex(transact, index, typeof job === 'string' ? job : undefined)
+        await settleIndex(transact, index, jobIdOf(index, rows))
         log({ event: 'migration_index_valid', migration: migration.name, index })
       }
     }

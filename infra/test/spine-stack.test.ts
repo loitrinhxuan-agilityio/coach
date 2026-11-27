@@ -246,7 +246,11 @@ describe('the distribution', () => {
     const origins = config.Origins as Json[]
     expect(origins).toHaveLength(1)
     expect(origins[0]?.OriginPath).toBeUndefined()
-    expect(JSON.stringify(origins[0]?.DomainName)).toContain(apiId)
+    // The host is the third piece of "https://<id>.execute-api.<region>.amazonaws.com" split on "/":
+    // index 0 is "https:" and index 1 is empty, and only a deploy would reject either as a host.
+    expect(origins[0]?.DomainName).toEqual({
+      'Fn::Select': [2, { 'Fn::Split': ['/', { 'Fn::GetAtt': [apiId, 'ApiEndpoint'] }] }],
+    })
     expect(origins[0]?.CustomOriginConfig.OriginProtocolPolicy).toBe('https-only')
     for (const [path, behaviour] of behaviours) {
       expect(behaviour.TargetOriginId, path).toBe(origins[0]?.Id)
@@ -262,6 +266,26 @@ describe('the database settings', () => {
       .filter(([, p]) => (p.Properties.Roles as Json[]).some((r) => r.Ref === role))
       .flatMap(([, p]) => p.Properties.PolicyDocument.Statement as Json[])
   }
+
+  test('the API connects as admin, pinned as a literal and not derived from the constant', () => {
+    // The other expectations in this block follow API_DB_ROLE, so on their own they would follow an
+    // edit of it. Only 'admin' exists: 0001 creates tables and no database role. Changing this
+    // constant, as the least-privilege follow-up must, deploys Lambdas that connect as a role nothing
+    // has created, and every request fails. If this test fails, a migration that creates the role
+    // (CREATE ROLE, AWS IAM GRANT to the Lambda's role, GRANT on the tables) comes first, and this
+    // literal changes with it, in the same change.
+    expect(API_DB_ROLE).toBe('admin')
+    for (const name of ['HttpFunction', 'McpFunction']) {
+      expect(functionNamed(name)[1].Properties.Environment.Variables.DSQL_DB_ROLE, name).toBe(
+        'admin',
+      )
+      expect(
+        ofType('AWS::IAM::Policy').some(([, p]) =>
+          JSON.stringify(p.Properties.PolicyDocument).includes('dsql:DbConnectAdmin'),
+        ),
+      ).toBe(true)
+    }
+  })
 
   test.each(['HttpFunction', 'McpFunction'])(
     '%s is told where the database is and which role to use, and nothing else',

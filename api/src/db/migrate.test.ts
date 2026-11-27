@@ -4,6 +4,7 @@ import { type Client, type ConnectorDeps, createConnector } from './connection.j
 import { fakeDriver, type Script } from './fakes.test-helper.js'
 import {
   indexNameOf,
+  jobIdOf,
   MigrationError,
   runMigrations,
   splitStatements,
@@ -95,6 +96,8 @@ describe('indexNameOf', () => {
 type World = {
   applied?: string[] // undefined: the migrations table does not exist yet
   jobFor?: (statement: string) => string | undefined
+  // The rows a CREATE INDEX answers with, when a test needs a shape jobFor cannot make.
+  answer?: (statement: string) => object[]
   valid?: (index: string) => boolean
   failOn?: RegExp
 }
@@ -111,6 +114,7 @@ function harness(world: World = {}) {
       return { rows: (world.applied ?? []).map((name) => ({ name })) }
     }
     if (/CREATE (UNIQUE )?INDEX/i.test(sql)) {
+      if (world.answer) return { rows: world.answer(sql) }
       const job = (world.jobFor ?? (() => 'job-1'))(sql)
       return { rows: job === undefined ? [] : [{ job_id: job }] }
     }
@@ -229,6 +233,38 @@ describe('obligation 2: wait for every index, then check it is valid', () => {
     })
     expect(sent.some((line) => /wait_for_job/.test(line))).toBe(false)
     expect(sent.some((line) => /pg_index/.test(line))).toBe(true)
+  })
+
+  test.each([
+    ['a job_id that is not text or a number', { job_id: null }],
+    ['an empty job_id', { job_id: '' }],
+    ['a job under a different column name', { other: 'x' }],
+    ['a row with no columns', {}],
+    ['a job_id that is an object', { job_id: { id: 'job-1' } }],
+  ])('an answer with rows but no usable job id stops the migration: %s', async (_name, row) => {
+    const { sent, transact } = harness({ answer: () => [row] })
+    await expect(runMigrations([migration], transact)).rejects.toThrow(/no usable job_id/)
+    expect(sent.some((line) => /wait_for_job/.test(line))).toBe(false)
+    expect(sent.some((line) => /INSERT INTO migrations/.test(line))).toBe(false)
+    // and it stopped at the first index, so nothing after it ran
+    expect(sent.some((line) => /t_b_key ON/.test(line))).toBe(false)
+  })
+
+  test('a numeric job id is accepted, and waited on as text', async () => {
+    const { sent, transact } = harness({ answer: () => [{ job_id: 42 }] })
+    await runMigrations([migration], transact)
+    expect(sent).toContain('SELECT sys.wait_for_job($1) [42]')
+  })
+
+  test('a bigint job id is accepted, and waited on as text', async () => {
+    const { sent, transact } = harness({ answer: () => [{ job_id: 42n }] })
+    await runMigrations([migration], transact)
+    expect(sent).toContain('SELECT sys.wait_for_job($1) [42]')
+  })
+
+  test('only an answer with no rows at all may skip the wait', () => {
+    expect(jobIdOf('i', [])).toBeUndefined()
+    expect(() => jobIdOf('i', [{}])).toThrow(MigrationError)
   })
 
   test('an index the catalogue does not list at all is not valid either', async () => {
