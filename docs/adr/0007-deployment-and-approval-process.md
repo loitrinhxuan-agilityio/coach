@@ -16,6 +16,7 @@ cadence (D-016, "not decided") and whether a staging environment exists (`mvp-sc
 here" list). **The other four are raised for the first time by this document**, including who runs
 `cdk bootstrap` and which GitHub identity the Dev Lead acts under, neither of which anything in the
 decision log or the scope documents had thought to ask.
+
 **Accepted by the Owner on 2026-11-27** (D-047). Writing it approved nothing (D-022); this note
 records what the approval did and, in the same breath, what it did not: an acceptance that reads as
 though it answered more than it did is the failure mode ADR 0004's "settles the rule, not the
