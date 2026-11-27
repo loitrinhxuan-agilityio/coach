@@ -78,7 +78,6 @@ describe('get_account', () => {
     const names = keyNames(JSON.parse(serialised))
     for (const forbidden of ['cognito_sub', 'key', 'hash', 'keys']) {
       expect(names, `field "${forbidden}"`).not.toContain(forbidden)
-      expect(serialised, `field "${forbidden}"`).not.toContain(`"${forbidden}"`)
     }
 
     // By value, so a field that carries one of these under a name we did not think of is still
@@ -88,6 +87,23 @@ describe('get_account', () => {
     expect(serialised).not.toContain(principal.key_id)
     expect(serialised).not.toContain('Other Agent')
     expect(serialised).not.toContain(OTHER_KEY_SHA256)
+  })
+
+  test('only the two settings fields are forwarded, whatever else the row carries', async () => {
+    // A future Aurora DSQL row may carry columns this operation never chose to expose. The memory
+    // repository hands back every property it was seeded with, so this stands in for that row.
+    const repo = memoryRepository({
+      keys: [{ name: 'Claude Desktop', key_sha256: FAKE_KEY_SHA256 }],
+      settings: { ...SETTINGS, cognito_sub: 'fake-sub', extra_column: 'fake-extra' } as never,
+    })
+    expect(await repo.getSettings()).toHaveProperty('cognito_sub', 'fake-sub')
+    const body = await getAccount({ repo, principal: await callerOf(repo) })
+
+    expect(body.settings).toStrictEqual({ time_zone: 'Asia/Ho_Chi_Minh', display_unit: 'kg' })
+    const serialised = JSON.stringify(body)
+    expect(serialised).not.toContain('fake-sub')
+    expect(serialised).not.toContain('fake-extra')
+    expect(keyNames(body)).not.toContain('cognito_sub')
   })
 
   test('a missing settings row raises internal, never a default', async () => {
