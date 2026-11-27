@@ -105,11 +105,13 @@ export function createMcpHandler(options: {
         response = { statusCode: 405, headers: { allow: 'POST' } }
       } else {
         const message = parseMessage(event)
-        // Named before anyone is asked who they are, so a refusal is logged against the tool it
-        // was for, as the HTTP surface logs it against the route.
+        // Named before anyone is asked who they are, so a call that carries an id and is refused
+        // is logged against the tool it was for, as the HTTP surface logs it against the route.
+        // A message with no id is a notification, whatever its method: nobody expects a result
+        // and no tool is run, whether it is then refused (401) or acknowledged (202). So it never
+        // names a tool in the log line; a refused notification does not record which tool it
+        // named, and that is the cost of the line never claiming an operation it did not act on.
         const called = toolName(message)
-        // A call with no id is a notification: it is acknowledged and never runs, so the line must
-        // not name an operation that did not happen.
         if (called !== undefined && message.id !== undefined && tools.has(called)) {
           operation = called
         }
@@ -117,7 +119,8 @@ export function createMcpHandler(options: {
         principal = await authenticate(event.headers, repo)
 
         if (message.id === undefined) {
-          // A notification (the client's "initialized") is acknowledged and never answered.
+          // A notification (the client's "initialized"), now that its sender is known, is
+          // acknowledged and never answered. One that is refused above gets the 401 instead.
           response = { statusCode: 202 }
         } else if (message.method === 'initialize') {
           // Always answers this revision, whatever the client asked for. Deliberate: one revision
@@ -144,8 +147,8 @@ export function createMcpHandler(options: {
             if (tool === undefined) throw new OperationError('not_found')
             assertMayCall(tool.entry, principal)
             // The call's `arguments` are not read and the operation is given none. That is safe only
-            // while no input schema has a required field; server.test.ts fails the build when one
-            // does ("no registry entry requires input"), and this call must then change.
+            // while no input schema has a property; server.test.ts fails ("no registry entry takes
+            // input") when one does, and this call must then change.
             const output = await tool.run({ repo, principal })
             response = jsonResponse(
               200,

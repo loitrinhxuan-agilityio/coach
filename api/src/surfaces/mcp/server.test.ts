@@ -605,13 +605,33 @@ describe('input the body can carry', () => {
   })
 
   // The tripwire for the call above. The handler never reads `arguments`, which is right only
-  // while every operation takes none. The first entry with a required input field fails this
-  // test, and whoever adds it must make tools/call validate and pass the arguments on.
-  test('no registry entry requires input', () => {
+  // while every operation takes none. An operation that takes none has no properties and none
+  // required, so optional-only arguments (properties, nothing required) are caught as well. The
+  // first entry that takes input fails this test, and whoever adds it must make tools/call
+  // validate the arguments and pass them on.
+  test('no registry entry takes input', () => {
     for (const entry of registry) {
       expect(entry.input.type, entry.name).toBe('object')
-      if (entry.input.type === 'object') expect(entry.input.required, entry.name).toEqual([])
+      if (entry.input.type === 'object') {
+        expect(entry.input.required, entry.name).toEqual([])
+        expect(entry.input.properties, entry.name).toEqual({})
+      }
     }
+  })
+
+  test('a tools/call with no id and no Key is refused with 401, not acknowledged', async () => {
+    const reply = await call(
+      createMcpHandler({ repo: seededRepo() }),
+      eventFor({
+        body: rpcBody({ method: 'tools/call', params: { name: 'get_account' } }),
+        headers: {},
+      }),
+    )
+    expect(reply.statusCode).toBe(401)
+    expect((reply.body as ErrorBody).error.code).toBe('key_missing')
+    expect(reply.lines).toHaveLength(1)
+    expect(reply.lines[0]?.operation).toBe('unknown')
+    expect(reply.lines[0]?.principal_kind).toBe('none')
   })
 
   test('a tools/call with no id is acknowledged and never runs the operation', async () => {
@@ -747,6 +767,15 @@ describe('the log line', () => {
       'a tools/call with no id, which is a notification and never runs',
       () => eventFor({ body: rpcBody({ method: 'tools/call', params: { name: 'get_account' } }) }),
       { outcome: 'ok', operation: 'unknown', principal: 'agent' },
+    ],
+    [
+      'a tools/call with no id and no Key, which is refused and still names no tool',
+      () =>
+        eventFor({
+          body: rpcBody({ method: 'tools/call', params: { name: 'get_account' } }),
+          headers: {},
+        }),
+      { outcome: 'key_missing', operation: 'unknown', principal: 'none' },
     ],
     [
       'a tool call with no Key',
