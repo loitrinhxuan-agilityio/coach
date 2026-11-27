@@ -39,15 +39,11 @@ const REJECTED = [
   ['serial', 'CREATE TABLE a (n bigserial PRIMARY KEY);'],
   ['serial', 'CREATE TABLE a (n smallserial PRIMARY KEY);'],
   ['serial', 'CREATE TABLE a (n serial8 PRIMARY KEY);'],
-  // This project's own rules: forward-only, and foreign keys held back.
+  // This project's own rule: forward-only.
   ['drop', 'DROP TABLE keys;'],
   ['drop', 'DROP INDEX keys_name_key;'],
   ['drop', 'ALTER TABLE keys DROP COLUMN name;'],
   ['delete-from', 'DELETE FROM settings;'],
-  ['foreign-key', 'CREATE TABLE a (k uuid, FOREIGN KEY (k) REFERENCES keys (id));'],
-  // The column-constraint form never writes the words FOREIGN KEY.
-  ['foreign-key', 'CREATE TABLE a (k uuid REFERENCES keys (id));'],
-  ['foreign-key', 'ALTER TABLE keys ADD COLUMN k uuid REFERENCES keys (id);'],
   // The checker cannot read inside these, so it refuses them.
   ['procedural-body', "DO $$ BEGIN EXECUTE 'DROP TABLE keys'; END $$;"],
   ['procedural-body', "DO 'BEGIN PERFORM 1; END';"],
@@ -103,11 +99,7 @@ describe('every construct the checker is meant to reject is rejected', () => {
 
 describe('the same constructs are rejected however they are written', () => {
   test.each([
-    [
-      'a comment between the words',
-      'CREATE TABLE a (k uuid, FOREIGN/**/KEY (k) REFERENCES keys (id));',
-      'foreign-key',
-    ],
+    ['a comment between the words', 'DROP/**/TABLE keys;', 'drop'],
     [
       'a newline and a tab between the words',
       'CREATE\n\tTRIGGER t BEFORE INSERT ON keys EXECUTE FUNCTION f();',
@@ -158,9 +150,21 @@ describe('the same constructs are rejected however they are written', () => {
   })
 })
 
+describe('foreign keys are accepted, because Aurora DSQL supports them', () => {
+  // The AWS documentation (CREATE TABLE and foreign-key pages, read 2026-11-27) documents FOREIGN KEY
+  // and REFERENCES, so refusing them would make this guard claim something DSQL does not say.
+  test.each([
+    'CREATE TABLE a (k uuid, FOREIGN KEY (k) REFERENCES keys (id));',
+    'CREATE TABLE a (k uuid REFERENCES keys (id) ON DELETE RESTRICT);',
+    'ALTER TABLE settings ADD CONSTRAINT fk FOREIGN KEY (cognito_sub) REFERENCES keys (name) NOT VALID;',
+  ])('%s', (sql) => {
+    expect(checkSql(sql)).toEqual([])
+  })
+})
+
 describe('a construct that is only mentioned, not used, is left alone', () => {
   test.each([
-    ['a line comment', '-- CREATE TRIGGER, DROP TABLE and FOREIGN KEY are named here\nSELECT 1;'],
+    ['a line comment', '-- CREATE TRIGGER and DROP TABLE are named here\nSELECT 1;'],
     ['a block comment', '/* TRUNCATE keys; DROP TABLE keys; */ SELECT 1;'],
     ['a nested block comment', '/* a /* b */ DROP TABLE keys; */ SELECT 1;'],
     [
@@ -176,7 +180,7 @@ describe('a construct that is only mentioned, not used, is left alone', () => {
     ['a column named for the word', 'ALTER TABLE keys ADD COLUMN truncated_at timestamptz;'],
     [
       'a name that contains a keyword',
-      'CREATE TABLE dropdown_choices (serial_no text, deleted_at timestamptz, references_count int);',
+      'CREATE TABLE dropdown_choices (serial_no text, deleted_at timestamptz);',
     ],
   ])('%s', (_name, sql) => {
     expect(checkSql(sql)).toEqual([])
@@ -220,10 +224,11 @@ describe('findings say which rule, which tier, and which statement', () => {
     expect(finding.why.length).toBeGreaterThan(20)
   })
 
-  test('the foreign key rule says it is this project holding the line, not Aurora DSQL', () => {
-    const [finding] = checkSql('CREATE TABLE a (k uuid REFERENCES keys (id));')
-    expect(finding.tier).toBe('policy')
-    expect(finding.why).toMatch(/supports foreign keys/i)
+  test('the SERIAL rule admits it is unconfirmed rather than claiming Aurora DSQL rejects it', () => {
+    const [finding] = checkSql('CREATE TABLE a (n SERIAL PRIMARY KEY);')
+    expect(finding.tier).toBe('inferred')
+    expect(finding.why).toMatch(/^UNVERIFIED/)
+    expect(finding.why).toMatch(/never lists SERIAL/)
   })
 
   test('every rule has a tier from the known set and a reason', () => {
@@ -313,7 +318,6 @@ describe('the command line', () => {
   })
 
   test.each([
-    ['a FOREIGN KEY', 'CREATE TABLE a (k uuid, FOREIGN KEY (k) REFERENCES keys (id));'],
     ['a SERIAL', 'CREATE TABLE a (n SERIAL PRIMARY KEY);'],
     ['a CREATE TRIGGER', 'CREATE TRIGGER t BEFORE INSERT ON keys EXECUTE FUNCTION f();'],
     ['a DROP', 'DROP TABLE keys;'],

@@ -14,8 +14,9 @@
 // Every rule has a tier, and the tier says where the rule comes from:
 //   documented  the Aurora DSQL documentation says the construct is not accepted or must be written
 //               another way (read 2026-11-27, and the project's own notes in docs/product/decision-log.md)
-//   inferred    follows from a documented rule, but the documentation does not list the construct itself
-//   policy      Aurora DSQL accepts it; this project does not allow it in a migration
+//   inferred    the documentation does not list the construct at all, so it cannot be confirmed as
+//               accepted; the message says so
+//   policy      Aurora DSQL accepts it; a migration here must be forward-only, so it is refused
 //   blind       the guard cannot see inside the construct, so it refuses to guess
 
 import { readdirSync, readFileSync, statSync } from 'node:fs'
@@ -81,7 +82,7 @@ export const RULES = [
     'serial',
     'inferred',
     /\b(smallserial|bigserial|serial[248]?)\b/i,
-    'The documentation does not list SERIAL, which creates a sequence with no CACHE, and CREATE SEQUENCE must state one. Keys here are UUIDs.',
+    'UNVERIFIED. The documentation (CREATE TABLE, data types, sequences, read 2026-11-27) never lists SERIAL, and it documents sequences, and the integer columns built on them, only with an explicit CACHE. This guard refuses SERIAL because it cannot confirm it is accepted; Keys here are UUIDs, so nothing needs it. If SERIAL is later confirmed, remove this rule.',
   ),
   rule(
     'drop',
@@ -94,12 +95,6 @@ export const RULES = [
     'policy',
     /\bdelete from\b/i,
     'Migrations are forward-only and destroy nothing.',
-  ),
-  rule(
-    'foreign-key',
-    'policy',
-    /\bforeign key\b|\breferences\b/i,
-    'Aurora DSQL supports foreign keys (AWS documentation, read 2026-11-27), so it does not reject this. The guard holds them back until a change adopts them on purpose, because every write to either table then pays extra reads and can fail at commit.',
   ),
   rule(
     'procedural-body',
