@@ -129,6 +129,13 @@ retention explicitly.
 API Lambda, enforced as a failing test. The budget is a starting line, not a law: it is reviewed at
 `9017` against the measured cold start, which is the first evidence anyone will have.
 
+**R18 — A Key can be brought into existence, and only this way.** (D4) `scripts/mint-key.ts`
+takes a name, generates `alc_live_` plus 32 random bytes, writes **only** the `sha256`, prints the Key
+once to stdout with a line saying it cannot be shown again, writes it to no file, and exits non-zero
+if a Key of that name already exists. ADR 0003 says Keys are created by script; no Phase 1 story
+budgets one, so it is specified here. It cannot run until a cluster exists, so the Owner's first Key
+arrives after `9017`.
+
 ## Design
 
 ### Layout
