@@ -1,5 +1,6 @@
 import { constraintOf } from '../db/errors.js'
 import { withTransaction } from '../db/with-transaction.js'
+import { KEY_HASH_TAKEN, keyNameTaken } from './errors.js'
 import type { KeyRow, Repository, SettingsRow } from './types.js'
 
 // The names the migration gave the two unique indexes (migrations/0001_init.sql). A unique violation
@@ -17,15 +18,16 @@ const SETTINGS = 'SELECT time_zone, display_unit FROM settings'
 const keyRow = (row: KeyRow | undefined): KeyRow | null =>
   row ? { id: row.id, name: row.name } : null
 
-// Turns a unique violation into the error the in-memory repository throws, so the two agree and so
+// Turns a unique violation into the error the in-memory repository throws (the same wording, from
+// errors.ts), so the two agree and so
 // the one the driver raised, whose detail names the hash it rejected, goes no further. Anything else
 // is returned as it came, and nothing is swallowed.
 function duplicateKey(error: unknown, name: string): unknown {
   switch (constraintOf(error)) {
     case KEY_NAME_INDEX:
-      return new Error(`a Key named ${name} already exists`)
+      return new Error(keyNameTaken(name))
     case KEY_HASH_INDEX:
-      return new Error('a Key with this hash already exists')
+      return new Error(KEY_HASH_TAKEN)
     default:
       return error
   }

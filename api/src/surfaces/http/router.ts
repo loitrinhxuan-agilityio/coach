@@ -47,9 +47,9 @@ export function createHandler(options: {
 
   const handle = async (
     event: APIGatewayProxyEventV2,
+    requestId: string,
   ): Promise<APIGatewayProxyStructuredResultV2> => {
     const started = performance.now()
-    const requestId = requestIdFor(event)
 
     let operation = NO_OPERATION
     let principal: Principal | undefined
@@ -85,6 +85,12 @@ export function createHandler(options: {
     return response
   }
 
-  // Entered once, here, so the database layer can name the request in its own log lines.
-  return (event) => runWithRequestId(requestIdFor(event), () => handle(event))
+  // The id is read from the event once, here, and handed to both the request line and the database
+  // layer's retry lines (through the request context), so the two cannot name different requests and
+  // an id already in the context, from some outer request, is never consulted. `async` so that a
+  // malformed event rejects, as it always did, and does not throw before a promise exists.
+  return async (event) => {
+    const requestId = requestIdFor(event)
+    return runWithRequestId(requestId, () => handle(event, requestId))
+  }
 }

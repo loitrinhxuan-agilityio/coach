@@ -1,5 +1,6 @@
 import pg from 'pg'
 import type { Client, ConnectorDeps } from './connection.js'
+import { ConnectionLostError } from './errors.js'
 
 // A scripted stand-in for the driver. It answers whatever its script says and keeps what it was
 // asked, so a test can say "the first connection is dead" or "COMMIT fails once" and then count.
@@ -68,7 +69,11 @@ export function dbError(fields: { code?: string; constraint?: string; message?: 
 export const concurrencyConflict = () =>
   dbError({ code: '40001', message: 'change conflicts with another transaction (OC000)' })
 
-export const droppedConnection = () => new Error('Connection terminated unexpectedly')
+// What the real client's adapter makes of pg's "Connection terminated unexpectedly".
+export const droppedConnection = () => new ConnectionLostError('Connection terminated unexpectedly')
+
+// A socket error, which carries the operating system's name for it.
+export const socketReset = () => Object.assign(new Error('read ECONNRESET'), { code: 'ECONNRESET' })
 
 // Keeps retry and request lines out of the test run's output, and lets a test read them. Call it
 // once at the top of a test file. The spy is restored after every test.

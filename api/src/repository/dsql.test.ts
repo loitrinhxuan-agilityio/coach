@@ -5,15 +5,17 @@ import { type Client, type ConnectorDeps, createConnector } from '../db/connecti
 import {
   captureStdout,
   dbError,
-  droppedConnection,
   fakeDriver,
   type Script,
+  socketReset,
 } from '../db/fakes.test-helper.js'
 import { createTransactionRunner } from '../db/with-transaction.js'
+import { runWithRequestId } from '../logging/request-context.js'
 import { createHandler } from '../surfaces/http/router.js'
 import { createMcpHandler } from '../surfaces/mcp/server.js'
 import { repositoryContract } from './contract.test-helper.js'
 import { dsqlRepository, KEY_HASH_INDEX, KEY_NAME_INDEX } from './dsql.js'
+import { memoryRepository } from './memory.js'
 
 const out = captureStdout()
 
@@ -68,7 +70,7 @@ repositoryContract(makeEngineRepo, {
   settings: { time_zone: 'Asia/Ho_Chi_Minh', display_unit: 'kg' },
 })
 
-describe('the repository against a real engine', () => {
+describe('the repository against PGlite (PostgreSQL, not Aurora DSQL)', () => {
   test('the index names this file keys on are the ones the migration created', async () => {
     const { rows } = await engine.query<{ indexname: string }>(
       "SELECT indexname FROM pg_indexes WHERE tablename = 'keys' ORDER BY indexname",
@@ -92,6 +94,23 @@ describe('the repository against a real engine', () => {
     // The driver's own error, whose detail quotes the value it rejected, is not what comes out.
     expect(failure).not.toHaveProperty('detail')
     expect(failure).not.toHaveProperty('code')
+  })
+
+  test('both repositories refuse a duplicate in the same words', async () => {
+    // The contract only asks that a duplicate rejects. This is what keeps the wording from drifting.
+    const messageOf = async (repo: ReturnType<typeof makeEngineRepo>, row: [string, string]) => {
+      await repo.insertKey({ name: 'drift-agent', key_sha256: 'fake-sha256-drift' })
+      const failure = await repo
+        .insertKey({ name: row[0], key_sha256: row[1] })
+        .catch((error) => error)
+      return failure.message
+    }
+    for (const row of [
+      ['drift-agent', 'fake-sha256-other'],
+      ['other-agent', 'fake-sha256-drift'],
+    ] as [string, string][]) {
+      expect(await messageOf(makeEngineRepo(), row)).toBe(await messageOf(memoryRepository(), row))
+    }
   })
 
   test('a hash that is taken is refused with an error that does not quote it', async () => {
@@ -295,7 +314,7 @@ describe('a database fault, seen from outside', () => {
 
   test('an outage answers internal, and the log shows only that it happened and for how long', async () => {
     const down = (sql: string) => {
-      if (sql === 'BEGIN') throw Object.assign(droppedConnection(), { code: 'ECONNRESET' })
+      if (sql === 'BEGIN') throw socketReset()
       return { rows: [] }
     }
     const { repo } = repoOver(down)
@@ -326,7 +345,7 @@ describe('a database fault, seen from outside', () => {
     ])
     expect(request).toMatchObject({ outcome: 'internal', key_id: null, operation: 'get_account' })
     // The line has no room for the cause: not the SQLSTATE of a final failure, not the message.
-    expect(JSON.stringify(out.lines())).not.toContain('Connection terminated')
+    expect(JSON.stringify(out.lines())).not.toContain('ECONNRESET at')
   })
 
   test('a Key that authenticates is served settings from the database', async () => {
@@ -350,7 +369,7 @@ describe('a database fault, seen from outside', () => {
 // A retry line is useful only if it can be tied to the request that caused it.
 describe('a retry line names its request', () => {
   const dropsOnBegin = (sql: string): { rows: object[] } => {
-    if (sql === 'BEGIN') throw Object.assign(droppedConnection(), { code: 'ECONNRESET' })
+    if (sql === 'BEGIN') throw socketReset()
     return { rows: [] }
   }
   const lines = () => out.lines() as Record<string, unknown>[]
@@ -403,5 +422,30 @@ describe('a retry line names its request', () => {
       .filter((line) => line.event === 'db_retry')
       .at(-1)
     expect(last?.request_id).toBeNull()
+  })
+
+  test('an id already in the context, from some outer request, is never the one used', async () => {
+    const handler = createHandler({ repo: repoOver(dropsOnBegin).repo })
+    await runWithRequestId('outer-request', () => handler(accountEvent('own-request')))
+    const [retry, request] = lines()
+    expect(retry?.request_id).toBe('own-request')
+    expect(request?.request_id).toBe('own-request')
+  })
+})
+
+// A caller of a handler is entitled to a rejected promise, not an exception thrown before one exists.
+describe('a malformed event', () => {
+  const malformed = {} as unknown as APIGatewayProxyEventV2
+  const { repo } = repoOver(() => ({ rows: [] }))
+
+  test.each([
+    ['the HTTP surface', createHandler({ repo })],
+    ['the MCP surface', createMcpHandler({ repo })],
+  ])('rejects on %s and does not throw', async (_name, handler) => {
+    let pending: Promise<unknown> | undefined
+    expect(() => {
+      pending = handler(malformed)
+    }).not.toThrow()
+    await expect(pending).rejects.toThrow()
   })
 })

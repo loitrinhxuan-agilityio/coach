@@ -9,6 +9,9 @@ import { currentRequestId } from './request-context.js'
 // (a unique violation names the hash it rejected) cannot reach the log through it. `error_code` is
 // the SQLSTATE or the operating system's error name and nothing else of the error: never its
 // message, never its detail.
+// `attempt` is the number of the try that failed, counting every try of the transaction from 1,
+// whether the next one is a conflict retry or a reconnect. `error_code` is only ever a vetted code
+// (db/errors.ts), never one taken as it came.
 type RetryLogFields = {
   reason: 'concurrency' | 'connection'
   attempt: number

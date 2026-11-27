@@ -1,5 +1,12 @@
 import { AUTH_TOKEN_MAX_AGE_MS, createConnector } from './connection.js'
-import { codeOf, isConcurrencyFailure, isConnectionFailure } from './errors.js'
+import {
+  asTransportFailure,
+  ConnectionLostError,
+  codeOf,
+  connectionCode,
+  isConcurrencyFailure,
+  isConnectionFailure,
+} from './errors.js'
 import {
   captureStdout,
   concurrencyConflict,
@@ -387,7 +394,7 @@ describe('withTransaction', () => {
           reason: 'connection',
           attempt: 1,
           delay_ms: 0,
-          error_code: null,
+          error_code: 'connection_lost',
         },
       ])
     })
@@ -422,7 +429,7 @@ describe('withTransaction', () => {
       expect(driver.clients).toHaveLength(2)
     })
 
-    test('is not replaced a second time, by a request or by a conflict', async () => {
+    test('is replaced only once when the replacement drops too', async () => {
       // Connection 0 is dead; connection 1 is alive but dies at its first statement too.
       const dead: Script = (sql) => {
         if (sql === 'SELECT 1') throw droppedConnection()
@@ -433,6 +440,75 @@ describe('withTransaction', () => {
         () => undefined,
       )
       expect(driver.clients).toHaveLength(2)
+    })
+
+    test('a conflict after a reconnect is retried on the replacement, not on a third connection', async () => {
+      const { withTransaction, driver } = runnerOver((n) =>
+        n === 0
+          ? (sql) => {
+              if (sql === 'BEGIN') throw droppedConnection()
+              return { rows: [] }
+            }
+          : failingCommit(concurrencyConflict),
+      )
+      await withTransaction(async () => undefined).catch(() => undefined)
+      expect(driver.clients).toHaveLength(2)
+    })
+
+    test('the bound, exactly: a connection already flagged dead is replaced without using the reconnect', async () => {
+      // Connection 0 reports an error while idle, so getConnection replaces it before any statement
+      // (connection 1). Connection 1 then fails its first statement, which earns the one counted
+      // reconnect (connection 2). Connection 2 fails too, so the request fails, after two
+      // replacements. This is what R14's "one automatic reconnect" means in code, and the comment in
+      // withTransaction says so.
+      const driver = fakeDriver((n) =>
+        n === 0
+          ? ok
+          : (sql) => {
+              if (sql === 'BEGIN') throw droppedConnection()
+              return { rows: [] }
+            },
+      )
+      const connector = createConnector(() => driver.deps)
+      const withTransaction = createTransactionRunner({
+        connector,
+        sleep: async () => undefined,
+      })
+      await connector.getConnection()
+      driver.clients[0]?.emit('error')
+      await expect(withTransaction(async () => undefined)).rejects.toThrow(
+        'Connection terminated unexpectedly',
+      )
+      expect(driver.clients).toHaveLength(3)
+      // Only the second replacement was a retry, so only it has a line.
+      expect(out.lines()).toHaveLength(1)
+    })
+
+    test('a conflict is retried on the same connection even after a connection was replaced', async () => {
+      const { withTransaction, driver } = runnerOver(() => failingCommit(concurrencyConflict, 1))
+      await withTransaction(async () => undefined)
+      expect(driver.clients).toHaveLength(1)
+    })
+
+    test('a retry line numbers every try, whether a reconnect or a conflict sent it round', async () => {
+      const { withTransaction, sleeps } = runnerOver((n) =>
+        n === 0
+          ? (sql) => {
+              if (sql === 'BEGIN') throw droppedConnection()
+              return { rows: [] }
+            }
+          : failingCommit(concurrencyConflict),
+      )
+      await withTransaction(async () => undefined).catch(() => undefined)
+      const lines = out.lines() as { reason: string; attempt: number; delay_ms: number }[]
+      expect(lines.map(({ reason, attempt }) => [reason, attempt])).toEqual([
+        ['connection', 1],
+        ['concurrency', 2],
+        ['concurrency', 3],
+        ['concurrency', 4],
+      ])
+      // The wait follows the conflicts only: the reconnect did not lengthen it.
+      expect(sleeps).toEqual([50, 100, 200])
     })
 
     test('does not use up the attempts a conflict is allowed', async () => {
@@ -478,32 +554,72 @@ describe('what counts as which failure', () => {
     expect(isConcurrencyFailure('40001')).toBe(false)
   })
 
-  test('a socket error, a connection-class SQLSTATE and the driver’s own messages are connection failures', () => {
+  test('a socket error and a connection-class SQLSTATE are connection failures, and the code is vetted', () => {
     for (const code of ['ECONNRESET', 'EPIPE', 'ETIMEDOUT', 'ECONNREFUSED', 'ENOTCONN']) {
-      expect(isConnectionFailure(Object.assign(new Error('x'), { code }))).toBe(true)
+      const error = Object.assign(new Error('x'), { code })
+      expect(isConnectionFailure(error)).toBe(true)
+      expect(connectionCode(error)).toBe(code)
     }
     for (const code of ['08000', '08003', '08006', '57P01', '57P02', '57P03']) {
       expect(isConnectionFailure(dbError({ code }))).toBe(true)
+      expect(connectionCode(dbError({ code }))).toBe(code)
     }
+  })
+
+  test('a code that only looks like one is not a connection failure, and is never logged', () => {
+    for (const code of [
+      '08',
+      '080000',
+      '08abc',
+      '08 secret',
+      'ECONNRESET-with-a-secret',
+      '58000',
+    ]) {
+      expect(isConnectionFailure(Object.assign(new Error('x'), { code }))).toBe(false)
+      expect(connectionCode(Object.assign(new Error('x'), { code }))).toBeNull()
+    }
+  })
+
+  test('the driver’s coded-less errors become a ConnectionLostError, matched exactly and only there', () => {
     for (const message of [
       'Connection terminated unexpectedly',
       'Connection terminated',
       'Client has encountered a connection error and is not queryable',
       'Client was closed and is not queryable',
+      'Query read timeout',
     ]) {
-      expect(isConnectionFailure(new Error(message))).toBe(true)
+      const converted = asTransportFailure(new Error(message))
+      expect(converted).toBeInstanceOf(ConnectionLostError)
+      expect(isConnectionFailure(converted)).toBe(true)
+      expect(connectionCode(converted)).toBe('connection_lost')
+      expect((converted as Error).message).toBe(message)
     }
+    // Not the same words, not the same error.
+    for (const message of [
+      'connection terminated unexpectedly',
+      'Connection terminated unexpectedly while parsing the plan',
+      'the row is not queryable',
+      'Query read timeout elsewhere',
+    ]) {
+      const error = new Error(message)
+      expect(asTransportFailure(error)).toBe(error)
+    }
+    // A database's own error is never converted, whatever it says.
+    const database = dbError({ code: '42601', message: 'Connection terminated unexpectedly' })
+    expect(asTransportFailure(database)).toBe(database)
+    expect(asTransportFailure('Connection terminated unexpectedly')).toBe(
+      'Connection terminated unexpectedly',
+    )
   })
 
-  test('a failed statement is not a connection failure', () => {
-    for (const code of ['23505', '42601', '42P01', '40001', '57014', '0A000', 'EACCES']) {
-      expect(isConnectionFailure(Object.assign(new Error('a statement failed'), { code }))).toBe(
-        false,
-      )
+  test('an error a function raises for itself is not a connection failure, whatever it says', () => {
+    for (const message of [
+      'Connection terminated unexpectedly',
+      'Client has encountered a connection error and is not queryable',
+      'Query read timeout',
+    ]) {
+      expect(isConnectionFailure(new Error(message))).toBe(false)
     }
-    expect(isConnectionFailure(new Error('no connection string given'))).toBe(false)
-    expect(isConnectionFailure(null)).toBe(false)
-    expect(isConnectionFailure(undefined)).toBe(false)
   })
 
   test('the wait is the ceiling times a factor between a half and one', () => {

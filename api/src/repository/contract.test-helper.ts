@@ -1,8 +1,10 @@
 import type { Repository, SettingsRow } from './types.js'
 
-// The behaviour every Repository must have. The in-memory implementation runs it today; the Aurora
-// DSQL implementation runs the same function against a real database, which is the only way the two
-// are shown to agree. Hashes here are obviously fake.
+// The behaviour every Repository must have. The in-memory implementation runs it, and so does the
+// Aurora DSQL implementation, against PGlite: a real PostgreSQL engine loaded with the real
+// migration. That shows the two agree and that the SQL is valid PostgreSQL. It does not show Aurora
+// DSQL accepts it; change 9017 runs this same function against a real cluster, which is the first
+// time that is shown. Hashes here are obviously fake.
 //
 // `makeRepo` must return a Repository with no Keys each time it is called, because most tests insert
 // the same Key into it. `settings` states the one settings row that store holds, or null when it

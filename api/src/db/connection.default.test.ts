@@ -42,6 +42,7 @@ vi.mock('@aws-sdk/dsql-signer', () => ({
 }))
 
 import { dsqlDeps, getConnection, readDsqlSettings } from './connection.js'
+import { ConnectionLostError } from './errors.js'
 
 const SETTINGS = {
   host: 'fake-cluster.dsql.invalid',
@@ -104,6 +105,7 @@ describe('the real driver and signer', () => {
       password: 'fake-admin-auth-token',
       ssl: { rejectUnauthorized: true },
       connectionTimeoutMillis: 5000,
+      query_timeout: 5000,
     })
     expect(client?.connect).toHaveBeenCalledTimes(1)
   })
@@ -133,6 +135,33 @@ describe('the real driver and signer', () => {
     expect(mocks.on).toHaveBeenCalledWith('error', listener)
     await client.end()
     expect(mocks.end).toHaveBeenCalledTimes(1)
+  })
+
+  test('statement_timeout is not sent, because nobody has shown DSQL accepts it at startup', async () => {
+    await dsqlDeps({ ...SETTINGS, role: 'admin' }).connect('fake-admin-auth-token')
+    expect(mocks.clients[0]?.config).not.toHaveProperty('statement_timeout')
+    expect(mocks.clients[0]?.config.query_timeout).toBe(5000)
+  })
+
+  test("the driver's own coded-less errors from a query become ConnectionLostError", async () => {
+    const client = await dsqlDeps({ ...SETTINGS, role: 'admin' }).connect('x')
+    for (const message of ['Connection terminated unexpectedly', 'Query read timeout']) {
+      mocks.query.mockRejectedValueOnce(new Error(message))
+      const failure = await client.query('SELECT 1').catch((error) => error)
+      expect(failure).toBeInstanceOf(ConnectionLostError)
+      expect(failure.message).toBe(message)
+    }
+  })
+
+  test('any other error from a query passes through as the same object', async () => {
+    const client = await dsqlDeps({ ...SETTINGS, role: 'admin' }).connect('x')
+    const database = Object.assign(new Error('Connection terminated unexpectedly'), {
+      code: '42601',
+    })
+    const plain = new Error('something else')
+    mocks.query.mockRejectedValueOnce(database).mockRejectedValueOnce(plain)
+    await expect(client.query('SELECT 1')).rejects.toBe(database)
+    await expect(client.query('SELECT 1')).rejects.toBe(plain)
   })
 
   test('a connect that fails is the error the caller sees', async () => {

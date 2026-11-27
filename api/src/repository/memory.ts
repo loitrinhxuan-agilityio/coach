@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto'
+import { KEY_HASH_TAKEN, keyNameTaken } from './errors.js'
 import type { KeyRow, Repository, SettingsRow } from './types.js'
 
 type StoredKey = KeyRow & { key_sha256: string }
@@ -17,10 +18,10 @@ export function memoryRepository(seed: Partial<Seed> = {}): Repository {
 
   const insert = ({ name, key_sha256 }: { name: string; key_sha256: string }): void => {
     if (keys.some((key) => key.name === name)) {
-      throw new Error(`a Key named ${name} already exists`)
+      throw new Error(keyNameTaken(name))
     }
     if (keys.some((key) => key.key_sha256 === key_sha256)) {
-      throw new Error('a Key with this hash already exists')
+      throw new Error(KEY_HASH_TAKEN)
     }
     keys.push({ id: randomUUID(), name, key_sha256 })
   }

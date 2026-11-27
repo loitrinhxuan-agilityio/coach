@@ -1,5 +1,6 @@
 import { DsqlSigner } from '@aws-sdk/dsql-signer'
 import pg from 'pg'
+import { asTransportFailure } from './errors.js'
 
 // The part of a database client this product uses. A narrow type, not pg's own, so that a test can
 // stand in a fake and so that nothing here can reach for a method this layer does not manage.
@@ -12,6 +13,12 @@ export interface Client {
   on(event: 'error' | 'end', listener: () => void): unknown
 }
 
+// WHY ONE CONNECTION IS SAFE. A Lambda container serves one request at a time, so one client at
+// module scope is never asked to run two transactions at once. That sentence is the whole
+// justification: pg would interleave two transactions on one client, and each would see the other's
+// statements. Nothing here guards against it, so this design must not be used where a runtime
+// serves requests concurrently in one process.
+//
 // "Token" here is AWS's own word for the SigV4 credential it mints for a database connection. It is
 // not a Key, and nothing in this file touches a Key.
 //
@@ -19,6 +26,22 @@ export interface Client {
 // minutes it is replaced by one opened with another. The auth token is good for 15 minutes by
 // default and the connection for 60, so replacing at ten keeps both well inside their limits.
 export const AUTH_TOKEN_MAX_AGE_MS = 10 * 60 * 1000
+
+// How long one statement may take before the driver gives up on it. connectionTimeoutMillis bounds
+// only the connect, and a half-open socket on a thawed container would otherwise hold a request
+// until the Lambda times out, with the reconnect never reached. PROVISIONAL: ADR 0005 and R15 name a
+// 30-second API Gateway ceiling, and 5 s is chosen to fit under it, not measured. A stuck connection
+// costs, before it surfaces, a timed-out statement, its rollback (also a statement), a connect, the
+// first statement on the new connection and that one's rollback: five waits of 5 s, 25 s, under 30
+// with 5 s to spare. The reconnect is single, so that is the worst case. A conflict is reported by
+// a connection that answers, so it costs only its waits, 350 ms at most in all. Four tries at 5 s is
+// NOT the bound: the timeout is per statement, and a try runs several.
+// Change 9017 revises it against measured latency.
+//
+// statement_timeout is deliberately not set. pg sends it in the startup message, and nobody has
+// shown Aurora DSQL accepts it there; if it did not, every connection would fail. 9017 can try it.
+export const QUERY_TIMEOUT_MS = 5000
+export const CONNECT_TIMEOUT_MS = 5000
 
 export type ConnectorDeps = {
   // Mints the SigV4 auth token that `connect` presents as the database password.
@@ -136,13 +159,20 @@ export function dsqlDeps({ host, region, role }: DsqlSettings): ConnectorDeps {
         ssl: { rejectUnauthorized: true },
         // Without a bound a connect that never answers holds the request until the Lambda times out,
         // which is indistinguishable from an outage.
-        connectionTimeoutMillis: 5000,
+        connectionTimeoutMillis: CONNECT_TIMEOUT_MS,
+        query_timeout: QUERY_TIMEOUT_MS,
       })
       await client.connect()
       return {
+        // Where the driver's own errors, which carry no code, are told apart from a function's: only
+        // what `client.query` itself throws passes through asTransportFailure.
         query: async (sql, params) => {
-          const result = await client.query(sql, params ? [...params] : undefined)
-          return { rows: result.rows }
+          try {
+            const result = await client.query(sql, params ? [...params] : undefined)
+            return { rows: result.rows }
+          } catch (error) {
+            throw asTransportFailure(error)
+          }
         },
         end: () => client.end(),
         on: (event, listener) => client.on(event, listener),
