@@ -1,4 +1,3 @@
-import { randomUUID } from 'node:crypto'
 import type { APIGatewayProxyEventV2, APIGatewayProxyStructuredResultV2 } from 'aws-lambda'
 import type { Principal } from '../../auth/authenticate.js'
 import { authenticate } from '../../auth/authenticate.js'
@@ -12,11 +11,14 @@ import { implementations } from '../../operations/index.js'
 import { registry } from '../../registry/index.js'
 import type { OperationEntry } from '../../registry/types.js'
 import type { Repository } from '../../repository/types.js'
-
-// What a request that matched no route is logged as, and what a request is logged as before a
-// Key has been found. Neither is a value an entry or a principal can have.
-const NO_OPERATION = 'unknown'
-const NO_PRINCIPAL = 'none'
+import {
+  failure,
+  implementationFor,
+  jsonResponse,
+  NO_OPERATION,
+  NO_PRINCIPAL,
+  requestIdFor,
+} from '../shared.js'
 
 const routeKey = (method: string, path: string): string => `${method} ${path}`
 
@@ -30,43 +32,21 @@ export function buildRouteTable(
   return new Map(entries.map((entry) => [routeKey(entry.method, entry.path), entry]))
 }
 
-function respond(statusCode: number, body: unknown): APIGatewayProxyStructuredResultV2 {
-  return {
-    statusCode,
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify(body),
-  }
-}
-
-// The one place a failure becomes a response, so no other code composes a message. Anything that
-// is not an OperationError is a fault in the product, and says nothing about itself to the caller.
-function failure(error: unknown): { code: ErrorCode; field?: string } {
-  return error instanceof OperationError
-    ? { code: error.code, field: error.field }
-    : { code: 'internal' }
-}
-
 export function createHandler(options: {
   repo: Repository
   entries?: readonly OperationEntry[]
   operations?: Record<string, Operation>
 }): (event: APIGatewayProxyEventV2) => Promise<APIGatewayProxyStructuredResultV2> {
   const { repo, entries = registry, operations = implementations } = options
-  // Every entry is paired with its implementation now, so a missing one stops the process at
-  // startup, where it cannot be deployed past, rather than answering 500 to every call.
   const routes = new Map(
-    [...buildRouteTable(entries)].map(([key, entry]) => {
-      const run = operations[entry.name]
-      if (run === undefined) throw new Error(`registry entry ${entry.name} has no implementation`)
-      return [key, { entry, run }] as const
-    }),
+    [...buildRouteTable(entries)].map(
+      ([key, entry]) => [key, { entry, run: implementationFor(operations, entry) }] as const,
+    ),
   )
 
   return async (event) => {
     const started = performance.now()
-    // The gateway's id, or a generated one. Never a client header: the log line passes this field
-    // through, so anything the client chose could carry a credential into it.
-    const requestId = event.requestContext.requestId || randomUUID()
+    const requestId = requestIdFor(event)
 
     let operation = NO_OPERATION
     let principal: Principal | undefined
@@ -83,12 +63,12 @@ export function createHandler(options: {
       principal = await authenticate(event.headers, repo)
       assertMayCall(entry, principal)
 
-      response = respond(200, await run({ repo, principal }))
+      response = jsonResponse(200, await run({ repo, principal }))
     } catch (error) {
       const { code, field } = failure(error)
       outcome = code
       const body: ErrorBody = errorBody(code, requestId, field)
-      response = respond(statusFor(code), body)
+      response = jsonResponse(statusFor(code), body)
     }
 
     logRequest({
