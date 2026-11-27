@@ -17,3 +17,6 @@ node_modules/
 
 # The test runner's scratch output (.vitest/json/output.json); never commit it.
 .vitest/
+
+# CDK synth output (infra/). Never commit it: it holds the bundled Lambda code.
+cdk.out/
