@@ -2,6 +2,13 @@
 
 Author: Dev Lead. Status: draft.
 
+**Amended 2026-11-27.** The Owner approved the record while this change was open, so the change
+carries the acceptance too: ADR 0007 is `accepted`, dated 2026-11-27 and logged as **D-047**. The
+"Proposed outcome" below is unchanged except for that status, and **the six open questions are
+unchanged in substance** — the approval was of the record as written, and the record puts them rather
+than answering them. Two of the six now gate change `0009`'s first production deploy rather than its
+plan: who bootstraps, and which GitHub identity the Dev Lead acts under.
+
 ## Problem
 
 **One architecture document named by item 1 of
@@ -37,7 +44,8 @@ the first deploy costs a production incident.
 ## Proposed outcome
 
 - **[`docs/adr/0007-deployment-and-approval-process.md`](../../../docs/adr/0007-deployment-and-approval-process.md)
-  exists with `status: proposed`.** Writing it approves nothing (D-022). It answers seven questions:
+  exists.** It was written at `status: proposed`, because writing it approves nothing (D-022), and is
+  `accepted` as of the Owner's approval on 2026-11-27 (D-047). It answers seven questions:
   credentials without a stored secret, how the diff reaches the Owner, how a destructive diff is
   refused rather than skim-approved, what rollback means when the stateful part is Aurora DSQL,
   whether a staging environment exists, who bootstraps and what drift does, and where the runtime
@@ -47,12 +55,15 @@ the first deploy costs a production incident.
   credential — the ADR prices the options and stops.
 - **Every AWS fact in it is read from a live AWS page on 2026-11-26 and dated**, as ADR 0005 does,
   and anything AWS does not publish is recorded as not published rather than filled in.
-- **`architecture.md` lists 0007 as Proposed** — that section currently reads "None" — and its "not
+- **`architecture.md` lists 0007** — first as Proposed, where that section had read "None", and then
+  in **Accepted** once the Owner approved, which returns the Proposed section to "None" — and its "not
   yet written" bullet for the deployment process is removed, because it has been written.
 - **The decision log's architecture notes are corrected where current AWS pages contradict them**,
   with the date and what changed.
-- **No new D-NNN row.** A D row records a decision the Owner made. The Owner has made none here; the
-  ADR is the proposal that lets them make several.
+- **A D row only once the Owner decides something.** A D row records a decision the Owner made, and
+  while the ADR was `proposed` they had made none, so the change added none. The approval of
+  2026-11-27 is such a decision, so it is recorded as **D-047** — taking that number rather than D-046,
+  which change 9014 holds on an open pull request.
 
 ## Affected users and systems
 

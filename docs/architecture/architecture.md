@@ -17,10 +17,18 @@ an ADR.
 | [0004](../adr/0004-one-operation-registry-generated-surfaces.md) | Operations are defined once in a registry, and every agent-facing surface is generated from it |
 | [0005](../adr/0005-hosting-and-the-data-store.md) | Static dashboard on CloudFront, API on Lambda, Aurora DSQL behind it, and a ping that keeps the cluster from scaling to zero |
 | [0006](../adr/0006-phase-1-is-single-account.md) | Phase 1 is single-account; tenancy is deferred behind surrogate UUID primary keys |
+| [0007](../adr/0007-deployment-and-approval-process.md) | How a change reaches AWS: GitHub OIDC rather than a stored deploy key, one GitHub Environment gate carrying D-016's per-change approval, and a plan job that refuses a destructive diff before the Owner is offered a button |
 
 ADRs 0003 and 0004 were accepted by the Owner on 2026-11-26 (D-043). **Accepting 0004 settled its
 rule, not its schedule:** the generator is still not among D-010's 50 stories, and whether it is built
 in Phase 1 remains the Owner's to settle. That question is recorded in 0004 itself.
+
+ADR 0007 was accepted on 2026-11-27 (D-047). **Accepting it settled the mechanism, not the operating
+decisions, and it configured nothing:** all six questions 0007 put to the Owner are still open, two of
+them — who bootstraps, and which GitHub identity the Dev Lead acts under — before the first production
+deploy can succeed; and three of its controls are repository or account settings rather than files
+here, including the checks required on `main`, outstanding since change 9010. Those are recorded in
+0007 itself.
 
 ## Superseded
 
@@ -30,21 +38,17 @@ in Phase 1 remains the Owner's to settle. That question is recorded in 0004 itse
 
 ## Proposed, awaiting review and the Owner's approval
 
-| ADR | Decision |
-|---|---|
-| [0007](../adr/0007-deployment-and-approval-process.md) | How a change reaches AWS: GitHub OIDC rather than a stored deploy key, one GitHub Environment gate carrying D-016's per-change approval, and a plan job that refuses a destructive diff before the Owner is offered a button |
+**None.** Every architecture ADR written so far is decided.
 
 **Writing one approves nothing** (D-022: the Independent Reviewer reviews and the Owner approves,
-before any dependent issue starts), and that is how each ADR in the table above reached it. ADR 0007
-leaves six questions open for the Owner, including the deploy cadence D-016 deliberately did not
-settle and whether a staging environment exists.
+before any dependent issue starts), and that is how each accepted ADR above reached it.
 
 ## Not yet written
 
 Item 1 of [`../agents/development-preparation.md`](../agents/development-preparation.md) named five
-ADRs. ADR 0006 removed one of them, ADRs 0003, 0004 and 0005 are now accepted (D-043, D-045), and the
-deployment process is written and awaiting review as 0007 above, so **one is only partly covered and
-none is missing outright**:
+ADRs. ADR 0006 removed one of them, ADRs 0003, 0004 and 0005 are accepted (D-043, D-045), and the
+deployment process is accepted as 0007 (D-047), so **one is only partly covered and none is missing
+outright**:
 
 - ~~**How one Account's data is kept from another's without row-level security.**~~ **No longer
   needed** (D-042, ADR 0006). Phase 1 is single-account, so there is no second Account for data to

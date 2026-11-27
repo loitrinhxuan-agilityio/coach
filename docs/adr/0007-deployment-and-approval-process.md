@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: accepted
 ---
 
 # The deployment and approval process: OIDC instead of a stored key, one environment gate, and a diff that cannot quietly destroy data
@@ -16,7 +16,41 @@ cadence (D-016, "not decided") and whether a staging environment exists (`mvp-sc
 here" list). **The other four are raised for the first time by this document**, including who runs
 `cdk bootstrap` and which GitHub identity the Dev Lead acts under, neither of which anything in the
 decision log or the scope documents had thought to ask.
-Writing this document approves nothing (D-022).
+**Accepted by the Owner on 2026-11-27** (D-047). Writing it approved nothing (D-022); this note
+records what the approval did and, in the same breath, what it did not: an acceptance that reads as
+though it answered more than it did is the failure mode ADR 0004's "settles the rule, not the
+schedule" and ADR 0005's five-part note were both written against.
+
+**Acceptance settles the mechanism, not the operating decisions.** Seven things are now fixed, and a
+later change may no longer choose any of them freely:
+
+1. **There is no stored deploy credential.** GitHub OIDC, each role's trust policy pinning its single
+   `sub` with `StringEquals`, and an explicit `Deny` on `sts:AssumeRole` that keeps the plan role away
+   from the bootstrap roles.
+2. **Two jobs with one approval between them, and the deploy job executes the change set the Owner
+   saw, by ARN.** Nothing is synthesised after the approval, so the approved thing is the deployed
+   thing.
+3. **The GitHub Environment is where the approval happens**, with its documented limits recorded
+   rather than assumed: admin bypass, create-on-reference, Prevent self-review, and no approval
+   timeout.
+4. **The destructive-change gate fails closed** — on `Replacement: True` *or* `Conditional`, on the
+   removal of a protected resource, and on any change to a protected resource's own protections.
+5. **Rollback is a restore into a new cluster**, is itself a deploy and so needs its own approval, and
+   carries a Phase 1 obligation to test one restore by hand.
+6. **Bootstrap is narrowed in the same act that creates it**, because the default leaves a
+   `DeploymentActionRole` that can deploy without an approval.
+7. **Runtime configuration is non-secret** — a Cognito pool id and one `cognito_sub` — and is served
+   as a file rather than baked in at build time.
+
+**Acceptance configures nothing.** Three of those controls are not files in this repository: the
+GitHub Environment and its reviewer, the checks required on `main` (outstanding since change 9010),
+and the stack policy if it is adopted. Until someone sets them, **a pipeline naming an unconfigured
+environment is less safe than one with no gate at all, because it looks gated.** So this approval is
+not the moment the gate starts working.
+
+**None of the six questions below is closed by it,** and two of them have to be answered before the
+first production deploy can succeed at all. They are listed unchanged under *What the Owner still has
+to decide*, which says what acceptance did and did not imply about each.
 
 **One finding reorders the whole problem, so it is stated first.** D-016 exists partly because "an
 infrastructure change can replace a stateful resource and lose data." For this stack that threat is
@@ -652,6 +686,21 @@ is what D-016 bought on purpose.
 
 ## What the Owner still has to decide
 
+**All six survived the acceptance of 2026-11-27 (D-047); none is answered by it.** The Owner approved
+this record, and this record puts these rather than answering them. Two were already open before it —
+cadence (D-016) and staging (`mvp-scope.md`) — and four are raised first here.
+
+**Acceptance narrowed two of them without settling either.** The accepted pipeline has exactly one
+gated environment, so (2) is now an addition to an accepted design rather than an open shape; and the
+accepted gate has no override, so (4) is a question about relaxing a control that exists rather than
+about inventing one. Both remain the Owner's.
+
+**Two of the six block the first production deploy rather than the planning of it:** (3), because
+nothing can assume a role until someone has bootstrapped, and (5), because an identity shared with the
+Owner makes GitHub's Prevent self-review deadlock the gate. Those two need an act — an account created,
+a command run — not an opinion. The other four are choices that change what gets built: (6) decides
+whether rendering a migration beside the infrastructure diff is in scope at all.
+
 1. **Deploy cadence.** D-016 left it open: per merge, or batched per release. Per merge means the diff
    is small enough to read and the approvals are frequent; batched means fewer interruptions and a
    larger diff each time, which is the condition under which skim-approval happens. The Dev Lead's
@@ -696,8 +745,11 @@ is what D-016 bought on purpose.
   caveat is false, and a false caveat invites the next person to repeat it. The decision log's
   architecture notes are corrected in this change; amending an accepted ADR is the Owner's call and is
   raised in the pull request rather than taken here.
-- **Item 5 of `development-preparation.md` is answerable once this is approved**, and item 1 has no
-  unwritten ADR left. Neither row is marked closed here; closing one is the Owner's.
+- **Item 1 of `development-preparation.md` has no unwritten and no unapproved ADR left**, and item 5's
+  procedures now exist as an accepted record. **Neither row is closed**, and the acceptance is not what
+  closes them: item 1 still carries ADR 0004's open schedule question and ADR 0005's three Phase 1
+  obligations, and item 5 still waits on the three controls above, which are settings rather than
+  documents. Closing a row is the Owner's in any case.
 
 ## Evidence
 
