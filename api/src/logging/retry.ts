@@ -1,6 +1,9 @@
+import { currentRequestId } from './request-context.js'
+
 // The line withTransaction writes when it tries again (R13). It is not the request line: that one
 // is fixed at six fields (R16) and is written once per request by the surfaces. This one is written
-// by the database layer, which knows nothing about the request, so it carries no request_id.
+// by the database layer, which is not handed the request, so it reads the request's id from
+// request-context.ts. It is null for a retry made outside any request, such as a migration run.
 //
 // Like the request line it is built from a fixed list, so that a database error carrying a value
 // (a unique violation names the hash it rejected) cannot reach the log through it. `error_code` is
@@ -16,6 +19,7 @@ type RetryLogFields = {
 export function logRetry(fields: RetryLogFields): void {
   const line = {
     event: 'db_retry',
+    request_id: currentRequestId(),
     reason: fields.reason,
     attempt: fields.attempt,
     delay_ms: fields.delay_ms,

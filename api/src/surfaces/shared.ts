@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 import type { APIGatewayProxyEventV2, APIGatewayProxyStructuredResultV2 } from 'aws-lambda'
 import type { ErrorCode } from '../errors/types.js'
 import { OperationError } from '../errors/types.js'
+import { currentRequestId } from '../logging/request-context.js'
 import type { Operation } from '../operations/index.js'
 import type { OperationEntry } from '../registry/types.js'
 
@@ -12,9 +13,11 @@ export const NO_OPERATION = 'unknown'
 export const NO_PRINCIPAL = 'none'
 
 // The gateway's id, or a generated one. Never a client header: the log line passes this field
-// through, so anything the client chose could carry a credential into it.
+// through, so anything the client chose could carry a credential into it. Once a surface has entered
+// the request (runWithRequestId) this returns that id, so a generated one is generated once and the
+// request line and the database layer's retry lines name the same request.
 export function requestIdFor(event: APIGatewayProxyEventV2): string {
-  return event.requestContext.requestId || randomUUID()
+  return currentRequestId() ?? (event.requestContext.requestId || randomUUID())
 }
 
 export function jsonResponse(statusCode: number, body: unknown): APIGatewayProxyStructuredResultV2 {

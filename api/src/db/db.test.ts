@@ -11,7 +11,7 @@ import {
   type Script,
   settled,
 } from './fakes.test-helper.js'
-import { backoffDelay, createTransactionRunner, MAX_ATTEMPTS } from './with-transaction.js'
+import { backoffDelay, createTransactionRunner, MAX_RETRIES } from './with-transaction.js'
 
 const TEN_MINUTES = 600_000
 
@@ -189,14 +189,14 @@ describe('withTransaction', () => {
   })
 
   describe('a concurrency failure', () => {
-    test('is tried three times in all, then the failure surfaces unchanged', async () => {
-      expect(MAX_ATTEMPTS).toBe(3)
+    test('is retried three times, so tried four times in all, then the failure surfaces unchanged', async () => {
+      expect(MAX_RETRIES).toBe(3)
       const { withTransaction, driver } = runnerOver(() => failingCommit(concurrencyConflict))
       let runs = 0
       const failure = await withTransaction(async () => {
         runs += 1
       }).catch((error) => error)
-      expect(runs).toBe(3)
+      expect(runs).toBe(4)
       expect(codeOf(failure)).toBe('40001')
       // The same connection throughout: a conflict is no reason to reconnect.
       expect(driver.clients).toHaveLength(1)
@@ -207,6 +207,11 @@ describe('withTransaction', () => {
       let runs = 0
       const result = await withTransaction(async () => ++runs)
       expect(result).toBe(3)
+      // Succeeding on the last retry is still success.
+      const last = runnerOver(() => failingCommit(concurrencyConflict, MAX_RETRIES))
+      let tries = 0
+      await last.withTransaction(async () => ++tries)
+      expect(tries).toBe(MAX_RETRIES + 1)
     })
 
     test('is retried when it is raised by a statement and not only by COMMIT', async () => {
@@ -239,42 +244,42 @@ describe('withTransaction', () => {
         () => 1,
       )
       await top.withTransaction(async () => undefined).catch(() => undefined)
-      expect(top.sleeps).toEqual([50, 100])
+      expect(top.sleeps).toEqual([50, 100, 200])
 
       const bottom = runnerOver(
         () => failingCommit(concurrencyConflict),
         () => 0,
       )
       await bottom.withTransaction(async () => undefined).catch(() => undefined)
-      expect(bottom.sleeps).toEqual([25, 50])
+      expect(bottom.sleeps).toEqual([25, 50, 100])
 
       const middle = runnerOver(
         () => failingCommit(concurrencyConflict),
         () => 0.5,
       )
       await middle.withTransaction(async () => undefined).catch(() => undefined)
-      expect(middle.sleeps).toEqual([38, 75])
+      expect(middle.sleeps).toEqual([38, 75, 150])
     })
 
-    test('is not waited for after the last attempt', async () => {
+    test('is not waited for after the last try', async () => {
       const { withTransaction, sleeps } = runnerOver(() => failingCommit(concurrencyConflict))
       await withTransaction(async () => undefined).catch(() => undefined)
-      expect(sleeps).toHaveLength(MAX_ATTEMPTS - 1)
+      expect(sleeps).toHaveLength(MAX_RETRIES)
     })
 
     test('writes one line per retry, with the reason, the attempt, the wait and the code', async () => {
       const { withTransaction } = runnerOver(() => failingCommit(concurrencyConflict))
       await settled(withTransaction(async () => undefined))
-      const lines = out.lines()
-      expect(lines).toEqual([
-        { event: 'db_retry', reason: 'concurrency', attempt: 1, delay_ms: 50, error_code: '40001' },
-        {
-          event: 'db_retry',
-          reason: 'concurrency',
-          attempt: 2,
-          delay_ms: 100,
-          error_code: '40001',
-        },
+      const retry = {
+        event: 'db_retry',
+        request_id: null,
+        reason: 'concurrency',
+        error_code: '40001',
+      }
+      expect(out.lines()).toEqual([
+        { ...retry, attempt: 1, delay_ms: 50 },
+        { ...retry, attempt: 2, delay_ms: 100 },
+        { ...retry, attempt: 3, delay_ms: 200 },
       ])
     })
 
@@ -288,7 +293,7 @@ describe('withTransaction', () => {
       const { withTransaction } = runnerOver(() => failingCommit(leaky))
       await settled(withTransaction(async () => undefined))
       const lines = out.lines()
-      expect(lines).toHaveLength(2)
+      expect(lines).toHaveLength(MAX_RETRIES)
       const written = JSON.stringify(lines)
       expect(written).not.toContain('leaky-message-marker')
       expect(written).not.toContain('leaky-constraint-marker')
@@ -299,6 +304,7 @@ describe('withTransaction', () => {
           'error_code',
           'event',
           'reason',
+          'request_id',
         ])
       }
     })
@@ -375,7 +381,14 @@ describe('withTransaction', () => {
       expect(driver.clients[0]?.ended).toBe(true)
       expect(driver.clients[1]?.statements).toEqual(['BEGIN', 'COMMIT'])
       expect(lines).toEqual([
-        { event: 'db_retry', reason: 'connection', attempt: 1, delay_ms: 0, error_code: null },
+        {
+          event: 'db_retry',
+          request_id: null,
+          reason: 'connection',
+          attempt: 1,
+          delay_ms: 0,
+          error_code: null,
+        },
       ])
     })
 
@@ -435,8 +448,8 @@ describe('withTransaction', () => {
       await withTransaction(async () => {
         runs += 1
       }).catch(() => undefined)
-      // BEGIN never reached the function on the dead connection; then three tries at the conflict.
-      expect(runs).toBe(MAX_ATTEMPTS)
+      // BEGIN never reached the function on the dead connection; then all four tries at the conflict.
+      expect(runs).toBe(MAX_RETRIES + 1)
     })
 
     test('is not retried once COMMIT has been sent, because the commit may have happened', async () => {

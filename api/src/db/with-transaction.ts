@@ -7,11 +7,10 @@ import { codeOf, isConcurrencyFailure, isConnectionFailure } from './errors.js'
 // handler that does is a review finding, because it would hide the failure from the code that
 // knows whether trying again is safe.
 //
-// Three attempts at a conflict, with a wait between them that doubles and carries jitter. DSQL's
-// conflicts surface at commit, so a whole transaction is what is retried. R13 says "retries three
-// times", which could mean three tries or three more after the first; this takes three tries in
-// all, as the task brief states, and MAX_ATTEMPTS is the one number to change.
-export const MAX_ATTEMPTS = 3
+// Three retries of a conflict, so four tries in all, with a wait between them that doubles and
+// carries jitter. DSQL's conflicts surface at commit, so a whole transaction is what is retried.
+// R13 says the helper "retries three times": three retries after the first try.
+export const MAX_RETRIES = 3
 export const BASE_DELAY_MS = 50
 
 type Options = {
@@ -57,7 +56,7 @@ export function createTransactionRunner({
           await connector.discardConnection(client)
         }
 
-        if (isConcurrencyFailure(error) && attempt < MAX_ATTEMPTS) {
+        if (isConcurrencyFailure(error) && attempt <= MAX_RETRIES) {
           const delay = backoffDelay(attempt, random)
           logRetry({ reason: 'concurrency', attempt, delay_ms: delay, error_code: codeOf(error) })
           attempt += 1

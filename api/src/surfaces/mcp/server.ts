@@ -6,6 +6,7 @@ import { errorBody, statusFor } from '../../errors/catalogue.js'
 import type { ErrorBody, ErrorCode } from '../../errors/types.js'
 import { OperationError } from '../../errors/types.js'
 import { logRequest } from '../../logging/line.js'
+import { runWithRequestId } from '../../logging/request-context.js'
 import type { Operation } from '../../operations/index.js'
 import { implementations } from '../../operations/index.js'
 import { registry } from '../../registry/index.js'
@@ -87,7 +88,9 @@ export function createMcpHandler(options: {
     entries.map((entry) => [entry.name, { entry, run: implementationFor(operations, entry) }]),
   )
 
-  return async (event) => {
+  const handle = async (
+    event: APIGatewayProxyEventV2,
+  ): Promise<APIGatewayProxyStructuredResultV2> => {
     const started = performance.now()
     const requestId = requestIdFor(event)
     let operation = NO_OPERATION
@@ -187,4 +190,7 @@ export function createMcpHandler(options: {
     })
     return response
   }
+
+  // Entered once, here, so the database layer can name the request in its own log lines.
+  return (event) => runWithRequestId(requestIdFor(event), () => handle(event))
 }

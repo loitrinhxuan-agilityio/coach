@@ -11,6 +11,7 @@ import {
 } from '../db/fakes.test-helper.js'
 import { createTransactionRunner } from '../db/with-transaction.js'
 import { createHandler } from '../surfaces/http/router.js'
+import { createMcpHandler } from '../surfaces/mcp/server.js'
 import { repositoryContract } from './contract.test-helper.js'
 import { dsqlRepository, KEY_HASH_INDEX, KEY_NAME_INDEX } from './dsql.js'
 
@@ -19,10 +20,15 @@ const out = captureStdout()
 // ---------------------------------------------------------------------------------------------
 // Against a real PostgreSQL engine (PGlite, in process), with the real migration.
 //
-// This is what the fake driver cannot be: the repository's SQL is run by an engine that checks it.
-// A scripted fake answers whatever string it is shown, so it would pass a misspelt column. It is
-// still not Aurora DSQL. The one change made to the migration is dropping the word ASYNC, which
-// only DSQL accepts; the schema is otherwise the file as committed.
+// READ THIS BEFORE TRUSTING THE GREEN. This proves the repository's SQL is valid PostgreSQL against
+// the committed schema, and that the contract holds on a real engine. It does NOT prove Aurora DSQL
+// accepts any of it. They are different engines: the migration will not even load here as written,
+// because `CREATE UNIQUE INDEX ASYNC` is DSQL-only, and the one edit below strips it. DSQL's
+// optimistic concurrency, its error shapes (is `constraint` set on a unique violation?), its TLS and
+// its auth are all untested. Change 9017 is the first time any of that is.
+//
+// Why an engine and not a scripted fake: a fake that dispatches on SQL strings answers whatever it
+// is shown, so it would pass a misspelt column. Here an engine that checks the SQL runs it.
 // ---------------------------------------------------------------------------------------------
 const migration = readFileSync(new URL('../../migrations/0001_init.sql', import.meta.url), 'utf8')
 const engine = new PGlite()
@@ -252,11 +258,20 @@ describe('the repository against a scripted driver', () => {
 const FAKE_KEY = 'abc'
 const FAKE_KEY_SHA256 = 'ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad'
 
-const accountEvent = (): APIGatewayProxyEventV2 =>
+// `null` is a gateway that sent no id; a default parameter would turn `undefined` into the usual one.
+const accountEvent = (requestId: string | null = 'gateway-request-0001'): APIGatewayProxyEventV2 =>
   ({
     rawPath: '/api/account',
     headers: { authorization: `Bearer ${FAKE_KEY}` },
-    requestContext: { requestId: 'gateway-request-0001', http: { method: 'GET' } },
+    requestContext: { requestId: requestId ?? undefined, http: { method: 'GET' } },
+  }) as unknown as APIGatewayProxyEventV2
+
+const toolsListEvent = (requestId: string): APIGatewayProxyEventV2 =>
+  ({
+    rawPath: '/mcp',
+    headers: { authorization: `Bearer ${FAKE_KEY}` },
+    body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/list' }),
+    requestContext: { requestId, http: { method: 'POST' } },
   }) as unknown as APIGatewayProxyEventV2
 
 describe('a database fault, seen from outside', () => {
@@ -289,11 +304,13 @@ describe('a database fault, seen from outside', () => {
     expect(response.statusCode).toBe(500)
     expect(JSON.parse(String(response.body)).error.code).toBe('internal')
 
-    // Everything a diagnostician has: one retry line, then the six-field request line.
+    // Everything a diagnostician has: one retry line, which names the request, then the six-field
+    // request line.
     const [retry, request, ...rest] = out.lines() as Record<string, unknown>[]
     expect(rest).toEqual([])
     expect(retry).toEqual({
       event: 'db_retry',
+      request_id: 'gateway-request-0001',
       reason: 'connection',
       attempt: 1,
       delay_ms: 0,
@@ -327,5 +344,64 @@ describe('a database fault, seen from outside', () => {
       settings: { time_zone: 'Etc/UTC', display_unit: 'kg' },
       standing_notes: [],
     })
+  })
+})
+
+// A retry line is useful only if it can be tied to the request that caused it.
+describe('a retry line names its request', () => {
+  const dropsOnBegin = (sql: string): { rows: object[] } => {
+    if (sql === 'BEGIN') throw Object.assign(droppedConnection(), { code: 'ECONNRESET' })
+    return { rows: [] }
+  }
+  const lines = () => out.lines() as Record<string, unknown>[]
+
+  test('on the HTTP surface, with the gateway id', async () => {
+    await createHandler({ repo: repoOver(dropsOnBegin).repo })(accountEvent('http-request-id'))
+    const [retry, request] = lines()
+    expect(retry?.request_id).toBe('http-request-id')
+    expect(request?.request_id).toBe('http-request-id')
+  })
+
+  test('on the MCP surface, with the gateway id', async () => {
+    await createMcpHandler({ repo: repoOver(dropsOnBegin).repo })(toolsListEvent('mcp-request-id'))
+    const [retry, request] = lines()
+    expect(retry?.event).toBe('db_retry')
+    expect(retry?.request_id).toBe('mcp-request-id')
+    expect(request?.request_id).toBe('mcp-request-id')
+  })
+
+  test('with the generated id when the gateway sent none, the same one the request line has', async () => {
+    await createHandler({ repo: repoOver(dropsOnBegin).repo })(accountEvent(null))
+    const [retry, request] = lines()
+    expect(retry?.request_id).toEqual(expect.any(String))
+    expect(retry?.request_id).not.toBe('')
+    expect(retry?.request_id).not.toBe('gateway-request-0001')
+    expect(retry?.request_id).toBe(request?.request_id)
+  })
+
+  test('each of two requests in flight at once names itself and not the other', async () => {
+    // A pause before the failure lets the two requests interleave.
+    const slowDrop = async (sql: string): Promise<{ rows: object[] }> => {
+      await new Promise((resolve) => setTimeout(resolve, 5))
+      return dropsOnBegin(sql)
+    }
+    const a = createHandler({ repo: repoOver(slowDrop).repo })
+    const b = createMcpHandler({ repo: repoOver(slowDrop).repo })
+    await Promise.all([a(accountEvent('request-a')), b(toolsListEvent('request-b'))])
+
+    const retries = lines().filter((line) => line.event === 'db_retry')
+    const requests = lines().filter((line) => line.event === undefined)
+    expect(retries.map((line) => line.request_id).sort()).toEqual(['request-a', 'request-b'])
+    expect(requests.map((line) => line.request_id).sort()).toEqual(['request-a', 'request-b'])
+  })
+
+  test('a request that has finished leaves nothing behind for the next retry outside one', async () => {
+    await createHandler({ repo: repoOver(dropsOnBegin).repo })(accountEvent('finished-request'))
+    const outside = repoOver(dropsOnBegin).repo
+    await outside.getSettings().catch(() => undefined)
+    const last = lines()
+      .filter((line) => line.event === 'db_retry')
+      .at(-1)
+    expect(last?.request_id).toBeNull()
   })
 })
