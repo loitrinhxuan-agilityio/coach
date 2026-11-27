@@ -416,6 +416,11 @@ describe('no stored secret', () => {
   })
 })
 
+const totalBytes = (directory: string): number =>
+  readdirSync(directory, { recursive: true, withFileTypes: true })
+    .filter((entry) => entry.isFile())
+    .reduce((sum, entry) => sum + statSync(join(entry.parentPath, entry.name)).size, 0)
+
 describe('the bundle budget (R17)', () => {
   const BUDGET_BYTES = 1_000_000
 
@@ -507,6 +512,33 @@ describe('the bundle budget (R17)', () => {
       })
     })
   }
+
+  // THE SECOND BUDGET: everything that ships, code and source map together, per function.
+  //
+  // R17 says the API Lambda's bundle is under 1 MB, and the tests above hold index.js to that. The
+  // source map is left out of that figure on purpose: Node reads it only when a stack is formatted,
+  // so it is not code that loads. But it ships, and it is about four times the size of the code
+  // (about 2.4 MB in all for each function), so a test that measured only index.js would pass while
+  // most of what is deployed went unmeasured, and a dependency that doubled the map would fail
+  // nothing. This limit closes that gap.
+  //
+  // PROVISIONAL. 3 MB is a starting line, set above the measured 2.4 MB, not a finding. Change 9017's
+  // cold-start measurement is what revises it. ADR 0005 names a small bundle as a free cold-start
+  // mitigation and a 2 MB map is no longer free; the maps are kept because an unreadable stack trace
+  // on a production 500 is worse while the six-field log line (R16) cannot carry a cause. That trade
+  // is made here, in the open, and 9017 either confirms or overturns it.
+  const TOTAL_BUDGET_BYTES = 3_000_000
+  test.each(['HttpFunction', 'McpFunction', 'MigrationFunction'])(
+    '%s ships under 3 MB in all, code and source map together (provisional)',
+    (name) => {
+      const directory = assetDirectory(outdir, functionNamed(name)[1])
+      const total = totalBytes(directory)
+      expect(total).toBeLessThan(TOTAL_BUDGET_BYTES)
+      // Not met by an empty directory, and the map is in what was counted.
+      expect(total).toBeGreaterThan(statSync(join(directory, 'index.js')).size)
+      expect(statSync(join(directory, 'index.js.map')).size).toBeGreaterThan(0)
+    },
+  )
 
   test('the migration runner carries the migration files, and the API functions do not', () => {
     const runner = assetDirectory(outdir, functionNamed('MigrationFunction')[1])
