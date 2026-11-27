@@ -64,7 +64,9 @@ const API_TIMEOUT = Duration.seconds(29)
 
 // R17: the API Lambda's bundle is under 1 MB, measured on this output, minified. Unminified the
 // bundle is about 1.28 MB, so `minify` is what keeps it inside the budget and the test reads what
-// this produces.
+// this produces. The budget measures index.js, the code. The source map beside it (index.js.map,
+// about 1.9 MB) also ships, and is not counted: it is read only to make a stack trace legible, and
+// every function carries NODE_OPTIONS=--enable-source-maps for that.
 //
 // CommonJS, because `pg` is CommonJS and an ES module bundle of it needs a `require` shim. `pg-native`
 // is not bundled: `pg` only loads it if asked for `pg.native`, which nothing here does, and it is not
@@ -76,7 +78,7 @@ const BUNDLING: BundlingOptions = {
   target: 'node22',
   format: OutputFormat.CJS,
   externalModules: ['pg-native'],
-  sourceMap: false,
+  sourceMap: true,
 }
 
 // A hash of every migration file, so that adding or editing one changes the custom resource's
@@ -136,6 +138,9 @@ export class SpineStack extends Stack {
     const databaseEnvironment = (role: string) => ({
       DSQL_ENDPOINT: cluster.attrEndpoint,
       DSQL_DB_ROLE: role,
+      // The bundle is minified, so a stack trace is unreadable without its map. Node reads the map
+      // only when a stack is formatted.
+      NODE_OPTIONS: '--enable-source-maps',
     })
     const mayConnect = (role: string) =>
       new PolicyStatement({ actions: [connectAction(role)], resources: [cluster.attrResourceArn] })

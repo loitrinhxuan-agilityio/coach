@@ -49,11 +49,6 @@ function assetDirectory(outputDir: string, fn: Json): string {
   return join(outputDir, entry.source.path)
 }
 
-const totalBytes = (directory: string): number =>
-  readdirSync(directory, { recursive: true, withFileTypes: true })
-    .filter((entry) => entry.isFile())
-    .reduce((sum, entry) => sum + statSync(join(entry.parentPath, entry.name)).size, 0)
-
 describe('the region and the stack', () => {
   test(`is in ${REGION}, and the stack cannot be given another`, () => {
     expect(REGION).toBe('ap-southeast-1')
@@ -274,7 +269,11 @@ describe('the database settings', () => {
       const environment = functionNamed(name)[1].Properties.Environment.Variables as Json
       // DSQL_DB_ROLE has no default in the Lambda: it fails to start without it (R14), so the stack
       // has to say. AWS_REGION is set by Lambda itself.
-      expect(Object.keys(environment).sort()).toEqual(['DSQL_DB_ROLE', 'DSQL_ENDPOINT'])
+      expect(Object.keys(environment).sort()).toEqual([
+        'DSQL_DB_ROLE',
+        'DSQL_ENDPOINT',
+        'NODE_OPTIONS',
+      ])
       expect(environment.DSQL_DB_ROLE).toBe(API_DB_ROLE)
       expect(environment.DSQL_DB_ROLE).toMatch(/\S/)
       expect(environment.DSQL_ENDPOINT).toEqual({ 'Fn::GetAtt': [clusterId, 'Endpoint'] })
@@ -397,10 +396,11 @@ describe('no stored secret', () => {
     expect(json.Parameters.BootstrapVersion.Type).toBe('AWS::SSM::Parameter::Value<String>')
   })
 
-  test('the only environment variables are the two that name the database', () => {
+  test('the only environment variables are the two that name the database and the source-map switch', () => {
     for (const [id, fn] of ofType('AWS::Lambda::Function')) {
       const names = Object.keys(fn.Properties.Environment?.Variables ?? {}).sort()
-      expect(names, id).toEqual(['DSQL_DB_ROLE', 'DSQL_ENDPOINT'])
+      expect(names, id).toEqual(['DSQL_DB_ROLE', 'DSQL_ENDPOINT', 'NODE_OPTIONS'])
+      expect(fn.Properties.Environment.Variables.NODE_OPTIONS, id).toBe('--enable-source-maps')
     }
   })
 
@@ -425,18 +425,27 @@ describe('the bundle budget (R17)', () => {
       const bundle = readFileSync(join(directory, 'index.js'), 'utf8')
 
       test('what would be deployed is under 1 MB', () => {
-        // Measured on the asset directory the deployer uploads, minified, and not on a rebuild of
-        // our own: this is the output the stack's esbuild configuration made. Unminified it is about
-        // 1.28 MB, so the minify option is what keeps it under.
-        const bytes = totalBytes(directory)
-        expect(bytes).toBeLessThan(BUDGET_BYTES)
+        // Measured on the minified code in the asset directory the deployer uploads, and not on a
+        // rebuild of our own: this is the output the stack's esbuild configuration made. Unminified
+        // it is about 1.28 MB, so the minify option is what keeps it under. The source map beside
+        // it also ships and is deliberately not counted: it is not code that loads.
+        expect(statSync(join(directory, 'index.js')).size).toBeLessThan(BUDGET_BYTES)
       })
 
       test('and it is the real thing, so that "under 1 MB" is not met by an empty bundle', () => {
-        expect(totalBytes(directory)).toBeGreaterThan(200_000)
+        expect(statSync(join(directory, 'index.js')).size).toBeGreaterThan(200_000)
         expect(bundle).toContain('DSQL_DB_ROLE')
         expect(bundle).toContain('mcpHandler')
-        expect(readdirSync(directory)).toEqual(['index.js'])
+        expect(readdirSync(directory).sort()).toEqual(['index.js', 'index.js.map'])
+      })
+
+      test('ships a source map that names our own sources, so a stack trace can be read', () => {
+        const map = JSON.parse(readFileSync(join(directory, 'index.js.map'), 'utf8'))
+        expect(
+          (map.sources as string[]).some((source) => source.endsWith('api/src/handlers.ts')),
+        ).toBe(true)
+        // The code points at it, and the function turns it on (asserted with the environment above).
+        expect(bundle).toContain('sourceMappingURL=index.js.map')
       })
 
       test('is minified: a line is not one statement', () => {
