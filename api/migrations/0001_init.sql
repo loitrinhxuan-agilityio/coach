@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS keys (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   key_sha256 text NOT NULL,
   name text NOT NULL,
-  created_at timestamptz NOT NULL DEFAULT now()
+  created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Authentication is one read of this index (R10). Aurora DSQL builds every index asynchronously, so
@@ -44,5 +44,5 @@ WHERE NOT EXISTS (SELECT 1 FROM settings);
 -- What has run. The runner writes one row per file after the file has run in full.
 CREATE TABLE IF NOT EXISTS migrations (
   name text PRIMARY KEY,
-  applied_at timestamptz NOT NULL DEFAULT now()
+  applied_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
