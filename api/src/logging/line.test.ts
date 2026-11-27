@@ -52,9 +52,11 @@ test('a Key, a hash, a cognito_sub, an email and a body never appear', () => {
     key_hash: 'ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad',
     cognito_sub: '11111111-2222-4333-8444-555555555555',
     email: 'lifter@example.invalid',
-    request_body: '{"note":"fake request body"}',
-    response_body: '{"settings":"fake response body"}',
+    request_body: 'fake request body',
+    response_body: 'fake response body',
   }
+  // Values hold nothing JSON.stringify would escape, so a leak would be a literal substring of the
+  // line and the not.toContain below can fail.
   // Carried in adjacent properties, the way a careless caller would hand over a whole context.
   const out = capture({ ...base, ...secrets })
 
