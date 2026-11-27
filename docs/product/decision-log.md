@@ -221,8 +221,8 @@ approval of the specific infrastructure change (D-016), with a new "Deploying" s
   hunt unscoped queries after ADR 0006 made that not a finding class — the prompt said "Follow REVIEW.md" and then
   contradicted it. ~~**Still open, and the Owner's:** making the checks *required* on `main`, and watching one pull
   request with a real finding go red first, since only the pass path has run live.~~ **The red path ran live on
-  PR #16 (change 9012, 2026-11-26):** of eight runs, six went red on real findings and the last went green once
-  the reviewer found nothing. Making the checks required on `main` is still the Owner's, and **the thing to settle
+  PR #16 (change 9012, 2026-11-26):** across seven review rounds the check went red six times on real findings and
+  green once the reviewer found nothing. Making the checks required on `main` is still the Owner's, and **the thing to settle
   first is narrower than it was:** a seventh red — the first attempt at the final head commit — was the reviewer
   **crashing** (`is_error`, one turn, no comments buffered) and looked exactly like a blocking finding, so the
   workflow cannot tell "there is a finding" from "the reviewer never ran". Re-running it cleared it.
