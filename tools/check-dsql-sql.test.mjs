@@ -5,13 +5,14 @@
 // Each rejected construct is appended to the real 0001_init.sql, so the test also proves the checker
 // reads past the statements before it and does not stop at the first clean one.
 import { spawnSync } from 'node:child_process'
-import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, readFileSync, symlinkSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { checkDirectory, checkSql, RULES } from './check-dsql-sql.mjs'
+import { checkDirectory, checkSql, RULES } from './dsql-sql.mjs'
 
 const script = fileURLToPath(new URL('./check-dsql-sql.mjs', import.meta.url))
+const toolsDir = fileURLToPath(new URL('.', import.meta.url))
 const migrationsDir = fileURLToPath(new URL('../api/migrations', import.meta.url))
 const baseline = readFileSync(join(migrationsDir, '0001_init.sql'), 'utf8')
 
@@ -28,7 +29,10 @@ const REJECTED = [
   ['truncate', 'TRUNCATE keys;'],
   ['temporary-table', 'CREATE TEMP TABLE scratch (a int);'],
   ['temporary-table', 'CREATE TEMPORARY TABLE scratch (a int);'],
-  ['sequence-without-cache', 'CREATE SEQUENCE seq START 1;'],
+  ['sequence-cache', 'CREATE SEQUENCE seq START 1;'],
+  ['sequence-cache', 'CREATE SEQUENCE seq CACHE 5;'],
+  ['sequence-cache', 'CREATE SEQUENCE seq CACHE 65535 START 1;'],
+  ['sequence-cache', 'CREATE SEQUENCE seq CACHE 0;'],
   ['alter-column-type', 'ALTER TABLE keys ALTER COLUMN name TYPE varchar(10);'],
   ['alter-column-type', 'ALTER TABLE keys ALTER COLUMN name SET DATA TYPE varchar(10);'],
   ['set-not-null', 'ALTER TABLE settings ALTER COLUMN cognito_sub SET NOT NULL;'],
@@ -44,6 +48,9 @@ const REJECTED = [
   ['drop', 'DROP INDEX keys_name_key;'],
   ['drop', 'ALTER TABLE keys DROP COLUMN name;'],
   ['delete-from', 'DELETE FROM settings;'],
+  ['rename', 'ALTER TABLE keys RENAME TO k;'],
+  ['rename', 'ALTER TABLE keys RENAME COLUMN name TO label;'],
+  ['rename', 'ALTER TABLE keys RENAME CONSTRAINT a TO b;'],
   // The checker cannot read inside these, so it refuses them.
   ['procedural-body', "DO $$ BEGIN EXECUTE 'DROP TABLE keys'; END $$;"],
   ['procedural-body', "DO 'BEGIN PERFORM 1; END';"],
@@ -180,7 +187,7 @@ describe('a construct that is only mentioned, not used, is left alone', () => {
     ['a column named for the word', 'ALTER TABLE keys ADD COLUMN truncated_at timestamptz;'],
     [
       'a name that contains a keyword',
-      'CREATE TABLE dropdown_choices (serial_no text, deleted_at timestamptz);',
+      'CREATE TABLE dropdown_choices (serial_no text, deleted_at timestamptz, renamed_at timestamptz);',
     ],
   ])('%s', (_name, sql) => {
     expect(checkSql(sql)).toEqual([])
@@ -192,6 +199,7 @@ describe('a construct that is only mentioned, not used, is left alone', () => {
     'CREATE UNIQUE INDEX ASYNC IF NOT EXISTS keys_name_key ON keys (name);',
     'create unique index async if not exists keys_name_key on keys (name);',
     'CREATE SEQUENCE seq CACHE 65536;',
+    'CREATE SEQUENCE seq CACHE 1000000 START 1;',
     'CREATE SEQUENCE seq CACHE 1 START 1;',
     'CREATE TABLE a (k uuid PRIMARY KEY, n text UNIQUE, c int CHECK (c > 0));',
     'ALTER TABLE keys ADD COLUMN note text;',
@@ -324,6 +332,60 @@ describe('the command line', () => {
     ['a non-ASYNC index', 'CREATE UNIQUE INDEX k ON keys (name);'],
   ])('exits non-zero on %s', (_name, sql) => {
     expect(run(scratch({ '0001_x.sql': sql })).status).toBe(1)
+  })
+
+  // The entry point must work however it is reached. These run the script through a symlink to the
+  // file, through a symlinked directory, and against a symlinked migrations directory: each ends in a
+  // DROP TABLE that must be found. A script that only ran when its own path matched its real path would
+  // exit 0 here, having checked nothing. (The path the other tests use is the real one, so they cannot
+  // see that.)
+  describe('reached through a symlink', () => {
+    const bad = () => scratch({ '0001_bad.sql': 'DROP TABLE keys;' })
+
+    test('a symlink to the script file', () => {
+      const link = join(mkdtempSync(join(tmpdir(), 'dsql-link-')), 'check.mjs')
+      symlinkSync(script, link)
+      const result = spawnSync(process.execPath, [link, bad()], { encoding: 'utf8' })
+      expect(result.stderr).toContain('drop')
+      expect(result.status).toBe(1)
+    })
+
+    test('a symlink to the tools directory', () => {
+      const link = join(mkdtempSync(join(tmpdir(), 'dsql-link-')), 'tools')
+      symlinkSync(toolsDir, link)
+      const result = spawnSync(process.execPath, [join(link, 'check-dsql-sql.mjs'), bad()], {
+        encoding: 'utf8',
+      })
+      expect(result.stderr).toContain('drop')
+      expect(result.status).toBe(1)
+    })
+
+    test('a symlinked migrations directory', () => {
+      const link = join(mkdtempSync(join(tmpdir(), 'dsql-link-')), 'migrations')
+      symlinkSync(bad(), link)
+      const result = run(link)
+      expect(result.stderr).toContain('drop')
+      expect(result.status).toBe(1)
+    })
+
+    test('a relative path from the current directory', () => {
+      const result = spawnSync(process.execPath, ['check-dsql-sql.mjs', bad()], {
+        cwd: toolsDir,
+        encoding: 'utf8',
+      })
+      expect(result.stderr).toContain('drop')
+      expect(result.status).toBe(1)
+    })
+
+    test('a clean directory through a symlink still exits 0 and prints its summary', () => {
+      const link = join(mkdtempSync(join(tmpdir(), 'dsql-link-')), 'check.mjs')
+      symlinkSync(script, link)
+      const result = spawnSync(process.execPath, [link, scratch({ '0001_ok.sql': 'SELECT 1;' })], {
+        encoding: 'utf8',
+      })
+      expect(result.stdout).toMatch(/1 migration file checked, 0 findings/)
+      expect(result.status).toBe(0)
+    })
   })
 
   test('exits non-zero on an empty directory, a missing directory and an unreadable file', () => {
