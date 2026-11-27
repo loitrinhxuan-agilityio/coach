@@ -5,6 +5,7 @@
       "api/**",
       "infra/**",
       "tools/**",
+      "scripts/**",
       "*.json",
       "*.ts",
       "!**/node_modules",

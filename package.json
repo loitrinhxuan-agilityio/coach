@@ -12,7 +12,7 @@
   ],
   "scripts": {
     "test": "vitest run",
-    "typecheck": "npm run typecheck --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present && tsc --noEmit -p scripts",
     "lint": "biome check"
   },
   "devDependencies": {
