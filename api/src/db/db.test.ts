@@ -12,11 +12,12 @@ import {
   concurrencyConflict,
   dbError,
   droppedConnection,
-  type FakeClient,
+  FakeClient,
   fakeDriver,
   ok,
   type Script,
   settled,
+  within,
 } from './fakes.test-helper.js'
 import { backoffDelay, createTransactionRunner, MAX_RETRIES } from './with-transaction.js'
 
@@ -148,15 +149,54 @@ describe('the connection', () => {
     expect(await getConnection(() => TEN_MINUTES + 2)).toBe(replacement)
   })
 
-  test('a connection that will not close does not fail the request that replaces it', async () => {
+  test('a connection whose close fails does not fail the request that replaces it', async () => {
     const driver = fakeDriver()
     const { getConnection } = createConnector(() => driver.deps)
     await getConnection(() => 0)
-    const first = driver.clients[0] as FakeClient
-    first.end = async () => {
-      throw new Error('socket already closed')
-    }
+    driver.clients[0]?.rejectsOnClose()
     await expect(getConnection(() => TEN_MINUTES + 1)).resolves.toBeDefined()
+    expect(driver.clients[0]?.ended).toBe(true)
+  })
+
+  describe('a connection that will not close, because end() neither resolves nor rejects', () => {
+    test('the fixture really does hang: it is not one that rejects', async () => {
+      const client = new FakeClient(ok).hangOnClose()
+      const outcome = await Promise.race([
+        client.end().then(
+          () => 'resolved',
+          () => 'rejected',
+        ),
+        new Promise((resolve) => setTimeout(resolve, 50, 'still pending')),
+      ])
+      expect(outcome).toBe('still pending')
+      expect(client.ended).toBe(true)
+    })
+
+    test('does not stall the request that replaces it', async () => {
+      const driver = fakeDriver(() => ok, { closeHangs: true })
+      const { getConnection } = createConnector(() => driver.deps)
+      const first = await getConnection(() => 0)
+      const second = await within(getConnection(() => TEN_MINUTES + 1))
+      expect(second).not.toBe(first)
+      expect(driver.clients[0]?.ended).toBe(true)
+    })
+
+    test('does not stall the request that replaces a connection known to be dead', async () => {
+      const driver = fakeDriver(() => ok, { closeHangs: true })
+      const { getConnection } = createConnector(() => driver.deps)
+      const first = await getConnection(() => 0)
+      driver.clients[0]?.emit('end')
+      expect(await within(getConnection(() => 1))).not.toBe(first)
+    })
+
+    test('does not stall the caller that discards it, and the next request gets a new one', async () => {
+      const driver = fakeDriver(() => ok, { closeHangs: true })
+      const { getConnection, discardConnection } = createConnector(() => driver.deps)
+      const first = await getConnection(() => 0)
+      await within(discardConnection(first))
+      expect(driver.clients[0]?.ended).toBe(true)
+      expect(await within(getConnection(() => 1))).not.toBe(first)
+    })
   })
 })
 
@@ -397,6 +437,49 @@ describe('withTransaction', () => {
           error_code: 'connection_lost',
         },
       ])
+    })
+
+    test('whose close hangs does not stall the reconnect, and the request then succeeds', async () => {
+      const driver = fakeDriver(
+        (n) =>
+          n === 0
+            ? (sql) => {
+                if (sql === 'BEGIN') throw droppedConnection()
+                return { rows: [] }
+              }
+            : ok,
+        { closeHangs: true },
+      )
+      const withTransaction = createTransactionRunner({
+        connector: createConnector(() => driver.deps),
+        sleep: async () => undefined,
+      })
+      await expect(within(withTransaction(async () => 'served'))).resolves.toBe('served')
+      expect(driver.clients).toHaveLength(2)
+      expect(driver.clients[0]?.ended).toBe(true)
+    })
+
+    test('whose rollback fails and whose close hangs still surfaces the original error', async () => {
+      const driver = fakeDriver(
+        () => (sql) => {
+          if (sql === 'ROLLBACK') throw new Error('rollback failed')
+          return { rows: [] }
+        },
+        { closeHangs: true },
+      )
+      const withTransaction = createTransactionRunner({
+        connector: createConnector(() => driver.deps),
+        sleep: async () => undefined,
+      })
+      const original = new Error('the real problem')
+      await expect(
+        within(
+          withTransaction(async () => {
+            throw original
+          }),
+        ),
+      ).rejects.toBe(original)
+      expect(driver.clients[0]?.ended).toBe(true)
     })
 
     test('is replaced once, then the error surfaces', async () => {

@@ -194,7 +194,7 @@ describe('the deployed handler', () => {
     expect(received[0]?.headers['content-type']).toBe('')
     const answer = JSON.parse(received[0]?.body ?? '{}')
     expect(answer.Status).toBe('FAILED')
-    expect(answer.Reason).toContain('DSQL_DB_ROLE is not set')
+    expect(answer.Reason).toBe('Error: DSQL_DB_ROLE is not set')
     // The name is what the error carries, never a value of anything it read.
     expect(answer.Reason).not.toContain('sentinel')
   })
@@ -206,7 +206,7 @@ describe('the deployed handler', () => {
     vi.stubEnv('DSQL_DB_ROLE', 'sentinel-role')
     const answer = JSON.parse((await call('Create'))[0]?.body ?? '{}')
     expect(answer.Status).toBe('FAILED')
-    expect(answer.Reason).toContain('DSQL_ENDPOINT is not set')
+    expect(answer.Reason).toBe('Error: DSQL_ENDPOINT is not set')
     expect(answer.Reason).not.toContain('sentinel')
   })
 

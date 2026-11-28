@@ -323,9 +323,9 @@ describe('a database fault, seen from outside', () => {
     expect(response.statusCode).toBe(500)
     expect(JSON.parse(String(response.body)).error.code).toBe('internal')
 
-    // Everything a diagnostician has: one retry line, which names the request, then the six-field
-    // request line.
-    const [retry, request, ...rest] = out.lines() as Record<string, unknown>[]
+    // Everything a diagnostician has: one retry line, which names the request, a fault line, which
+    // names the request and where the failure came from, then the six-field request line.
+    const [retry, fault, request, ...rest] = out.lines() as Record<string, unknown>[]
     expect(rest).toEqual([])
     expect(retry).toEqual({
       event: 'db_retry',
@@ -344,8 +344,12 @@ describe('a database fault, seen from outside', () => {
       'request_id',
     ])
     expect(request).toMatchObject({ outcome: 'internal', key_id: null, operation: 'get_account' })
-    // The line has no room for the cause: not the SQLSTATE of a final failure, not the message.
+    expect(fault).toMatchObject({ event: 'fault', request_id: 'gateway-request-0001' })
+    expect(Object.keys(fault ?? {}).sort()).toEqual(['event', 'name', 'request_id', 'stack'])
+    // The request line has no room for the cause: not the SQLSTATE of a final failure, not the
+    // message. Nor has the fault line, which carries the stack's frames and not the message.
     expect(JSON.stringify(out.lines())).not.toContain('ECONNRESET at')
+    expect(JSON.stringify(fault)).not.toContain('read ECONNRESET')
   })
 
   test('a Key that authenticates is served settings from the database', async () => {

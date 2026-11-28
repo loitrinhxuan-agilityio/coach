@@ -30,6 +30,26 @@ export class FakeClient implements Client {
     this.ended = true
   }
 
+  // A close that neither resolves nor rejects: the socket the server dropped, which pg's end()
+  // waits on for ever. `ended` is still set, because end() was called. This is not a close that
+  // fails, which is a different fixture; see rejectsOnClose.
+  hangOnClose(): this {
+    this.end = () => {
+      this.ended = true
+      return new Promise<void>(() => {})
+    }
+    return this
+  }
+
+  // A close that fails at once.
+  rejectsOnClose(): this {
+    this.end = async () => {
+      this.ended = true
+      throw new Error('socket already closed')
+    }
+    return this
+  }
+
   on(event: 'error' | 'end', listener: () => void): this {
     this.listeners[event].push(listener)
     return this
@@ -40,8 +60,12 @@ export class FakeClient implements Client {
   }
 }
 
-// `scriptFor(n)` is the script of the nth connection, counting from 0.
-export function fakeDriver(scriptFor: (n: number) => Script = () => ok) {
+// `scriptFor(n)` is the script of the nth connection, counting from 0. `closeHangs` makes every
+// connection's close hang, for the one case a test must not be able to pass by luck.
+export function fakeDriver(
+  scriptFor: (n: number) => Script = () => ok,
+  { closeHangs = false }: { closeHangs?: boolean } = {},
+) {
   const clients: FakeClient[] = []
   const mints: string[] = []
   const connectedWith: string[] = []
@@ -54,6 +78,7 @@ export function fakeDriver(scriptFor: (n: number) => Script = () => ok) {
     connect: async (authToken) => {
       connectedWith.push(authToken)
       const client = new FakeClient(scriptFor(clients.length))
+      if (closeHangs) client.hangOnClose()
       clients.push(client)
       return client
     },
@@ -95,6 +120,17 @@ export function captureStdout(): { lines: () => unknown[] } {
         .filter((line) => line !== '')
         .map((line) => JSON.parse(line)),
   }
+}
+
+// Settles with the promise's outcome, or rejects after `ms` if it has not settled by then. A test
+// of "this must not wait for that" uses it so that a stall fails at once, and with a name, rather
+// than as the runner's generic timeout.
+export function within<T>(promise: Promise<T>, ms = 250): Promise<T> {
+  let timer: NodeJS.Timeout | undefined
+  const stalled = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new Error(`stalled: still waiting after ${ms} ms`)), ms)
+  })
+  return Promise.race([promise, stalled]).finally(() => clearTimeout(timer))
 }
 
 // Waits for a promise and discards how it ended, for a call whose failure the test expects and

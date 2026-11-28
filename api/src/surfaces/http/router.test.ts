@@ -391,17 +391,38 @@ describe('the log line', () => {
     expect(lines[0]?.key_id).toBe((await repo.findKeyByHash(FAKE_KEY_SHA256))?.id)
   })
 
-  test('an unexpected failure is logged once, as internal', async () => {
+  test('an unexpected failure is logged once as a request, as internal, and once as a fault', async () => {
     const handle = createHandler({
       repo: seededRepo(),
       operations: {
         get_account: async () => {
-          throw new Error('boom')
+          throw new Error('connection string postgres://FAKE-SECRET-HOST/db refused')
+        },
+      },
+    })
+    const { lines } = await call(handle, eventFor())
+    expect(lines).toHaveLength(2)
+    const [fault, request] = lines
+    expect(request?.outcome).toBe('internal')
+    expect(fault).toMatchObject({ event: 'fault', request_id: GATEWAY_ID, name: 'Error' })
+    expect(Object.keys(fault as object).sort()).toEqual(['event', 'name', 'request_id', 'stack'])
+    expect(String(fault?.stack)).toMatch(/^\s+at /)
+    // The request line is still the six fields, and the message is nowhere.
+    expect(Object.keys(request as object)).toHaveLength(6)
+    expect(JSON.stringify(lines)).not.toContain('FAKE-SECRET-HOST')
+  })
+
+  test('a failure that is an OperationError writes no fault line', async () => {
+    const handle = createHandler({
+      repo: seededRepo(),
+      operations: {
+        get_account: async () => {
+          throw new OperationError('lifter_only')
         },
       },
     })
     const { lines } = await call(handle, eventFor())
     expect(lines).toHaveLength(1)
-    expect(lines[0]?.outcome).toBe('internal')
+    expect(lines[0]?.event).toBeUndefined()
   })
 })

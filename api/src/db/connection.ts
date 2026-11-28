@@ -30,13 +30,25 @@ export const AUTH_TOKEN_MAX_AGE_MS = 10 * 60 * 1000
 // How long one statement may take before the driver gives up on it. connectionTimeoutMillis bounds
 // only the connect, and a half-open socket on a thawed container would otherwise hold a request
 // until the Lambda times out, with the reconnect never reached. PROVISIONAL: ADR 0005 and R15 name a
-// 30-second API Gateway ceiling, and 5 s is chosen to fit under it, not measured. A stuck connection
-// costs, before it surfaces, a timed-out statement, its rollback (also a statement), a connect, the
-// first statement on the new connection and that one's rollback: five waits of 5 s, 25 s, under 30
-// with 5 s to spare. The reconnect is single, so that is the worst case. A conflict is reported by
-// a connection that answers, so it costs only its waits, 350 ms at most in all. Four tries at 5 s is
-// NOT the bound: the timeout is per statement, and a try runs several.
-// Change 9017 revises it against measured latency.
+// 30-second API Gateway ceiling, and 5 s is chosen to fit under it, not measured.
+//
+// THE BOUND, PER TRANSACTION AND PER REQUEST. One transaction that meets one stuck connection costs,
+// before it surfaces, a timed-out statement, its rollback (also a statement), a connect, the first
+// statement on the new connection and that one's rollback: five waits of 5 s, 25 s. (Closing the
+// stuck connection is not a wait: nothing awaits it, see closeQuietly.) A connection already known
+// dead from the driver's events is replaced inside getConnection first, which adds one more connect,
+// 30 s in the worst order. A conflict is reported by a connection that answers, so it costs only
+// its waits, 350 ms at most in all. Four tries at 5 s is NOT the bound: the timeout is per
+// statement, and a try runs several.
+// And 25 s is the bound of ONE TRANSACTION, not of a request. A request runs more than one:
+// get_account is two (authenticate, then the account), each with its own withTransaction and so its
+// own single reconnect. A request that finds one stuck connection pays the 25 s once, because the
+// first transaction replaces it and the second reuses the replacement; that fits under the 29 s
+// Lambda timeout with about 4 s for the work itself. A request whose replacement is stuck too can
+// pay it twice, about 50 s, and then the Lambda timeout, not this number, is what ends it. So 29 s
+// is a backstop chosen to sit under the gateway's 30, and it is NOT derived from this arithmetic.
+// Change 9017 revises QUERY_TIMEOUT_MS and CONNECT_TIMEOUT_MS against measured latency, and has to
+// decide whether a request that cannot be answered in 29 s should be given a shorter wait here.
 //
 // statement_timeout is deliberately not set. pg sends it in the startup message, and nobody has
 // shown Aurora DSQL accepts it there; if it did not, every connection would fail. 9017 can try it.
@@ -54,20 +66,29 @@ type Slot = { held: Promise<Held> }
 
 export type Connector = {
   getConnection(now?: () => number): Promise<Client>
-  // Forgets this client and closes it, for the caller that has found it unusable. Does nothing to a
-  // newer connection that has replaced it.
+  // Forgets this client and starts closing it, for the caller that has found it unusable. Does not
+  // wait for the close to finish: see closeQuietly. Does nothing to a newer connection that has
+  // replaced it.
   discardConnection(client: Client): Promise<void>
 }
 
 // Ending a connection already known to be unusable can fail in any number of ways, and none of them
 // is anything to act on. This is the one place in the database layer that deliberately drops an
 // error, and it drops this one only.
-async function closeQuietly(client: Client): Promise<void> {
-  try {
-    await client.end()
-  } catch {
-    // The connection is being thrown away; there is nothing left to report to.
-  }
+//
+// NOBODY AWAITS THIS. `pg`'s end() sends Terminate and waits for the socket to close, with no
+// timeout of its own, and the connection being closed is one the server may already have dropped
+// (R14's thawed container): its end() may neither resolve nor reject. Awaiting it would stall the
+// very request the replacement was opened for. So it is started and left to finish or not; it never
+// rejects, so leaving it unawaited leaks no unhandled rejection.
+function closeQuietly(client: Client): void {
+  void (async () => {
+    try {
+      await client.end()
+    } catch {
+      // The connection is being thrown away; there is nothing left to report to.
+    }
+  })()
 }
 
 // One connection per container (R14). `makeDeps` runs on the first connection, not at import, so
@@ -103,7 +124,7 @@ export function createConnector(makeDeps: () => ConnectorDeps): Connector {
       stale = held.client
     }
     // The replacement is stored before anything else is awaited, so a caller that arrives while
-    // the old connection is closing finds the new one and does not open a third.
+    // the replacement is opening finds it and does not open a third.
     const slot: Slot = { held: open(now) }
     current = slot
     // A connection that failed to open must not be remembered, or every later request would be
@@ -111,7 +132,7 @@ export function createConnector(makeDeps: () => ConnectorDeps): Connector {
     slot.held.catch(() => {
       if (current === slot) current = null
     })
-    if (stale) await closeQuietly(stale)
+    if (stale) closeQuietly(stale)
     return (await slot.held).client
   }
 
@@ -121,7 +142,7 @@ export function createConnector(makeDeps: () => ConnectorDeps): Connector {
       const held = await slot.held.catch(() => null)
       if (held?.client === client && current === slot) current = null
     }
-    await closeQuietly(client)
+    closeQuietly(client)
   }
 
   return { getConnection, discardConnection }

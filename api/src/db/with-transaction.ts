@@ -78,10 +78,13 @@ export function createTransactionRunner({
         // dropped it (R14). Not once COMMIT has been sent: a connection that dies then may or may
         // not have committed, and running the transaction again could write it twice.
         //
-        // The bound, stated exactly: this is the one reconnect a failed statement earns. A
-        // connection already known to be dead from the driver's `error` or `end` event is replaced
-        // earlier, quietly, inside getConnection, before any statement is wasted on it. So a request
-        // can open two replacements before it fails: one it did not have to ask for, and this one.
+        // The bound, stated exactly: this is the one reconnect a failed statement earns, and it is
+        // per call of withTransaction, because `tries`, `retries` and `reconnected` are locals of
+        // each call. A connection already known to be dead from the driver's `error` or `end` event
+        // is replaced earlier, quietly, inside getConnection, before any statement is wasted on it.
+        // So one transaction can open two replacements before it fails: one it did not have to ask
+        // for, and this one. A request that runs two transactions (get_account does) can therefore
+        // open four. See QUERY_TIMEOUT_MS for what that does to the time a request can take.
         const lost = connectionCode(error)
         if (lost !== null && !committing && !reconnected) {
           reconnected = true

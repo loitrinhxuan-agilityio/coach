@@ -139,7 +139,7 @@ two are decision-log rows that change **`9016`** must land before this change's 
 | Layout | npm workspaces: `api/`, `infra/`, `scripts/`; `web/` arrives with `0142`. `test/visual/screenshots/` stays where change 9005 put it |
 | Tooling | Biome for lint and format; esbuild via `NodejsFunction`; a bundle-size budget as a failing test, since ADR 0005 names a small bundle as a free cold-start mitigation |
 | Method | Written **test-first**. A partial answer to item 8 of `development-preparation.md`, in practice rather than by rewriting the agent documents |
-| Not built | No rate limiting (story 167 is Phase 2), no CORS (the dashboard is same-origin behind CloudFront), and **no stored secret anywhere**: OIDC to deploy, SigV4 to the database, one Key held by the Owner |
+| Not built | No rate limiting (story 167 is Phase 2), no CORS (the dashboard is same-origin behind CloudFront), **no keep-warm ping** (ADR 0005's; this change creates the only stack it could live in, and `9017` owns it), and **no stored secret anywhere**: OIDC to deploy, SigV4 to the database, one Key held by the Owner |
 
 ## Open questions
 

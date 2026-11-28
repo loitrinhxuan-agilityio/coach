@@ -59,9 +59,12 @@ export const API_DB_ROLE = 'admin'
 export const connectAction = (role: string): string =>
   role === 'admin' ? 'dsql:DbConnectAdmin' : 'dsql:DbConnect'
 
-// Lambda's ceiling for a request is API Gateway's: 30 seconds. R15 and connection.ts work out that
-// the worst case of a stuck connection is 25 s, so this sits just under the gateway's, and a Lambda
-// that is cut off reports as a timeout, not as the gateway's blank 503.
+// Lambda's ceiling for a request is API Gateway's: 30 seconds. This sits just under it, so a Lambda
+// that is cut off reports as a timeout, not as the gateway's blank 503. It is a backstop and is NOT
+// derived from the database layer's arithmetic: one transaction that meets one stuck connection can
+// spend 25 s (30 s in the worst order), and a request runs more than one transaction, so a request
+// whose replacement connection is stuck too can need about 50 s and is ended by this timeout, not
+// answered. connection.ts (QUERY_TIMEOUT_MS) has the working. Change 9017 revises both numbers.
 const API_TIMEOUT = Duration.seconds(29)
 
 // R17: the API Lambda's bundle is under 1 MB, measured on this output, minified. Unminified the
@@ -84,8 +87,9 @@ const BUNDLING: BundlingOptions = {
   sourceMap: true,
 }
 
-// A hash of every migration file, so that adding or editing one changes the custom resource's
-// properties and CloudFormation runs the runner again.
+// A hash of every migration file, so that adding one changes the custom resource's properties and
+// CloudFormation runs the runner again. Editing one changes the hash and so re-runs the resource,
+// but applies nothing: runMigrations skips a migration by name and answers SUCCESS.
 export function digestOf(directory: string): string {
   const hash = createHash('sha256')
   for (const name of readdirSync(directory)

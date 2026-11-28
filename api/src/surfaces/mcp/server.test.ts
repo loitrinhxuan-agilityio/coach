@@ -841,20 +841,41 @@ describe('the log line', () => {
     expect(typeof line.duration_ms).toBe('number')
   })
 
-  test('an operation that throws is logged once, as internal, against its tool', async () => {
+  test('an operation that throws is logged once, as internal, against its tool, with a fault line', async () => {
     const handle = createMcpHandler({
       repo: seededRepo(),
       operations: {
         get_account: async () => {
-          throw new Error('boom')
+          throw new Error('connection string postgres://FAKE-SECRET-HOST/db refused')
         },
       },
     })
     const { lines } = await call(handle, callEvent('get_account'))
-    expect(lines).toHaveLength(1)
-    expect(lines[0]?.outcome).toBe('internal')
-    expect(lines[0]?.operation).toBe('get_account')
-    expect(lines[0]?.principal_kind).toBe('agent')
+    expect(lines).toHaveLength(2)
+    const [fault, request] = lines
+    expect(fault).toMatchObject({ event: 'fault', request_id: GATEWAY_ID, name: 'Error' })
+    expect(Object.keys(fault as object).sort()).toEqual(['event', 'name', 'request_id', 'stack'])
+    expect(String(fault?.stack)).toMatch(/^\s+at /)
+    expect(request?.outcome).toBe('internal')
+    expect(request?.operation).toBe('get_account')
+    expect(request?.principal_kind).toBe('agent')
+    expect(JSON.stringify(lines)).not.toContain('FAKE-SECRET-HOST')
+  })
+
+  test('a failure outside a tool call also writes a fault line', async () => {
+    const handle = createMcpHandler({
+      repo: {
+        ...seededRepo(),
+        findKeyByHash: async () => {
+          throw new Error('FAKE-SECRET-HOST unreachable')
+        },
+      },
+    })
+    const { lines } = await call(handle, callEvent('get_account'))
+    expect(lines).toHaveLength(2)
+    expect(lines[0]).toMatchObject({ event: 'fault', request_id: GATEWAY_ID })
+    expect(lines[1]?.outcome).toBe('internal')
+    expect(JSON.stringify(lines)).not.toContain('FAKE-SECRET-HOST')
   })
 
   test('a refusal after the Key was found still names the Key and the principal kind', async () => {

@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 import type { APIGatewayProxyEventV2, APIGatewayProxyStructuredResultV2 } from 'aws-lambda'
 import type { ErrorCode } from '../errors/types.js'
 import { OperationError } from '../errors/types.js'
+import { logFault } from '../logging/fault.js'
 import type { Operation } from '../operations/index.js'
 import type { OperationEntry } from '../registry/types.js'
 
@@ -27,11 +28,13 @@ export function jsonResponse(statusCode: number, body: unknown): APIGatewayProxy
 }
 
 // The one place a failure becomes a code, so no other code composes a message. Anything that is not
-// an OperationError is a fault in the product, and says nothing about itself to the caller.
+// an OperationError is a fault in the product, and says nothing about itself to the caller. It
+// does say something to the operator: its name and stack go to the log (logging/fault.ts), here,
+// where the error is still in hand, because nothing after this point has it.
 export function failure(error: unknown): { code: ErrorCode; field?: string } {
-  return error instanceof OperationError
-    ? { code: error.code, field: error.field }
-    : { code: 'internal' }
+  if (error instanceof OperationError) return { code: error.code, field: error.field }
+  logFault(error)
+  return { code: 'internal' }
 }
 
 // Every entry is paired with its implementation when a surface is built, so a missing one stops the
