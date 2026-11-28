@@ -61,39 +61,54 @@ coherent thing; padding it to match C4 would be the index deciding the work.
 **One change per capability**, with three departures, each for a stated reason. Each change takes the
 number of its **lead story** and lists its members; the folder is the lookup table (D-046).
 
+**Amended 2026-11-27 (D-050): thirteen changes, not fourteen.** The error contract (story 166) was
+folded into change 1, so change 1 is the only one carrying two capabilities, every change after it
+moved up one, and the product proof moved with them. The partition above is unchanged — this is a
+change to the build order, not to the scope.
+
 | # | Change | Cap. | Stories | Waits on |
 |---|---|---|---|---|
-| 1 | `0009` the spine: one Lifter, one Key, one read | C2 | 4, 9, 10, 11 | **ADR 0007** |
-| 2 | `0166` the error contract | C12a | 166 | 1 |
-| 3 | `0202` signing in and out | C1 | 192, 202–205 | 1 |
-| 4 | `0016` exercise identity and the starter catalogue | C5 | 16, 31, 32 | 2 |
-| 5 | `0034` load semantics and plate maths | C6 | 19, 20, 34, 36, 37 | 2 |
-| 6 | `0012` training-session lifecycle | C3 | 12, 13, 24, 25, 26 | 2 |
-| 7 | `0014` logging sets by speaking | C4 | 14, 15, 17, 21, 22, 23, 28 | 4, 5, 6 |
-| 8 | `0018` plausibility holds | C7 | 18 | 7 |
-| 9 | `0142` the dashboard shell | C11a | 142, 144, 152, 154 | 3 |
-| 10 | `0140` the Today page | C11b | 140 | 7, 9 |
-| 11 | `0046` targets and progression | C8 | 46, 47, 48, 52, 53, 54 | 7 |
-| 12 | `0027` records | C9 | 27, 58 | 7 |
-| 13 | `0043` history and the session summary | C10 | 43, 57, 174 | 7 |
-| 14 | `0198` the guide's Part B | C12b | 198 | 13 |
-| — | `9015` scripted conversations as acceptance tests | C12 | 199 | 14 |
+| 1 | `0009` the spine: one Lifter, one Key, one read | C2 + C12a | 4, 9, 10, 11, 166 | — |
+| 2 | `0202` signing in and out | C1 | 192, 202–205 | 1 |
+| 3 | `0016` exercise identity and the starter catalogue | C5 | 16, 31, 32 | 1 |
+| 4 | `0034` load semantics and plate maths | C6 | 19, 20, 34, 36, 37 | 1 |
+| 5 | `0012` training-session lifecycle | C3 | 12, 13, 24, 25, 26 | 1 |
+| 6 | `0014` logging sets by speaking | C4 | 14, 15, 17, 21, 22, 23, 28 | 3, 4, 5 |
+| 7 | `0018` plausibility holds | C7 | 18 | 6 |
+| 8 | `0142` the dashboard shell | C11a | 142, 144, 152, 154 | 2 |
+| 9 | `0140` the Today page | C11b | 140 | 6, 8 |
+| 10 | `0046` targets and progression | C8 | 46, 47, 48, 52, 53, 54 | 6 |
+| 11 | `0027` records | C9 | 27, 58 | 6 |
+| 12 | `0043` history and the session summary | C10 | 43, 57, 174 | 6 |
+| 13 | `0198` the guide's Part B | C12b | 198 | 12 |
+| — | `9015` scripted conversations as acceptance tests | C12 | 199 | 13 |
 
-**D-004's product proof lands after change 11**: log a real session through the assistant (7), see it on
-the dashboard (10), and get a next-time weight suggestion (11). Changes 12 to 14 complete Phase 1 but
-are not needed to prove it.
+Change 1's "waits on" was **ADR 0007** until that ADR was accepted on 2026-11-27 (D-047), so nothing
+gates it now. Two process changes sit beside this order rather than in it: **`9016`** records the
+decisions change 1 rests on, and **`9017`** performs the first deploy, which change 1 deliberately
+does not (see [`0009-spine/intent.md`](0009-spine/intent.md)).
+
+**D-004's product proof lands after change 10**: log a real session through the assistant (6), see it on
+the dashboard (9), and get a next-time weight suggestion (10). Changes 11 to 13 complete Phase 1 but
+are not needed to prove it. One caveat the proof depends on and this index cannot settle: it needs an
+assistant that can reach the MCP surface with a Key, which `0009-spine/intent.md` records as an open
+question for the Owner.
 
 ### The three departures from one-change-per-capability
 
 1. **C11 splits** into the shell (`0142`) and the Today page (`0140`). The shell is navigation, empty
    states and theming; Today reads live session data. The shell is useful — and reviewable against the
    design boards — before any session exists.
-2. **C12 splits** into the error contract (`0166`) and the guide's Part B (`0198`). This one was found
-   while deriving the build order, and it matters: story 166's one-sentence error contract is
-   **cross-cutting and must land before any other operation**, or every change invents its own error
-   shape and the contract becomes a retrofit. Part B is the opposite — ADR 0004 says it is *generated
-   from the operation registry*, so it cannot be written until the operations exist. Keeping them in one
-   change would force the error contract to wait for the last change in Phase 1.
+2. **C12 splits** into the error contract (story 166) and the guide's Part B (`0198`). Story 166's
+   one-sentence error contract is **cross-cutting and must land before any other operation**, or every
+   change invents its own error shape and the contract becomes a retrofit. Part B is the opposite —
+   ADR 0004 says it is *generated from the operation registry*, so it cannot be written until the
+   operations exist.
+   **Corrected 2026-11-27 (D-050).** This index first made the error contract its own change, placed
+   second and waiting on change 1 — which contradicted the rule stated in the same paragraph, since
+   change 1 is an operation and would have invented an error shape for change 2 to replace. Story 166
+   is now delivered **inside change 1**, so C12a is not a change of its own and change 1 carries two
+   capabilities.
 3. **C13 is dropped**, not deferred. Story 201's subject no longer exists.
 
 ### What is deliberately not split
