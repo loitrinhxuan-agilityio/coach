@@ -117,8 +117,14 @@ function expectNoKeyAnywhereElse(run: Run, key: string) {
 
 const randomBytesSpy = vi.mocked(randomBytes)
 
+const { randomBytes: realRandomBytes } =
+  await vi.importActual<typeof import('node:crypto')>('node:crypto')
+
 beforeEach(() => {
-  randomBytesSpy.mockClear()
+  // mockClear would leave a value queued with mockReturnValueOnce for the next test to find. Reset
+  // drops it, and the passthrough to real random bytes is put back.
+  randomBytesSpy.mockReset()
+  randomBytesSpy.mockImplementation(((size: number) => realRandomBytes(size)) as never)
   fsCalls.length = 0
 })
 
@@ -149,6 +155,19 @@ describe('the Key', () => {
     // The Key is exactly the prefix and what node:crypto handed over. Plain base64 of these bytes has
     // '+', '/' and '=' in it, so this also fails on any other encoding.
     expect(keyLine(run.stdout)).toBe(FIXED_KEY)
+  })
+
+  test('leaves bytes queued and unused, to be found by the next test if they are not reset', async () => {
+    randomBytesSpy.mockReturnValueOnce(FIXED_BYTES as never)
+    // A name that is refused never reaches randomBytes, so the queued value is still there.
+    await mint([''], memoryRepository())
+    expect(randomBytesSpy).not.toHaveBeenCalled()
+  })
+
+  test('a value queued by the test before does not outlive it', async () => {
+    const run = await mint(['owner'], memoryRepository())
+
+    expect(keyLine(run.stdout)).not.toBe(FIXED_KEY)
   })
 
   test('is different every time, and so is its hash', async () => {
@@ -267,7 +286,7 @@ describe('what is printed', () => {
         (m) => m[1] ?? '',
       )
     const dynamic =
-      /\bimport\s*\(|\brequire\b|\beval\b|\bFunction\b|\bglobalThis\b|\bfetch\b|\bWebSocket\b|\bXMLHttpRequest\b/
+      /\bimport\s*\(|\brequire\b|\beval\b|\bFunction\b|\bglobalThis\b|\bconsole\b|\bfetch\b|\bWebSocket\b|\bXMLHttpRequest\b/
 
     test('mint-key-core.ts imports only node:crypto and two repository files, and never uses process', async () => {
       const code = await codeOf('mint-key-core.ts')
@@ -293,6 +312,21 @@ describe('what is printed', () => {
         ...code.matchAll(/\bprocess\b(?!\.argv\b|\.stdout\.write\(|\.stderr\.write\(|\.exit\()/g),
       ]
       expect(uses).toStrictEqual([])
+    })
+
+    test('mint-key.ts wires stdout to process.stdout, stderr to process.stderr, and the real repository', async () => {
+      const code = (await codeOf('mint-key.ts')).replace(/\s+/g, ' ')
+      const wiring = (stream: string) =>
+        new RegExp(`${stream}: \\(text\\) => process\\.${stream}\\.write\\(text\\),`)
+
+      // Each stream is written by exactly one wiring line, and each line names its own stream. A swap,
+      // or a second write of the same text to the other stream, no longer matches.
+      expect(code).toMatch(wiring('stdout'))
+      expect(code).toMatch(wiring('stderr'))
+      expect(code.match(/process\.stdout\.write\(text\)/g)).toHaveLength(1)
+      expect(code.match(/process\.stderr\.write\(text\)/g)).toHaveLength(1)
+      expect(code).toMatch(/mintKey\(process\.argv\.slice\(2\), \{/)
+      expect(code).toMatch(/repo: dsqlRepository\(\),/)
     })
 
     test('the check itself sees what it is meant to see', () => {
@@ -352,8 +386,71 @@ describe('a name that already exists', () => {
     expect(run.code).not.toBe(0)
     expect(run.stdout).toBe('')
     expect(run.stderr).toContain('connection reset')
-    expect(run.stderr).not.toMatch(/already exists/)
+    // Not misreported as a duplicate.
+    expect(run.stderr).not.toContain('a Key named owner already exists')
     expectNoKeyAnywhereElse(run, FIXED_KEY)
+  })
+
+  test('a write that fails with an unknown outcome says the name may now be taken, and what to do', async () => {
+    randomBytesSpy.mockReturnValueOnce(FIXED_BYTES as never)
+    const timedOut: Repository = {
+      ...memoryRepository(),
+      insertKey: async () => {
+        throw new Error('timed out after COMMIT')
+      },
+    }
+
+    const run = await mint(['owner'], timedOut)
+
+    expect(run.code).toBe(1)
+    // The row may exist, so "no Key was made" would be false, and it is not said.
+    expect(run.stderr).not.toMatch(/no Key was made/i)
+    expect(run.stderr).toContain('timed out after COMMIT')
+    expect(run.stderr).toContain('may have been stored')
+    expect(run.stderr).toContain('The name owner may now be taken')
+    expect(run.stderr).toMatch(/already exists, it does, and a new name is needed/)
+    expect(run.stdout).toBe('')
+    expectNoKeyAnywhereElse(run, FIXED_KEY)
+  })
+
+  test('a print that fails after the write says the Key is stored, lost, and the name taken', async () => {
+    randomBytesSpy.mockReturnValueOnce(FIXED_BYTES as never)
+    const repo = memoryRepository()
+    let stderr = ''
+
+    const code = await mintKey(['owner'], {
+      repo,
+      stdout: () => {
+        throw new Error('EPIPE')
+      },
+      stderr: (text) => {
+        stderr += text
+      },
+    })
+
+    expect(code).toBe(1)
+    expect(stderr).not.toMatch(/no Key was made/i)
+    expect(stderr).toContain('was stored but could not be printed (EPIPE)')
+    expect(stderr).toContain('The name owner is taken')
+    expect(stderr).not.toContain(FIXED_SUFFIX)
+    // And it is true: the row is there.
+    expect(await repo.findKeyByName('owner')).not.toBeNull()
+  })
+
+  test('a duplicate refusal and a failed lookup are certain, and say no Key was made', async () => {
+    const seeded = memoryRepository({ keys: [{ name: 'owner', key_sha256: sha256Hex('older') }] })
+    const raced = await mint(['owner'], { ...seeded, findKeyByName: async () => null })
+    const lookup = await mint(['owner'], {
+      ...memoryRepository(),
+      findKeyByName: async () => {
+        throw new Error('connection reset')
+      },
+    })
+
+    expect(raced.stderr).toContain('no Key was made: a Key named owner already exists')
+    expect(raced.stderr).not.toMatch(/may have been stored|may now be taken/)
+    expect(lookup.stderr).toContain('no Key was made: connection reset')
+    expect(lookup.stderr).not.toMatch(/may have been stored|may now be taken/)
   })
 
   test('a lookup that fails is a failure too, and stores nothing', async () => {

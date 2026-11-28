@@ -1,5 +1,5 @@
 import { createHash, randomBytes } from 'node:crypto'
-import { keyNameTaken } from '../api/src/repository/errors.js'
+import { KEY_HASH_TAKEN, keyNameTaken } from '../api/src/repository/errors.js'
 import type { Repository } from '../api/src/repository/types.js'
 
 // R18. The only way a Key comes into existence in Phase 1 (ADR 0003). The logic is here and the
@@ -43,10 +43,29 @@ function refuse(args: readonly string[]): string | null {
 const reasonOf = (error: unknown): string =>
   error instanceof Error ? error.message : 'an unknown error'
 
-// Returns the process's exit code: 0 a Key was made and printed, 1 none was, 2 the arguments were
+// The sentence for every failure whose outcome is not known. A database that timed out after COMMIT
+// has stored the row and said nothing, so "it failed" may be false, and the one thing the Owner can
+// act on is the name: it may now be taken, and a retry that says it already exists means exactly that.
+const outcomeUnknown = (name: string, reason: string): string =>
+  `the Key for ${name} may have been stored, and no Key was shown (${reason}). ` +
+  `The name ${name} may now be taken: if a retry says a Key with it already exists, ` +
+  'it does, and a new name is needed.'
+
+// A rejection that is the database saying one of the two unique indexes already holds the value. It
+// is a definite answer: the row that exists is somebody else's, and nothing of this mint was stored.
+const isDuplicate = (error: unknown, name: string): boolean =>
+  error instanceof Error &&
+  (error.message === keyNameTaken(name) || error.message === KEY_HASH_TAKEN)
+
+// Returns the process's exit code: 0 a Key was made and printed, 1 it was not, 2 the arguments were
 // wrong. It does not throw. A Key is generated only once the name is known to be free, written to
 // the database as its hash alone, and printed only after that write has succeeded, so a failure at
 // any step leaves no Key on screen that the database does not know.
+//
+// What each exit 1 says is what is known. Before the write, or a rejection naming a duplicate, no
+// row of this mint exists and the message says "no Key was made". A failed write of any other kind
+// may or may not have committed, and a failed print has certainly committed, so those two say so and
+// say what to do about the name.
 export async function mintKey(args: readonly string[], deps: MintDeps): Promise<number> {
   const refusal = refuse(args)
   if (refusal !== null) {
@@ -55,27 +74,44 @@ export async function mintKey(args: readonly string[], deps: MintDeps): Promise<
   }
   const name = args[0] as string
 
+  // A check then a write is a race, and the database's unique index on name is what closes it; the
+  // rejection below is the real guard, and this read only gives the common case a clean answer.
   try {
-    // A check then a write is a race, and the database's unique index on name is what closes it;
-    // the rejection below is the real guard, and this read only gives the common case a clean answer.
     if ((await deps.repo.findKeyByName(name)) !== null) {
       deps.stderr(`${keyNameTaken(name)}; no Key was made\n`)
       return 1
     }
+  } catch (error) {
+    deps.stderr(`no Key was made: ${reasonOf(error)}\n`)
+    return 1
+  }
 
-    const key = generateKey()
+  const key = generateKey()
+  try {
     await deps.repo.insertKey({ name, key_sha256: sha256Hex(key) })
+  } catch (error) {
+    // Neither branch names the Key, which has not been printed and reached the repository only as a
+    // hash.
+    deps.stderr(
+      isDuplicate(error, name)
+        ? `no Key was made: ${reasonOf(error)}\n`
+        : `${outcomeUnknown(name, reasonOf(error))}\n`,
+    )
+    return 1
+  }
 
+  try {
     deps.stdout(
       `${key}\n` +
         `This Key for ${name} cannot be shown again. Only its sha256 is stored. ` +
         'If it is lost, mint another under a new name.\n',
     )
-    return 0
   } catch (error) {
-    // A duplicate caught here is the race; anything else is a failed connection or write. Neither
-    // names the Key, which has not been printed and never reached the repository except as a hash.
-    deps.stderr(`no Key was made: ${reasonOf(error)}\n`)
+    deps.stderr(
+      `the Key for ${name} was stored but could not be printed (${reasonOf(error)}), so it is lost. ` +
+        `The name ${name} is taken: mint another Key under a new name.\n`,
+    )
     return 1
   }
+  return 0
 }
