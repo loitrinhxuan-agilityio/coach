@@ -70,6 +70,16 @@ so." Rates were read from the AWS pricing pages on **2026-11-26**. Where a page 
 figure the rate is marked as such, because most of these pages price their worked examples in US East
 and say only that pricing varies by Region. Nothing below is quoted from memory.
 
+**Amended 2026-11-27 (D-049), after the region was chosen.** Phase 1 deploys to `ap-southeast-1`, and
+the Aurora DSQL row below now carries that region's **measured** rates. They were read from the
+pricing page's per-Region selector, which renders client-side — which is why the first reading of that
+page, and the paragraph above, found only the US East worked examples. Two figures worth recording
+beside it: Ireland, the region this table kept marking as unpublished, is **$9.50 per million DPU and
+$0.36 per GB-month**, dearer than Singapore on DPU; US East (Ohio) is $8.00 and $0.33. The other rows
+still carry the US East or unlabelled rates read on 2026-11-26, and the rows that say "rate not
+verified per region" still mean it. The total is unchanged at about **$1.67**, because DSQL's expected
+charge is zero inside the monthly free allowance in every one of the three regions.
+
 **Usage assumed.** One Lifter; four training sessions a week (17 a month); every logged set a write;
 one agent conversation per session; the dashboard opened about 30 times a month. That comes to roughly
 1,500 API calls a month. The table uses **10,000 API calls and 10,000 Lambda invocations** — about
@@ -79,7 +89,7 @@ seven times the estimate — so these figures are a ceiling, not a guess.
 |---|---|---|---|
 | **Route 53 hosted zone** | one zone, flat | **$0.50** | $0.50 per zone for the first 25. Verified, no free tier, and *not prorated* |
 | **Domain registration** | one `.com` | **~$1.10** | **Unverified.** The Route 53 pricing page publishes no `.com` figure and links a separate TLD price list |
-| **Aurora DSQL** | DPUs, storage | **$0.00 expected, unmeasured** | $8/million DPU and $0.33/GB-month, with the first 100,000 DPUs and 1 GB free *each month*. US East figures; no Ireland rate published |
+| **Aurora DSQL** | DPUs, storage | **$0.00 expected, unmeasured** | **$9.00/million DPU and $0.40/GB-month in `ap-southeast-1`**, with the first 100,000 DPUs and 1 GB free *each month*. Read per-Region on 2026-11-27 (D-049); the earlier $8.00 and $0.33 were US East |
 | **Lambda** | 10,000 inv. x 512 MB x 400 ms = ~2,000 GB-s | **$0.04**, or $0.00 inside the allowance | $0.0000166667/GB-s plus $0.20/million requests, US East |
 | **API Gateway** (HTTP API) | 10,000 requests | **$0.01** | $1.00/million, from a worked example that names no region |
 | **CloudFront** | ~40,000 requests, well under 1 GB out | **$0.00** | Inside the "Always free" 1 TB and 10,000,000 requests a month |
