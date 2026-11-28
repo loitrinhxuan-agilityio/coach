@@ -6,10 +6,12 @@ import { mintKey } from './mint-key-core.js'
 //   DSQL_ENDPOINT=<cluster endpoint> AWS_REGION=<region> DSQL_DB_ROLE=admin \
 //     npx tsx scripts/mint-key.ts <name>
 //
-// If it ends with a failure that says the Key "may have been stored", the database may have
-// committed the row and said nothing (a timeout after COMMIT), so the name may now be taken. Phase 1
-// has no way to delete a Key: if a retry says a Key of that name already exists, it does, and a new
-// name is needed.
+// Two failures leave the name taken, and Phase 1 has no way to delete a Key, so each needs a new name:
+//   - "may have been stored": the database may have committed the row and said nothing (a timeout
+//     after COMMIT). If a retry says a Key of that name already exists, it does.
+//   - "stored but could not be printed": the row is certainly there and its Key was never shown, so
+//     it is lost.
+// A failure that says "no Key was made" stored nothing, and the same name can be tried again.
 //
 // with AWS credentials for the account the cluster is in. `admin` is the role that can write to
 // `keys`; whether it is the right one to run this as is 9017's to confirm. The logic is in

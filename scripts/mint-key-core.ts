@@ -51,19 +51,29 @@ const outcomeUnknown = (name: string, reason: string): string =>
   `The name ${name} may now be taken: if a retry says a Key with it already exists, ` +
   'it does, and a new name is needed.'
 
-// A rejection that is the database saying one of the two unique indexes already holds the value. It
-// is a definite answer: the row that exists is somebody else's, and nothing of this mint was stored.
-const isDuplicate = (error: unknown, name: string): boolean =>
+// SQLSTATE insufficient_privilege. A write the database refused for want of permission stored nothing.
+// The likeliest cause is a DSQL_DB_ROLE that may not write `keys`, which is the failure the Owner is
+// most likely to meet the first time this runs, and each time it would otherwise burn a name for
+// nothing. Read from the code the driver sets, never from the message.
+const INSUFFICIENT_PRIVILEGE = '42501'
+
+// A rejection that says for certain that this mint stored nothing: the database saying one of the two
+// unique indexes already holds the value (the row that exists is not this mint's: it is another
+// mint's, or the leftover of an earlier run of this script whose outcome was not known), or a
+// permission refusal.
+const storedNothing = (error: unknown, name: string): boolean =>
   error instanceof Error &&
-  (error.message === keyNameTaken(name) || error.message === KEY_HASH_TAKEN)
+  (error.message === keyNameTaken(name) ||
+    error.message === KEY_HASH_TAKEN ||
+    (error as { code?: unknown }).code === INSUFFICIENT_PRIVILEGE)
 
 // Returns the process's exit code: 0 a Key was made and printed, 1 it was not, 2 the arguments were
 // wrong. It does not throw. A Key is generated only once the name is known to be free, written to
 // the database as its hash alone, and printed only after that write has succeeded, so a failure at
 // any step leaves no Key on screen that the database does not know.
 //
-// What each exit 1 says is what is known. Before the write, or a rejection naming a duplicate, no
-// row of this mint exists and the message says "no Key was made". A failed write of any other kind
+// What each exit 1 says is what is known. Before the write, or a rejection naming a duplicate or a
+// refused permission, no row of this mint exists and the message says "no Key was made". A failed write of any other kind
 // may or may not have committed, and a failed print has certainly committed, so those two say so and
 // say what to do about the name.
 export async function mintKey(args: readonly string[], deps: MintDeps): Promise<number> {
@@ -86,14 +96,20 @@ export async function mintKey(args: readonly string[], deps: MintDeps): Promise<
     return 1
   }
 
-  const key = generateKey()
+  let key: string
+  try {
+    key = generateKey()
+  } catch (error) {
+    deps.stderr(`no Key was made: ${reasonOf(error)}\n`)
+    return 1
+  }
   try {
     await deps.repo.insertKey({ name, key_sha256: sha256Hex(key) })
   } catch (error) {
     // Neither branch names the Key, which has not been printed and reached the repository only as a
     // hash.
     deps.stderr(
-      isDuplicate(error, name)
+      storedNothing(error, name)
         ? `no Key was made: ${reasonOf(error)}\n`
         : `${outcomeUnknown(name, reasonOf(error))}\n`,
     )

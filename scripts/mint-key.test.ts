@@ -1,6 +1,7 @@
 import { spawnSync } from 'node:child_process'
 import { createHash, randomBytes } from 'node:crypto'
 import { authenticate } from '../api/src/auth/authenticate.js'
+import { KEY_HASH_TAKEN } from '../api/src/repository/errors.js'
 import { memoryRepository } from '../api/src/repository/memory.js'
 import type { Repository } from '../api/src/repository/types.js'
 import { mintKey } from './mint-key-core.js'
@@ -437,6 +438,45 @@ describe('a name that already exists', () => {
     expect(await repo.findKeyByName('owner')).not.toBeNull()
   })
 
+  test('a refused permission stored nothing, and says so, so a wrong role does not burn a name', async () => {
+    const refused: Repository = {
+      ...memoryRepository(),
+      insertKey: async () => {
+        throw Object.assign(new Error('permission denied for table keys'), { code: '42501' })
+      },
+    }
+    const lookalike: Repository = {
+      ...memoryRepository(),
+      insertKey: async () => {
+        // The words of a refusal and no code: nothing is decided from a message.
+        throw new Error('permission denied for table keys (42501)')
+      },
+    }
+
+    const run = await mint(['owner'], refused)
+    const unsure = await mint(['owner'], lookalike)
+
+    expect(run.code).toBe(1)
+    expect(run.stderr).toContain('no Key was made: permission denied for table keys')
+    expect(run.stderr).not.toMatch(/may have been stored|may now be taken/)
+    expect(run.stdout).toBe('')
+    expect(unsure.stderr).toContain('may have been stored')
+  })
+
+  test('a failure to generate the Key is a failure, not a throw, and stores nothing', async () => {
+    randomBytesSpy.mockImplementationOnce(() => {
+      throw new Error('no entropy')
+    })
+    const { repo, inserts } = watched(memoryRepository())
+
+    const run = await mint(['owner'], repo)
+
+    expect(run.code).toBe(1)
+    expect(run.stderr).toContain('no Key was made: no entropy')
+    expect(run.stdout).toBe('')
+    expect(inserts).toStrictEqual([])
+  })
+
   test('a duplicate refusal and a failed lookup are certain, and say no Key was made', async () => {
     const seeded = memoryRepository({ keys: [{ name: 'owner', key_sha256: sha256Hex('older') }] })
     const raced = await mint(['owner'], { ...seeded, findKeyByName: async () => null })
@@ -449,6 +489,15 @@ describe('a name that already exists', () => {
 
     expect(raced.stderr).toContain('no Key was made: a Key named owner already exists')
     expect(raced.stderr).not.toMatch(/may have been stored|may now be taken/)
+    // The unique index on the hash, which no real Key reaches, is as certain as the one on the name.
+    const hashTaken = await mint(['owner'], {
+      ...memoryRepository(),
+      insertKey: async () => {
+        throw new Error(KEY_HASH_TAKEN)
+      },
+    })
+    expect(hashTaken.stderr).toContain(`no Key was made: ${KEY_HASH_TAKEN}`)
+    expect(hashTaken.stderr).not.toMatch(/may have been stored|may now be taken/)
     expect(lookup.stderr).toContain('no Key was made: connection reset')
     expect(lookup.stderr).not.toMatch(/may have been stored|may now be taken/)
   })
