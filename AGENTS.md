@@ -23,9 +23,16 @@ AI Lift Coach is built by a team of AI agents following the AI-assisted Developm
 
 ## Commands
 
-No application code exists yet, so there are no build, test or lint commands. Two design checks do
-exist, and both exit non-zero on a failure, so either can gate a change. Run them from the
-repository root.
+The application has a test suite and a type check, and the design has two checks of its own. All
+exit non-zero on a failure, so any can gate a change. Run them from the repository root.
+
+- **Tests.** `npm test` (Vitest).
+- **Types.** `npm run typecheck` (`api`, `infra` and `scripts`).
+- **Lint.** `npm run lint` (Biome).
+- **Infrastructure.** `npx cdk synth --app "npx tsx infra/bin/app.ts"` builds the stack's template
+  and fails if it cannot.
+
+The two design checks:
 
 - **Palette contrast.** No dependencies.
   `node docs/design/ailiftcoach/tools/check-contrast.mjs`
@@ -40,9 +47,11 @@ the page, not the check.
 
 ## Architecture
 
-No application code exists; this repository holds product discovery, design and the process that
-will build it. Design sources are at `docs/design/ailiftcoach/` — prototypes as self-contained
-HTML, the token system under `system/`, which is authoritative on anything visual.
+The spine of the application exists: `api/` (the Lambda handlers, the database layer and the two
+surfaces, HTTP and MCP) and `infra/` (the CDK stack) are npm workspaces, and `scripts/` holds what an
+operator runs, such as `mint-key`. Beside them this repository holds product discovery, design and the
+process that builds it. Design sources are at `docs/design/ailiftcoach/` — prototypes as
+self-contained HTML, the token system under `system/`, which is authoritative on anything visual.
 `docs/product/shredpace/` is reverse-engineered reference material about a different product:
 evidence for how a feature should behave when it is built, never a scope commitment.
 

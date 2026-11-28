@@ -1,0 +1,19 @@
+{
+  "name": "@ai-lift-coach/infra",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "synth": "cdk synth"
+  },
+  "dependencies": {
+    "aws-cdk-lib": "^2.278.0",
+    "constructs": "^10.8.1"
+  },
+  "devDependencies": {
+    "aws-cdk": "^2.1149.0",
+    "esbuild": "^0.28.2",
+    "tsx": "^4.23.15"
+  }
+}

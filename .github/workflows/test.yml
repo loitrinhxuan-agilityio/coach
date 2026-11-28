@@ -1,0 +1,37 @@
+# Gate 1: the application's tests, type check and lint.
+# Each of the three root scripts exits non-zero on a failure, so any of them can block a
+# pull request. They are separate steps so a failing run names which one failed.
+# This runs on every pull request, with no paths filter, so the check always reports and
+# can be made a required check without a skipped-but-required trap.
+name: Test
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Test, typecheck and lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      # npm ci installs exactly what package-lock.json records, and fails if the two disagree.
+      - name: Install dependencies
+        run: npm ci
+      - name: Test
+        run: npm test
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Lint
+        run: npm run lint
